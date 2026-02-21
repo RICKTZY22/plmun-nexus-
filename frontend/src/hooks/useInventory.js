@@ -1,0 +1,179 @@
+import { useState, useCallback, useEffect } from 'react';
+import { inventoryService } from '../services';
+
+const useInventory = () => {
+    const [inventory, setInventory] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [stats, setStats] = useState({
+        total: 0,
+        available: 0,
+        inUse: 0,
+        maintenance: 0,
+        retired: 0,
+        categories: 0,
+        lowStock: 0,
+    });
+
+    const LOW_STOCK_THRESHOLD = 5;
+
+    const clearError = useCallback(() => setError(null), []);
+
+    const fetchInventory = useCallback(async (filters = {}) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await inventoryService.getAll(filters);
+            const items = Array.isArray(data) ? data : data.results || [];
+            setInventory(items);
+
+            // Compute stats from fetched items so stats cards stay in sync
+            const categories = new Set(items.map(i => i.category));
+            setStats({
+                total: items.length,
+                available: items.filter(i => i.status === 'AVAILABLE').length,
+                inUse: items.filter(i => i.status === 'IN_USE').length,
+                maintenance: items.filter(i => i.status === 'MAINTENANCE').length,
+                retired: items.filter(i => i.status === 'RETIRED').length,
+                categories: categories.size,
+                lowStock: items.filter(i => i.quantity > 0 && i.quantity <= LOW_STOCK_THRESHOLD).length,
+            });
+        } catch (err) {
+            console.error('Fetch inventory error:', err);
+            setError(err.response?.data?.detail || 'Failed to fetch inventory');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchStats = useCallback(async () => {
+        try {
+            const data = await inventoryService.getStats();
+            setStats(data);
+        } catch (err) {
+            console.error('Fetch stats error:', err);
+        }
+    }, []);
+
+    const addItem = useCallback(async (item) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const cleanData = { ...item };
+            // Only delete imageUrl if it's truly empty (not a File)
+            if (cleanData.imageUrl !== undefined && !(cleanData.imageUrl instanceof File)) {
+                if (!cleanData.imageUrl) {
+                    delete cleanData.imageUrl;
+                }
+            }
+            const newItem = await inventoryService.create(cleanData);
+            setInventory(prev => [...prev, newItem]);
+            return { success: true, item: newItem, message: 'Item added successfully' };
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                JSON.stringify(err.response?.data) ||
+                'Failed to add item';
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const updateItem = useCallback(async (id, data) => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Only send writable fields
+            const allowedKeys = ['name', 'category', 'quantity', 'status', 'location', 'description', 'imageUrl', 'accessLevel', 'isReturnable', 'borrowDuration', 'borrowDurationUnit'];
+            const cleanData = {};
+            allowedKeys.forEach(key => {
+                if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+                    cleanData[key] = data[key];
+                }
+            });
+            // Always include quantity even if 0
+            if (data.quantity !== undefined) cleanData.quantity = data.quantity;
+            const updatedItem = await inventoryService.update(id, cleanData);
+            setInventory(prev => prev.map(item =>
+                item.id === id ? updatedItem : item
+            ));
+            return { success: true, message: 'Item updated successfully' };
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail ||
+                JSON.stringify(err.response?.data) ||
+                'Failed to update item';
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const deleteItem = useCallback(async (id) => {
+        setLoading(true);
+        setError(null);
+        try {
+            await inventoryService.delete(id);
+            setInventory(prev => prev.filter(item => item.id !== id));
+            return { success: true, message: 'Item deleted successfully' };
+        } catch (err) {
+            const errorMessage = err.response?.data?.detail || 'Failed to delete item';
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const getLowStockItems = useCallback(async () => {
+        try {
+            const data = await inventoryService.getLowStock();
+            return Array.isArray(data) ? data : data.results || [];
+        } catch (err) {
+            console.error('Get low stock error:', err);
+            return [];
+        }
+    }, []);
+
+    const getAccessibleItems = useCallback((userRole, searchQuery = '') => {
+        const roleHierarchy = { STUDENT: 1, FACULTY: 2, STAFF: 3, ADMIN: 4 };
+        const userLevel = roleHierarchy[userRole] || 1;
+
+        let accessible = inventory.filter(item => {
+            const itemLevel = roleHierarchy[item.accessLevel] || 1;
+            return userLevel >= itemLevel && item.status === 'AVAILABLE' && item.quantity > 0;
+        });
+
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            accessible = accessible.filter(item =>
+                item.name.toLowerCase().includes(query) ||
+                item.category.toLowerCase().includes(query)
+            );
+        }
+
+        return accessible;
+    }, [inventory]);
+
+    return {
+        inventory,
+        loading,
+        error,
+        clearError,
+        selectedItem,
+        setSelectedItem,
+        fetchInventory,
+        fetchStats,
+        addItem,
+        updateItem,
+        deleteItem,
+        stats,
+        getAccessibleItems,
+        getLowStockItems,
+        LOW_STOCK_THRESHOLD,
+    };
+};
+
+export default useInventory;

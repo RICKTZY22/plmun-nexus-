@@ -1,0 +1,248 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { ROLES, hasMinRole, isAdmin, isStaffOrAbove, hasPermission } from '../utils/roles';
+import authService from '../services/authService';
+import useUIStore from './uiStore';
+
+// Idle timeout — log the user out after 30 min of inactivity
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+let idleTimer = null;
+
+const clearIdleTimer = () => {
+    if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+};
+
+const startIdleTimer = (logoutFn) => {
+    clearIdleTimer();
+    idleTimer = setTimeout(() => {
+        logoutFn();
+        window.location.href = '/login';
+    }, IDLE_TIMEOUT_MS);
+};
+
+const resetIdleTimer = (logoutFn) => () => startIdleTimer(logoutFn);
+
+const IDLE_EVENTS = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
+
+const attachIdleListeners = (logoutFn) => {
+    const handler = resetIdleTimer(logoutFn);
+    IDLE_EVENTS.forEach(evt => window.addEventListener(evt, handler, { passive: true }));
+    return handler;
+};
+
+const detachIdleListeners = (handler) => {
+    if (handler) IDLE_EVENTS.forEach(evt => window.removeEventListener(evt, handler));
+};
+
+// Maps the API user payload to the shape we keep in the store
+const mapUserResponse = (user) => ({
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    fullName: user.fullName || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+    role: user.role,
+    avatar: user.avatar,
+    department: user.department,
+    isActive: user.isActive ?? user.is_active,
+    isFlagged: user.isFlagged ?? user.is_flagged ?? false,
+    overdueCount: user.overdueCount ?? user.overdue_count ?? 0,
+    createdAt: user.date_joined,
+});
+
+const useAuthStore = create(
+    persist(
+        (set, get) => ({
+            // --- state ---
+            user: null,
+            token: null,
+            refreshToken: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+
+            // role helpers
+            getUserRole: () => get().user?.role || ROLES.STUDENT,
+            isAdmin: () => isAdmin(get().user?.role),
+            isStaff: () => isStaffOrAbove(get().user?.role),
+            hasMinRole: (requiredRole) => hasMinRole(get().user?.role, requiredRole),
+            hasPermission: (permission) => hasPermission(get().user?.role, permission),
+
+            // actions
+            setUser: (user) => set({ user, isAuthenticated: !!user }),
+            setToken: (token) => set({ token }),
+            clearError: () => set({ error: null }),
+
+            login: async (credentials) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const username = credentials.username ||
+                        credentials.email?.split('@')[0] ||
+                        credentials.email;
+
+                    const response = await authService.login(username, credentials.password);
+
+                    const user = response.user;
+                    const token = response.access;
+                    const refreshToken = response.refresh;
+
+                    set({
+                        user: mapUserResponse(user),
+                        token,
+                        refreshToken,
+                        isAuthenticated: true,
+                        isLoading: false
+                    });
+
+                    // Load per-user UI settings (theme, etc.)
+                    useUIStore.getState().loadUserSettings(user.id);
+
+                    // Start idle session timeout
+                    const logoutFn = get().logout;
+                    const handler = attachIdleListeners(logoutFn);
+                    get()._idleHandler = handler;
+                    startIdleTimer(logoutFn);
+
+                    return { success: true, user };
+                } catch (error) {
+                    const errorMessage = error.response?.data?.detail ||
+                        error.response?.data?.error ||
+                        error.message ||
+                        'Login failed';
+                    set({ error: errorMessage, isLoading: false });
+                    return { success: false, error: errorMessage };
+                }
+            },
+
+            register: async (userData) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await authService.register({
+                        username: userData.username || userData.email.split('@')[0],
+                        email: userData.email,
+                        password: userData.password,
+                        password2: userData.password,
+                        fullName: userData.fullName,
+                        role: userData.role || ROLES.STUDENT,
+                        department: userData.department || '',
+                        student_id: userData.studentId || '',
+                    });
+
+                    const user = response.user;
+                    const token = response.access;
+                    const refreshToken = response.refresh;
+
+                    set({
+                        user: mapUserResponse(user),
+                        token,
+                        refreshToken,
+                        isAuthenticated: true,
+                        isLoading: false
+                    });
+
+                    // Load per-user UI settings (theme, etc.)
+                    useUIStore.getState().loadUserSettings(user.id);
+
+                    return { success: true, message: 'Registration successful' };
+                } catch (error) {
+                    const errorMessage = error.response?.data?.detail ||
+                        JSON.stringify(error.response?.data) ||
+                        error.message ||
+                        'Registration failed';
+                    set({ error: errorMessage, isLoading: false });
+                    return { success: false, error: errorMessage };
+                }
+            },
+
+            updateProfile: async (profileData) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await authService.updateProfile(profileData);
+
+                    const currentUser = get().user;
+                    const updatedUser = {
+                        ...currentUser,
+                        ...response,
+                        fullName: response.fullName || `${response.first_name} ${response.last_name}`.trim(),
+                    };
+
+                    set({ user: updatedUser, isLoading: false });
+                    return { success: true, user: updatedUser };
+                } catch (error) {
+                    const errorMessage = error.response?.data?.detail || error.message;
+                    set({ error: errorMessage, isLoading: false });
+                    return { success: false, error: errorMessage };
+                }
+            },
+
+            updateAvatar: async (file) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await authService.uploadAvatar(file);
+
+                    const currentUser = get().user;
+                    const updatedUser = {
+                        ...currentUser,
+                        avatar: response.avatar,
+                    };
+
+                    set({ user: updatedUser, isLoading: false });
+                    return { success: true, user: updatedUser };
+                } catch (error) {
+                    const errorMessage = error.response?.data?.detail || error.message;
+                    set({ error: errorMessage, isLoading: false });
+                    return { success: false, error: errorMessage };
+                }
+            },
+
+            changePassword: async (passwordData) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await authService.changePassword(
+                        passwordData.currentPassword,
+                        passwordData.newPassword
+                    );
+
+                    set({ isLoading: false });
+                    return { success: true, message: 'Password changed successfully' };
+                } catch (error) {
+                    const errorMessage = error.response?.data?.detail ||
+                        error.response?.data?.old_password?.[0] ||
+                        error.message;
+                    set({ error: errorMessage, isLoading: false });
+                    return { success: false, error: errorMessage };
+                }
+            },
+
+            _idleHandler: null,
+
+            logout: () => {
+                // Clear idle timer and listeners
+                clearIdleTimer();
+                detachIdleListeners(get()._idleHandler);
+                // Reset UI settings to defaults
+                useUIStore.getState().resetToDefaults();
+                set({
+                    user: null,
+                    token: null,
+                    refreshToken: null,
+                    isAuthenticated: false,
+                    error: null,
+                    _idleHandler: null,
+                });
+            },
+
+
+        }),
+        {
+            name: 'auth-storage',
+            partialize: (state) => ({
+                user: state.user,
+                token: state.token,
+                refreshToken: state.refreshToken,
+                isAuthenticated: state.isAuthenticated
+            }),
+        }
+    )
+);
+
+export default useAuthStore;
