@@ -20,9 +20,32 @@ User = get_user_model()
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Adds user data to the JWT token response."""
+    """Accepts email + password, looks up the user, and returns JWT tokens + user data."""
+
+    username_field = 'email'
 
     def validate(self, attrs):
+        email = attrs.get('email', '').strip().lower()
+        password = attrs.get('password', '')
+
+        if not email or not password:
+            from rest_framework import serializers
+            raise serializers.ValidationError('Email and password are required.')
+
+        # Look up user by email
+        try:
+            user = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            from rest_framework import serializers
+            raise serializers.ValidationError('No account found with this email.')
+
+        # Swap email for username so SimpleJWT can authenticate
+        attrs[self.username_field] = user.username
+        attrs['password'] = password
+        # SimpleJWT expects the default 'username' key
+        attrs['username'] = user.username
+        del attrs['email']
+
         data = super().validate(attrs)
         # Update last_login since JWT auth doesn't trigger Django's login signal
         from django.contrib.auth.models import update_last_login

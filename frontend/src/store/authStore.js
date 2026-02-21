@@ -75,11 +75,8 @@ const useAuthStore = create(
             login: async (credentials) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const username = credentials.username ||
-                        credentials.email?.split('@')[0] ||
-                        credentials.email;
-
-                    const response = await authService.login(username, credentials.password);
+                    const email = credentials.email?.trim().toLowerCase();
+                    const response = await authService.login(email, credentials.password);
 
                     const user = response.user;
                     const token = response.access;
