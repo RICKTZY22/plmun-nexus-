@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLMun Nexus — UI Revamp Concepts</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e5e5e5; }
+
+  /* Tab Navigation */
+  .tabs { display: flex; justify-content: center; gap: 8px; padding: 24px; position: sticky; top: 0; background: #0a0a0a; z-index: 99; border-bottom: 1px solid #222; }
+  .tab { padding: 10px 28px; border-radius: 99px; cursor: pointer; font-size: 14px; font-weight: 600; border: 1px solid #333; background: transparent; color: #888; transition: all 0.2s; }
+  .tab:hover { border-color: #555; color: #ccc; }
+  .tab.active { background: #fff; color: #000; border-color: #fff; }
+  .concept { display: none; }
+  .concept.active { display: block; }
+
+  h1.section-title { text-align: center; font-size: 28px; font-weight: 700; margin: 32px 0 8px; }
+  p.section-desc { text-align: center; color: #888; font-size: 14px; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+  /* ===== CONCEPT 1: LINEAR ===== */
+  .linear-frame { display: flex; height: 520px; border-radius: 16px; overflow: hidden; border: 1px solid #222; margin: 0 40px 40px; background: #fafafa; }
+  .linear-sidebar { width: 56px; background: #f5f5f5; border-right: 1px solid #e5e5e5; display: flex; flex-direction: column; align-items: center; padding-top: 16px; gap: 8px; }
+  .linear-sidebar .icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #999; cursor: pointer; transition: all 0.15s; }
+  .linear-sidebar .icon:hover { background: #e8e8e8; color: #333; }
+  .linear-sidebar .icon.active { background: #7c3aed; color: white; }
+  .linear-content { flex: 1; padding: 24px 32px; overflow-y: auto; }
+  .linear-content h2 { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 4px; }
+  .linear-content .subtitle { font-size: 12px; color: #888; margin-bottom: 20px; }
+  .linear-metrics { display: flex; gap: 32px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #eee; }
+  .linear-metrics .metric { }
+  .linear-metrics .metric .val { font-size: 24px; font-weight: 700; color: #111; }
+  .linear-metrics .metric .lbl { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
+  .linear-search { display: flex; gap: 8px; margin-bottom: 16px; }
+  .linear-search input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; outline: none; background: white; font-family: inherit; }
+  .linear-search input:focus { border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,0.1); }
+  .linear-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .linear-table th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; font-weight: 600; border-bottom: 1px solid #eee; }
+  .linear-table td { padding: 10px 12px; border-bottom: 1px solid #f5f5f5; color: #333; }
+  .linear-table tr:hover td { background: #f8f5ff; }
+  .linear-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .linear-dot.green { background: #22c55e; }
+  .linear-dot.blue { background: #3b82f6; }
+  .linear-dot.amber { background: #f59e0b; }
+  .linear-dot.gray { background: #9ca3af; }
+
+  /* ===== CONCEPT 2: APPLE ===== */
+  .apple-frame { display: flex; height: 520px; border-radius: 20px; overflow: hidden; border: 1px solid #333; margin: 0 40px 40px; background: #1a1a2e; }
+  .apple-sidebar { width: 220px; background: rgba(30,30,50,0.85); backdrop-filter: blur(20px); border-right: 1px solid rgba(255,255,255,0.06); padding: 20px 12px; }
+  .apple-sidebar .logo { font-size: 15px; font-weight: 700; color: #e0e0ff; padding: 0 12px; margin-bottom: 24px; letter-spacing: -0.3px; }
+  .apple-sidebar .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 12px; font-size: 13px; color: #8888aa; cursor: pointer; margin-bottom: 2px; transition: all 0.2s; font-weight: 500; }
+  .apple-sidebar .nav-item:hover { background: rgba(255,255,255,0.05); color: #ccc; }
+  .apple-sidebar .nav-item.active { background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(59,130,246,0.2)); color: #e0e0ff; font-weight: 600; }
+  .apple-content { flex: 1; padding: 24px 28px; overflow-y: auto; background: #111122; }
+  .apple-content h2 { font-size: 22px; font-weight: 700; color: #f0f0ff; margin-bottom: 20px; }
+  .apple-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .apple-stat { padding: 16px; border-radius: 16px; position: relative; overflow: hidden; }
+  .apple-stat::before { content: ''; position: absolute; inset: 0; opacity: 0.12; border-radius: 16px; }
+  .apple-stat.s1 { background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05)); border: 1px solid rgba(34,197,94,0.15); }
+  .apple-stat.s2 { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.15); }
+  .apple-stat.s3 { background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05)); border: 1px solid rgba(245,158,11,0.15); }
+  .apple-stat.s4 { background: linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); border: 1px solid rgba(239,68,68,0.15); }
+  .apple-stat .val { font-size: 28px; font-weight: 700; }
+  .apple-stat.s1 .val { color: #4ade80; } .apple-stat.s2 .val { color: #60a5fa; }
+  .apple-stat.s3 .val { color: #fbbf24; } .apple-stat.s4 .val { color: #f87171; }
+  .apple-stat .lbl { font-size: 11px; color: #8888aa; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; font-weight: 500; }
+  .apple-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .apple-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; cursor: pointer; transition: all 0.3s; }
+  .apple-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .apple-card .img { height: 80px; border-radius: 12px; background: linear-gradient(135deg, #2a2a4a, #1a1a3e); display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 12px; }
+  .apple-card .name { font-size: 14px; font-weight: 600; color: #e0e0ff; }
+  .apple-card .cat { font-size: 11px; color: #7777aa; margin-top: 2px; }
+  .apple-card .bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .apple-card .badge { font-size: 10px; padding: 3px 10px; border-radius: 99px; font-weight: 600; }
+  .apple-card .badge.green { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .apple-card .badge.blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .apple-card .badge.amber { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .apple-card .qty { font-size: 13px; font-weight: 600; color: #aaa; }
+
+  /* ===== CONCEPT 3: DASHBOARD PRO ===== */
+  .pro-frame { display: flex; height: 520px; border-radius: 16px; overflow: hidden; border: 1px solid #ddd; margin: 0 40px 40px; background: #fff; }
+  .pro-sidebar { width: 200px; background: #f8f9fa; border-right: 1px solid #e5e7eb; padding: 16px 8px; }
+  .pro-sidebar .section-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 600; padding: 12px 12px 6px; }
+  .pro-sidebar .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; font-size: 13px; color: #6b7280; cursor: pointer; margin-bottom: 1px; transition: all 0.15s; font-weight: 500; }
+  .pro-sidebar .nav-item:hover { background: #e5e7eb; color: #374151; }
+  .pro-sidebar .nav-item.active { background: #111827; color: white; font-weight: 600; }
+  .pro-content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+  .pro-breadcrumb { font-size: 12px; color: #9ca3af; margin-bottom: 12px; }
+  .pro-breadcrumb span { color: #374151; font-weight: 500; }
+  .pro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .pro-header h2 { font-size: 18px; font-weight: 700; color: #111; }
+  .pro-header .btn { padding: 7px 14px; background: #111827; color: white; border: none; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .pro-segments { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; margin-bottom: 16px; gap: 2px; }
+  .pro-segments .seg { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; color: #6b7280; cursor: pointer; transition: all 0.15s; border: none; background: none; font-family: inherit; }
+  .pro-segments .seg:hover { color: #374151; }
+  .pro-segments .seg.active { background: white; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-weight: 600; }
+  .pro-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  .pro-stat { padding: 14px; border: 1px solid #e5e7eb; border-radius: 10px; }
+  .pro-stat .lbl { font-size: 11px; color: #9ca3af; font-weight: 500; }
+  .pro-stat .row { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
+  .pro-stat .val { font-size: 22px; font-weight: 700; color: #111; }
+  .pro-spark { display: flex; align-items: flex-end; gap: 2px; height: 24px; }
+  .pro-spark .bar { width: 4px; border-radius: 2px; background: #e5e7eb; }
+  .pro-spark .bar.hi { background: #6366f1; }
+  .pro-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .pro-table th { text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; color: #9ca3af; font-weight: 600; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+  .pro-table td { padding: 9px 10px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+  .pro-table tr:hover td { background: #f8f9ff; }
+  .pro-table .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .pro-table .kbd { font-size: 10px; padding: 1px 5px; border: 1px solid #ddd; border-radius: 4px; color: #999; background: #f9f9f9; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Tab Switcher -->
+<div class="tabs">
+  <button class="tab active" onclick="showConcept(0)">Option 1 — Linear</button>
+  <button class="tab" onclick="showConcept(1)">Option 2 — Apple</button>
+  <button class="tab" onclick="showConcept(2)">Option 3 — Dashboard Pro</button>
+</div>
+
+<!-- ==================== CONCEPT 1: LINEAR ==================== -->
+<div class="concept active">
+  <h1 class="section-title">Option 1 — "Linear"</h1>
+  <p class="section-desc">Minimal monochrome + single accent color. Flat, professional, fast. Inspired by Linear, Notion, Vercel.</p>
+  <div class="linear-frame">
+    <div class="linear-sidebar">
+      <div class="icon">🏠</div>
+      <div class="icon active">📦</div>
+      <div class="icon">📋</div>
+      <div class="icon">📊</div>
+      <div class="icon">👥</div>
+      <div style="flex:1"></div>
+      <div class="icon">⚙️</div>
+    </div>
+    <div class="linear-content">
+      <h2>Inventory</h2>
+      <div class="subtitle">Manage your items, track stock levels, and monitor usage.</div>
+      <div class="linear-metrics">
+        <div class="metric"><div class="val">156</div><div class="lbl">Total Items</div></div>
+        <div class="metric"><div class="val">89</div><div class="lbl">Available</div></div>
+        <div class="metric"><div class="val">42</div><div class="lbl">In Use</div></div>
+        <div class="metric"><div class="val">12</div><div class="lbl">Low Stock</div></div>
+        <div class="metric"><div class="val">3</div><div class="lbl">Out of Stock</div></div>
+      </div>
+      <div class="linear-search">
+        <input type="text" placeholder="Search items... (⌘K)" />
+      </div>
+      <table class="linear-table">
+        <tr><th>Name</th><th>Category</th><th>Qty</th><th>Status</th><th>Location</th></tr>
+        <tr><td>Dell Monitor 27"</td><td>💻 Electronics</td><td>12</td><td><span class="linear-dot green"></span>Available</td><td>Room 301</td></tr>
+        <tr><td>Office Chair Pro</td><td>🪑 Furniture</td><td>3</td><td><span class="linear-dot amber"></span>Low Stock</td><td>Storage B</td></tr>
+        <tr><td>Projector Epson X41</td><td>🔧 Equipment</td><td>5</td><td><span class="linear-dot blue"></span>In Use</td><td>Room 205</td></tr>
+        <tr><td>Whiteboard Markers</td><td>📦 Supplies</td><td>0</td><td><span class="linear-dot gray"></span>Out of Stock</td><td>Supply Room</td></tr>
+        <tr><td>Laptop Lenovo T14</td><td>💻 Electronics</td><td>8</td><td><span class="linear-dot green"></span>Available</td><td>IT Office</td></tr>
+        <tr><td>Standing Desk</td><td>🪑 Furniture</td><td>2</td><td><span class="linear-dot amber"></span>Maintenance</td><td>Room 102</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CONCEPT 2: APPLE ==================== -->
+<div class="concept">
+  <h1 class="section-title">Option 2 — "Apple"</h1>
+  <p class="section-desc">Frosted glass, soft depth, pastel accents. Premium & delightful. Inspired by Apple HIG, Arc Browser.</p>
+  <div class="apple-frame">
+    <div class="apple-sidebar">
+      <div class="logo">✦ PLMun Nexus</div>
+      <div class="nav-item">🏠 Dashboard</div>
+      <div class="nav-item active">📦 Inventory</div>
+      <div class="nav-item">📋 Requests</div>
+      <div class="nav-item">📊 Reports</div>
+      <div class="nav-item">👥 Users</div>
+      <div style="flex:1"></div>
+      <div class="nav-item">⚙️ Settings</div>
+    </div>
+    <div class="apple-content">
+      <h2>Inventory</h2>
+      <div class="apple-stats">
+        <div class="apple-stat s1"><div class="val">89</div><div class="lbl">Available</div></div>
+        <div class="apple-stat s2"><div class="val">42</div><div class="lbl">In Use</div></div>
+        <div class="apple-stat s3"><div class="val">12</div><div class="lbl">Low Stock</div></div>
+        <div class="apple-stat s4"><div class="val">3</div><div class="lbl">Out of Stock</div></div>
+      </div>
+      <div class="apple-cards">
+        <div class="apple-card"><div class="img">💻</div><div class="name">Dell Monitor 27"</div><div class="cat">Electronics</div><div class="bottom"><span class="badge green">Available</span><span class="qty">Qty: 12</span></div></div>
+        <div class="apple-card"><div class="img">🪑</div><div class="name">Office Chair Pro</div><div class="cat">Furniture</div><div class="bottom"><span class="badge amber">Low Stock</span><span class="qty">Qty: 3</span></div></div>
+        <div class="apple-card"><div class="img">🔧</div><div class="name">Projector Epson X41</div><div class="cat">Equipment</div><div class="bottom"><span class="badge blue">In Use</span><span class="qty">Qty: 5</span></div></div>
+        <div class="apple-card"><div class="img">📦</div><div class="name">Whiteboard Markers</div><div class="cat">Supplies</div><div class="bottom"><span class="badge amber">Out of Stock</span><span class="qty">Qty: 0</span></div></div>
+        <div class="apple-card"><div class="img">💻</div><div class="name">Laptop Lenovo T14</div><div class="cat">Electronics</div><div class="bottom"><span class="badge green">Available</span><span class="qty">Qty: 8</span></div></div>
+        <div class="apple-card"><div class="img">🪑</div><div class="name">Standing Desk</div><div class="cat">Furniture</div><div class="bottom"><span class="badge blue">Maintenance</span><span class="qty">Qty: 2</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CONCEPT 3: DASHBOARD PRO ==================== -->
+<div class="concept">
+  <h1 class="section-title">Option 3 — "Dashboard Pro"</h1>
+  <p class="section-desc">Data-dense, information-rich, power-user focused. Inspired by Stripe, Shopify Admin, GitHub.</p>
+  <div class="pro-frame">
+    <div class="pro-sidebar">
+      <div class="section-lbl">Main</div>
+      <div class="nav-item">🏠 Dashboard</div>
+      <div class="nav-item active">📦 Inventory</div>
+      <div class="nav-item">📋 Requests</div>
+      <div class="section-lbl">Analytics</div>
+      <div class="nav-item">📊 Reports</div>
+      <div class="section-lbl">Management</div>
+      <div class="nav-item">👥 Users</div>
+      <div class="nav-item">⚙️ Settings</div>
+    </div>
+    <div class="pro-content">
+      <div class="pro-breadcrumb">Home &gt; <span>Inventory</span></div>
+      <div class="pro-header">
+        <h2>Inventory</h2>
+        <button class="btn">+ Add Item</button>
+      </div>
+      <div class="pro-segments">
+        <button class="seg active">All (156)</button>
+        <button class="seg">Available (89)</button>
+        <button class="seg">In Use (42)</button>
+        <button class="seg">Maintenance (8)</button>
+        <button class="seg">Retired (4)</button>
+      </div>
+      <div class="pro-stats">
+        <div class="pro-stat"><div class="lbl">Total Items</div><div class="row"><div class="val">156</div><div class="pro-spark"><div class="bar" style="height:8px"></div><div class="bar" style="height:12px"></div><div class="bar hi" style="height:18px"></div><div class="bar hi" style="height:14px"></div><div class="bar hi" style="height:24px"></div></div></div></div>
+        <div class="pro-stat"><div class="lbl">Available</div><div class="row"><div class="val">89</div><div class="pro-spark"><div class="bar hi" style="height:20px"></div><div class="bar hi" style="height:16px"></div><div class="bar" style="height:10px"></div><div class="bar hi" style="height:22px"></div><div class="bar hi" style="height:18px"></div></div></div></div>
+        <div class="pro-stat"><div class="lbl">Low Stock</div><div class="row"><div class="val">12</div><div class="pro-spark"><div class="bar" style="height:6px"></div><div class="bar hi" style="height:14px"></div><div class="bar hi" style="height:10px"></div><div class="bar" style="height:4px"></div><div class="bar hi" style="height:12px"></div></div></div></div>
+        <div class="pro-stat"><div class="lbl">Out of Stock</div><div class="row"><div class="val">3</div><div class="pro-spark"><div class="bar" style="height:4px"></div><div class="bar" style="height:6px"></div><div class="bar hi" style="height:8px"></div><div class="bar" style="height:3px"></div><div class="bar" style="height:5px"></div></div></div></div>
+      </div>
+      <table class="pro-table">
+        <tr><th>Name</th><th>Category</th><th>Qty</th><th>Status</th><th>Location</th><th>Actions <span class="kbd">?</span></th></tr>
+        <tr><td>Dell Monitor 27"</td><td>Electronics</td><td><strong>12</strong></td><td><span class="status-dot" style="background:#22c55e"></span>Available</td><td>Room 301</td><td style="color:#9ca3af">⋯</td></tr>
+        <tr><td>Office Chair Pro</td><td>Furniture</td><td><strong style="color:#f59e0b">3</strong></td><td><span class="status-dot" style="background:#f59e0b"></span>Low Stock</td><td>Storage B</td><td style="color:#9ca3af">⋯</td></tr>
+        <tr><td>Projector Epson X41</td><td>Equipment</td><td><strong>5</strong></td><td><span class="status-dot" style="background:#3b82f6"></span>In Use</td><td>Room 205</td><td style="color:#9ca3af">⋯</td></tr>
+        <tr><td>Whiteboard Markers</td><td>Supplies</td><td><strong style="color:#ef4444">0</strong></td><td><span class="status-dot" style="background:#ef4444"></span>Out</td><td>Supply Room</td><td style="color:#9ca3af">⋯</td></tr>
+        <tr><td>Laptop Lenovo T14</td><td>Electronics</td><td><strong>8</strong></td><td><span class="status-dot" style="background:#22c55e"></span>Available</td><td>IT Office</td><td style="color:#9ca3af">⋯</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function showConcept(idx) {
+  document.querySelectorAll('.concept').forEach((c, i) => c.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+}
+</script>
+</body>
+</html>

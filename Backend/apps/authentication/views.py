@@ -1,3 +1,5 @@
+import os
+
 from rest_framework import status, generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,37 +17,15 @@ from .serializers import (
     ChangePasswordSerializer,
 )
 from .models import AuditLog, log_action
+from apps.permissions import IsAdmin
 
 User = get_user_model()
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Accepts email + password, looks up the user, and returns JWT tokens + user data."""
-
-    username_field = 'email'
+    """Adds user data to the JWT token response."""
 
     def validate(self, attrs):
-        email = attrs.get('email', '').strip().lower()
-        password = attrs.get('password', '')
-
-        if not email or not password:
-            from rest_framework import serializers
-            raise serializers.ValidationError('Email and password are required.')
-
-        # Look up user by email
-        try:
-            user = User.objects.get(email__iexact=email)
-        except User.DoesNotExist:
-            from rest_framework import serializers
-            raise serializers.ValidationError('No account found with this email.')
-
-        # Swap email for username so SimpleJWT can authenticate
-        attrs[self.username_field] = user.username
-        attrs['password'] = password
-        # SimpleJWT expects the default 'username' key
-        attrs['username'] = user.username
-        del attrs['email']
-
         data = super().validate(attrs)
         # Update last_login since JWT auth doesn't trigger Django's login signal
         from django.contrib.auth.models import update_last_login
@@ -56,8 +36,28 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """Login endpoint — rate-limited to 10 attempts/min per IP."""
+    """Login endpoint — rate-limited to 10 attempts/min per IP.
+    Accepts email or username + password."""
     serializer_class = CustomTokenObtainPairSerializer
+
+    def get_serializer(self, *args, **kwargs):
+        """If request data has 'email' but no 'username', look up user and inject username."""
+        data = kwargs.get('data')
+        if data and 'email' in data and 'username' not in data:
+            data = data.copy()
+            email = data.pop('email', [''])[0] if hasattr(data, 'getlist') else data.pop('email', '')
+            if isinstance(email, list):
+                email = email[0] if email else ''
+            email = email.strip().lower()
+            if email:
+                try:
+                    user = User.objects.get(email__iexact=email)
+                    data['username'] = user.username
+                except User.DoesNotExist:
+                    # Let it pass through — serializer will fail with invalid credentials
+                    data['username'] = email
+            kwargs['data'] = data
+        return super().get_serializer(*args, **kwargs)
 
     @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=False))
     def post(self, request, *args, **kwargs):
@@ -87,7 +87,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         else:
             # Failed login
             log_action(AuditLog.LOGIN_FAILED,
-                       details=f'Failed login attempt for username: {request.data.get("username", "?")}',
+                       details=f'Failed login attempt for: {request.data.get("email", request.data.get("username", "?"))}',
                        request=request)
 
         return response
@@ -160,14 +160,37 @@ class ProfilePictureView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
 
+    ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/webp'}
+    ALLOWED_EXT = {'.jpg', '.jpeg', '.png', '.webp'}
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
     def post(self, request):
-        if 'avatar' not in request.FILES:
+        file = request.FILES.get('avatar')
+        if not file:
             return Response(
                 {'error': 'No image file provided'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        request.user.avatar = request.FILES['avatar']
+        # SEC-02: Validate file type, extension, and size
+        if file.content_type not in self.ALLOWED_MIME:
+            return Response(
+                {'error': 'Only JPEG, PNG, and WebP images are allowed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        ext = os.path.splitext(file.name)[1].lower()
+        if ext not in self.ALLOWED_EXT:
+            return Response(
+                {'error': f'File extension "{ext}" is not allowed.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if file.size > self.MAX_SIZE:
+            return Response(
+                {'error': 'Image must be smaller than 5 MB.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        request.user.avatar = file
         request.user.save()
 
         return Response({
@@ -179,11 +202,9 @@ class ProfilePictureView(APIView):
 class AuditLogView(APIView):
     """Admin-only listing of audit events. Supports ?limit= and ?action= filters."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]  # SEC-03: class-level permission
 
     def get(self, request):
-        if not request.user.has_min_role('ADMIN'):
-            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
 
         qs = AuditLog.objects.select_related('user').all()
 
@@ -215,16 +236,30 @@ class AuditLogView(APIView):
         ]
         return Response(data)
 
+    def delete(self, request):
+        """Admin-only: clear all audit log entries."""
+
+        count = AuditLog.objects.count()
+        AuditLog.objects.all().delete()
+
+        # Log the clear action itself (so there's always a trace)
+        log_action(
+            AuditLog.Action.OTHER,
+            user=request.user,
+            details=f'Cleared {count} audit log entries',
+            request=request,
+        )
+
+        return Response({'message': f'Cleared {count} audit log entries.'})
+
 
 class BackupView(APIView):
     """Dumps users, inventory, and requests as a downloadable JSON file.
     Admin only."""
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAdmin]  # SEC-03: class-level permission
 
     def get(self, request):
-        if not request.user.has_min_role('ADMIN'):
-            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
 
         import json
         from django.http import HttpResponse

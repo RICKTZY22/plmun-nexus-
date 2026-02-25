@@ -4,6 +4,7 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 const ImageUpload = ({ value, onChange, className = '', compact = false }) => {
     const [preview, setPreview] = useState(value || null);
     const [isDragging, setIsDragging] = useState(false);
+    const [uploadError, setUploadError] = useState('');
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -15,14 +16,16 @@ const ImageUpload = ({ value, onChange, className = '', compact = false }) => {
 
     const processFile = (file) => {
         if (!file.type.startsWith('image/')) {
-            alert('Please upload an image file');
+            setUploadError('Please upload an image file');
             return;
         }
 
         if (file.size > 5 * 1024 * 1024) {
-            alert('Image must be less than 5MB');
+            setUploadError('Image must be less than 5MB');
             return;
         }
+
+        setUploadError('');
 
         // Show preview using base64
         const reader = new FileReader();
@@ -123,6 +126,9 @@ const ImageUpload = ({ value, onChange, className = '', compact = false }) => {
                 onChange={handleFileChange}
                 className="hidden"
             />
+            {uploadError && (
+                <p className="text-xs text-red-500 mt-1 ml-1">{uploadError}</p>
+            )}
         </div>
     );
 };

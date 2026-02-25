@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ROLES, hasMinRole, isAdmin, isStaffOrAbove, hasPermission } from '../utils/roles';
 import authService from '../services/authService';
+import { formatApiError } from '../utils/errorUtils';
 import useUIStore from './uiStore';
 
 // Idle timeout — log the user out after 30 min of inactivity
@@ -141,10 +142,7 @@ const useAuthStore = create(
 
                     return { success: true, message: 'Registration successful' };
                 } catch (error) {
-                    const errorMessage = error.response?.data?.detail ||
-                        JSON.stringify(error.response?.data) ||
-                        error.message ||
-                        'Registration failed';
+                    const errorMessage = formatApiError(error, 'Registration failed');
                     set({ error: errorMessage, isLoading: false });
                     return { success: false, error: errorMessage };
                 }

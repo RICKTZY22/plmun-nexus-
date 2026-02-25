@@ -47,6 +47,16 @@ class Item(models.Model):
     )
     is_returnable = models.BooleanField(default=True)
 
+    # Status metadata
+    status_note = models.TextField(blank=True, default='', help_text='Reason or note for current status')
+    status_changed_at = models.DateTimeField(null=True, blank=True, help_text='When the status was last changed')
+    status_changed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='status_changes',
+        help_text='Who last changed the status',
+    )
+    maintenance_eta = models.DateTimeField(null=True, blank=True, help_text='Estimated return-to-service date')
+
     class DurationUnit(models.TextChoices):
         MINUTES = 'MINUTES', 'Minutes'
         HOURS = 'HOURS', 'Hours'

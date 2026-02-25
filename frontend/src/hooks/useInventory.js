@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { inventoryService } from '../services';
+import { formatApiError } from '../utils/errorUtils';
+import { ROLE_HIERARCHY } from '../utils/roles';
 
 const useInventory = () => {
     const [inventory, setInventory] = useState([]);
@@ -40,7 +42,6 @@ const useInventory = () => {
                 lowStock: items.filter(i => i.quantity > 0 && i.quantity <= LOW_STOCK_THRESHOLD).length,
             });
         } catch (err) {
-            console.error('Fetch inventory error:', err);
             setError(err.response?.data?.detail || 'Failed to fetch inventory');
         } finally {
             setLoading(false);
@@ -52,7 +53,7 @@ const useInventory = () => {
             const data = await inventoryService.getStats();
             setStats(data);
         } catch (err) {
-            console.error('Fetch stats error:', err);
+            // stats fetch failed — non-critical
         }
     }, []);
 
@@ -71,9 +72,7 @@ const useInventory = () => {
             setInventory(prev => [...prev, newItem]);
             return { success: true, item: newItem, message: 'Item added successfully' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
-                JSON.stringify(err.response?.data) ||
-                'Failed to add item';
+            const errorMessage = formatApiError(err, 'Failed to add item');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -101,9 +100,7 @@ const useInventory = () => {
             ));
             return { success: true, message: 'Item updated successfully' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
-                JSON.stringify(err.response?.data) ||
-                'Failed to update item';
+            const errorMessage = formatApiError(err, 'Failed to update item');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -132,17 +129,37 @@ const useInventory = () => {
             const data = await inventoryService.getLowStock();
             return Array.isArray(data) ? data : data.results || [];
         } catch (err) {
-            console.error('Get low stock error:', err);
             return [];
         }
     }, []);
 
+    const changeItemStatus = useCallback(async (id, { status, note, maintenanceEta }) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const updatedItem = await inventoryService.changeStatus(id, {
+                status,
+                note: note || '',
+                maintenanceEta: maintenanceEta || null,
+            });
+            setInventory(prev => prev.map(item =>
+                item.id === id ? updatedItem : item
+            ));
+            return { success: true, message: `Status changed to ${status}` };
+        } catch (err) {
+            const errorMessage = formatApiError(err, 'Failed to change status');
+            setError(errorMessage);
+            return { success: false, error: errorMessage };
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     const getAccessibleItems = useCallback((userRole, searchQuery = '') => {
-        const roleHierarchy = { STUDENT: 1, FACULTY: 2, STAFF: 3, ADMIN: 4 };
-        const userLevel = roleHierarchy[userRole] || 1;
+        const userLevel = ROLE_HIERARCHY[userRole] || 1;
 
         let accessible = inventory.filter(item => {
-            const itemLevel = roleHierarchy[item.accessLevel] || 1;
+            const itemLevel = ROLE_HIERARCHY[item.accessLevel] || 1;
             return userLevel >= itemLevel && item.status === 'AVAILABLE' && item.quantity > 0;
         });
 
@@ -169,6 +186,7 @@ const useInventory = () => {
         addItem,
         updateItem,
         deleteItem,
+        changeItemStatus,
         stats,
         getAccessibleItems,
         getLowStockItems,

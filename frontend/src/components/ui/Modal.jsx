@@ -35,40 +35,40 @@ const Modal = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/50 dark:bg-black/60"
                 onClick={onClose}
             />
 
             {/* Modal */}
             <div className={`
-        relative bg-white w-full ${sizes[size]} 
-        rounded-2xl shadow-2xl overflow-hidden
-        animate-slide-in
-      `}>
+                relative bg-white dark:bg-gray-800 w-full ${sizes[size]}
+                rounded-xl shadow-xl border border-gray-200 dark:border-gray-700
+                animate-scale-in overflow-hidden
+            `}>
                 {/* Header */}
-                <div className="p-6 pb-0">
-                    <div className="flex items-start justify-between">
+                {(title || showClose) && (
+                    <div className="flex items-start justify-between p-5 pb-0">
                         <div>
                             {title && (
-                                <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
                             )}
                             {description && (
-                                <p className="text-sm text-gray-500 mt-1">{description}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>
                             )}
                         </div>
                         {showClose && (
                             <button
                                 onClick={onClose}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors -mt-1 -mr-1"
+                                className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors -mt-0.5 -mr-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             >
-                                <X size={20} className="text-gray-400" />
+                                <X size={18} />
                             </button>
                         )}
                     </div>
-                </div>
+                )}
 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-5">
                     {children}
                 </div>
             </div>

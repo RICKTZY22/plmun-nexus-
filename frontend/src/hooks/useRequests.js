@@ -1,16 +1,21 @@
 import { useState, useCallback } from 'react';
 import { requestService } from '../services';
+import { formatApiError } from '../utils/errorUtils';
 
 // Shared stats calculation — used after every action that changes request data
-const buildStats = (items) => ({
-    total: items.length,
-    pending: items.filter(r => r.status === 'PENDING').length,
-    approved: items.filter(r => r.status === 'APPROVED').length,
-    rejected: items.filter(r => r.status === 'REJECTED').length,
-    completed: items.filter(r => r.status === 'COMPLETED').length,
-    returned: items.filter(r => r.status === 'RETURNED').length,
-    highPriority: items.filter(r => r.priority === 'HIGH').length,
-});
+const buildStats = (items) => {
+    const init = { total: 0, pending: 0, approved: 0, rejected: 0, completed: 0, returned: 0, highPriority: 0 };
+    return items.reduce((acc, r) => {
+        acc.total++;
+        if (r.status === 'PENDING') acc.pending++;
+        else if (r.status === 'APPROVED') acc.approved++;
+        else if (r.status === 'REJECTED') acc.rejected++;
+        else if (r.status === 'COMPLETED') acc.completed++;
+        else if (r.status === 'RETURNED') acc.returned++;
+        if (r.priority === 'HIGH' && r.status === 'PENDING') acc.highPriority++;
+        return acc;
+    }, init);
+};
 
 const useRequests = () => {
     const [requests, setRequests] = useState([]);
@@ -39,7 +44,6 @@ const useRequests = () => {
             setRequests(items);
             setStats(buildStats(items));
         } catch (err) {
-            console.error('Fetch requests error:', err);
             setError(err.response?.data?.detail || 'Failed to fetch requests');
         } finally {
             setLoading(false);
@@ -51,7 +55,7 @@ const useRequests = () => {
             const data = await requestService.getStats();
             setStats(data);
         } catch (err) {
-            console.error('Fetch stats error:', err);
+            // stats fetch failed — non-critical
         }
     }, []);
 
@@ -59,7 +63,6 @@ const useRequests = () => {
         try {
             return await requestService.checkOverdue();
         } catch (err) {
-            console.error('Check overdue error:', err);
             return null;
         }
     }, []);
@@ -72,9 +75,7 @@ const useRequests = () => {
             setRequests(prev => [newRequest, ...prev]);
             return { success: true, request: newRequest, message: 'Request submitted successfully' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail ||
-                JSON.stringify(err.response?.data) ||
-                'Failed to create request';
+            const errorMessage = formatApiError(err, 'Failed to create request');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -119,28 +120,15 @@ const useRequests = () => {
         handleAction(() => requestService.clearCompleted(), 'Completed requests cleared', 'Failed to clear requests'),
         [handleAction]);
 
-    const cancelRequest = useCallback(async (id) => {
-        setLoading(true);
-        setError(null);
-        try {
-            await requestService.cancel(id);
-            setRequests(prev => prev.filter(req => req.id !== id));
-            return { success: true, message: 'Request cancelled' };
-        } catch (err) {
-            const errorMessage = err.response?.data?.detail || 'Failed to cancel request';
-            setError(errorMessage);
-            return { success: false, error: errorMessage };
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const cancelRequest = useCallback((id) =>
+        handleAction(() => requestService.cancel(id), 'Request cancelled', 'Failed to cancel request'),
+        [handleAction]);
 
     const getComments = useCallback(async (requestId) => {
         try {
             const data = await requestService.getComments(requestId);
             return Array.isArray(data) ? data : data.results || [];
         } catch (err) {
-            console.error('Get comments error:', err);
             return [];
         }
     }, []);

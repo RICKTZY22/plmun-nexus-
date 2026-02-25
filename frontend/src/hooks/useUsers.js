@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { userService } from '../services';
 import { ROLES } from '../utils/roles';
+import { formatApiError } from '../utils/errorUtils';
 
 const useUsers = () => {
     // state
@@ -27,13 +28,10 @@ const useUsers = () => {
             const data = await userService.getAll(filters);
             const rawItems = Array.isArray(data) ? data : data.results || [];
 
-            // Normalize snake_case fields from backend to camelCase
+            // Serializer already returns camelCase — just ensure fullName fallback
             const items = rawItems.map(u => ({
                 ...u,
-                isActive: u.is_active ?? u.isActive ?? true,
                 fullName: u.fullName || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
-                lastLogin: u.last_login || u.lastLogin || null,
-                dateJoined: u.date_joined || u.dateJoined || null,
             }));
             setUsers(items);
 
@@ -47,7 +45,6 @@ const useUsers = () => {
                 students: items.filter(u => u.role === ROLES.STUDENT).length,
             });
         } catch (err) {
-            console.error('Fetch users error:', err);
             setError(err.response?.data?.detail || 'Failed to fetch users');
         } finally {
             setLoading(false);
@@ -67,7 +64,7 @@ const useUsers = () => {
                 students: data.byRole?.students || 0,
             });
         } catch (err) {
-            console.error('Fetch stats error:', err);
+            // stats fetch failed — non-critical
         }
     }, []);
 
@@ -86,7 +83,7 @@ const useUsers = () => {
 
             return { success: true, message: 'Role updated successfully' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail || err.message || 'Failed to update role';
+            const errorMessage = formatApiError(err, 'Failed to update role');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -99,13 +96,15 @@ const useUsers = () => {
         setError(null);
         try {
             const result = await userService.toggleStatus(userId);
-            // Re-fetch to get fresh data from the server
+            const isNowActive = result.user?.is_active ?? result.user?.isActive;
+
+            // Use actual server response instead of optimistic flip (BUG-05)
             setUsers(prev => prev.map(u =>
-                u.id === userId ? { ...u, isActive: !u.isActive } : u
+                u.id === userId ? { ...u, isActive: isNowActive } : u
             ));
-            // Update stats
+            // Update stats from actual state
             setStats(prev => {
-                const newActive = prev.active + (result.user?.is_active ? 1 : -1);
+                const newActive = prev.active + (isNowActive ? 1 : -1);
                 return {
                     ...prev,
                     active: Math.max(0, newActive),
@@ -115,7 +114,7 @@ const useUsers = () => {
 
             return { success: true, message: 'User status updated' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail || err.message || 'Failed to update user status';
+            const errorMessage = formatApiError(err, 'Failed to update user status');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -132,7 +131,7 @@ const useUsers = () => {
 
             return { success: true, message: 'User deleted' };
         } catch (err) {
-            const errorMessage = err.response?.data?.detail || err.message || 'Failed to delete user';
+            const errorMessage = formatApiError(err, 'Failed to delete user');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {
@@ -150,7 +149,7 @@ const useUsers = () => {
             ));
             return { success: true, message: result.message };
         } catch (err) {
-            const errorMessage = err.response?.data?.message || err.response?.data?.detail || err.message || 'Failed to unflag user';
+            const errorMessage = formatApiError(err, 'Failed to unflag user');
             setError(errorMessage);
             return { success: false, error: errorMessage };
         } finally {

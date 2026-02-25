@@ -70,6 +70,11 @@ const inventoryService = {
         return response.data;
     },
 
+    changeStatus: async (id, data) => {
+        const response = await api.post(`/inventory/${id}/change_status/`, data);
+        return response.data;
+    },
+
 };
 
 export default inventoryService;

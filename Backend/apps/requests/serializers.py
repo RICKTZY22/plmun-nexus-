@@ -74,7 +74,7 @@ class RequestSerializer(serializers.ModelSerializer):
     def get_isReturnable(self, obj):
         try:
             return obj.item.is_returnable
-        except Exception:
+        except (AttributeError, obj.item.DoesNotExist):
             return False
 
     def get_isOverdue(self, obj):
@@ -87,13 +87,13 @@ class RequestSerializer(serializers.ModelSerializer):
     def get_borrowDuration(self, obj):
         try:
             return obj.item.borrow_duration
-        except Exception:
+        except (AttributeError, obj.item.DoesNotExist):
             return None
 
     def get_borrowDurationUnit(self, obj):
         try:
             return obj.item.borrow_duration_unit
-        except Exception:
+        except (AttributeError, obj.item.DoesNotExist):
             return None
 
 

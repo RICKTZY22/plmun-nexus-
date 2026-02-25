@@ -39,7 +39,7 @@ const downloadFile = async (blob, filename, mimeType) => {
         } catch (err) {
             // User cancelled the dialog or API failed - fall through to fallback
             if (err.name === 'AbortError') return; // User cancelled
-            console.warn('showSaveFilePicker failed, using fallback:', err);
+            // showSaveFilePicker failed — fall through to anchor fallback
         }
     }
 
@@ -74,7 +74,6 @@ export const exportCSV = async (filename, headers, rows) => {
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         await downloadFile(blob, fullFilename, 'text/csv');
     } catch (error) {
-        console.error('CSV Export Error:', error);
         alert('Failed to export CSV: ' + error.message);
     }
 };
@@ -165,7 +164,6 @@ export const exportPDF = async (filename, title, headers, rows, options = {}) =>
         const pdfBlob = doc.output('blob');
         await downloadFile(pdfBlob, fullFilename, 'application/pdf');
     } catch (error) {
-        console.error('PDF Export Error:', error);
         alert('Failed to export PDF: ' + error.message);
     }
 };

@@ -1,7 +1,3 @@
-// StatCard.jsx - STAT CARD component para sa Dashboard
-// Reusable card na may icon, title, value, at trend indicator (up/down)
-// Ginagamit para i-display yung summary stats (Total Items, Pending Requests, etc.)
-
 import React from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
@@ -13,42 +9,42 @@ const StatCard = ({
     trendValue,
     color = 'primary'
 }) => {
-    const colors = {
-        primary: 'from-primary to-primary-dark',
-        secondary: 'from-secondary to-secondary-dark',
-        success: 'from-emerald-500 to-emerald-600',
-        warning: 'from-amber-500 to-amber-600',
-        danger: 'from-red-500 to-red-600',
+    const iconColors = {
+        primary: 'bg-accent/10 text-accent dark:bg-accent/20',
+        secondary: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+        success: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+        warning: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+        danger: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
     };
 
     const getTrendIcon = () => {
-        if (trend === 'up') return <TrendingUp size={14} />;
-        if (trend === 'down') return <TrendingDown size={14} />;
-        return <Minus size={14} />;
+        if (trend === 'up') return <TrendingUp size={12} />;
+        if (trend === 'down') return <TrendingDown size={12} />;
+        return <Minus size={12} />;
     };
 
     const getTrendColor = () => {
-        if (trend === 'up') return 'text-emerald-500 bg-emerald-50';
-        if (trend === 'down') return 'text-red-500 bg-red-50';
-        return 'text-gray-500 bg-gray-50';
+        if (trend === 'up') return 'text-emerald-600 dark:text-emerald-400';
+        if (trend === 'down') return 'text-red-500 dark:text-red-400';
+        return 'text-gray-500';
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-4 shadow-card hover:shadow-card-hover transition-shadow">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-                    <h3 className="text-3xl font-bold text-gray-900">{value}</h3>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{title}</p>
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{value}</h3>
                     {trendValue && (
-                        <div className={`inline-flex items-center gap-1 mt-2 px-2 py-1 rounded-full text-xs font-medium ${getTrendColor()}`}>
+                        <div className={`flex items-center gap-1 mt-1.5 text-xs font-medium ${getTrendColor()}`}>
                             {getTrendIcon()}
-                            {trendValue}
+                            <span>{trendValue}</span>
                         </div>
                     )}
                 </div>
                 {Icon && (
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${colors[color]} shadow-lg`}>
-                        <Icon size={24} className="text-white" />
+                    <div className={`p-2.5 rounded-lg ${iconColors[color]}`}>
+                        <Icon size={20} />
                     </div>
                 )}
             </div>

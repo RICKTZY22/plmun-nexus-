@@ -21,6 +21,8 @@ SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-dev-key-change-in-production' if DEBUG else None,
 )
+
+
 if not SECRET_KEY:
     raise ValueError('SECRET_KEY environment variable is required in production (DEBUG=False).')
 
@@ -125,7 +127,7 @@ REST_FRAMEWORK = {
 # ===== JWT Settings =====
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # SEC-07: tightened from 7d
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -138,8 +140,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
 ]
 CORS_ALLOW_CREDENTIALS = True
-# WARNING: REMOVE BEFORE DEPLOYING TO PRODUCTION — allows any origin to call the API
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+# SEC-08: removed CORS_ALLOW_ALL_ORIGINS = DEBUG — use whitelist only
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',

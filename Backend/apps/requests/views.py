@@ -13,7 +13,7 @@ from .serializers import (
     CommentCreateSerializer,
     NotificationSerializer,
 )
-from apps.authentication.models import User
+from apps.authentication.models import User, AuditLog, log_action
 from apps.permissions import IsStaffOrAbove
 
 
@@ -27,7 +27,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         return RequestSerializer
 
     def get_permissions(self):
-        if self.action in ['approve', 'reject']:
+        if self.action in ['approve', 'reject', 'check_overdue']:
             return [IsStaffOrAbove()]
         return [permissions.IsAuthenticated()]
 
@@ -61,6 +61,11 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         req = serializer.save(requested_by=request.user)
+
+        # Audit log
+        log_action(AuditLog.REQUEST_CREATED, user=request.user,
+                   details=f'Created request for "{req.item_name}" (qty: {req.quantity})',
+                   request=request)
 
         # Notify all staff/admin about the new request
         author_name = request.user.get_full_name() or request.user.username
@@ -135,6 +140,11 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         req.save()
 
+        # Audit log
+        log_action(AuditLog.REQUEST_APPROVED, user=request.user,
+                   details=f'Approved request #{req.id} for "{req.item_name}" (qty: {req.quantity})',
+                   request=request)
+
         # Notify the requester about approval
         approver_name = request.user.get_full_name() or request.user.username
         Notification.objects.create(
@@ -166,6 +176,11 @@ class RequestViewSet(viewsets.ModelViewSet):
         req.rejection_reason = serializer.validated_data.get('reason', '')
         req.save()
 
+        # Audit log
+        log_action(AuditLog.REQUEST_REJECTED, user=request.user,
+                   details=f'Rejected request #{req.id} for "{req.item_name}". Reason: {req.rejection_reason or "(none)"}',
+                   request=request)
+
         # Notify the requester about rejection
         rejector_name = request.user.get_full_name() or request.user.username
         reason_text = f' Reason: "{req.rejection_reason}"' if req.rejection_reason else ''
@@ -182,6 +197,13 @@ class RequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         req = self.get_object()
+
+        # SEC-05: only requester or staff/admin can complete
+        if req.requested_by != request.user and not request.user.has_min_role('STAFF'):
+            return Response(
+                {'error': 'You can only complete your own requests'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         if req.status != 'APPROVED':
             return Response(
@@ -223,6 +245,11 @@ class RequestViewSet(viewsets.ModelViewSet):
         req.status = 'CANCELLED'
         req.save()
 
+        # Audit log
+        log_action(AuditLog.OTHER, user=request.user,
+                   details=f'Cancelled request #{req.id} for "{req.item_name}"',
+                   request=request)
+
         return Response(RequestSerializer(req).data)
 
     @action(detail=True, methods=['post'])
@@ -251,23 +278,54 @@ class RequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Restore stock
-        item.quantity += req.quantity
+        # Restore stock atomically to prevent race conditions
+        from apps.inventory.models import Item
+        Item.objects.filter(pk=item.pk).update(quantity=F('quantity') + req.quantity)
+        item.refresh_from_db()
         if item.status == 'IN_USE':
             item.status = 'AVAILABLE'
-        item.save()
+            item.save(update_fields=['status'])
 
         req.status = 'RETURNED'
         req.returned_at = timezone.now()
         req.save()
 
+        # Audit log
+        log_action(AuditLog.REQUEST_RETURNED, user=request.user,
+                   details=f'Returned item for request #{req.id} "{req.item_name}" (qty: {req.quantity})',
+                   request=request)
+
+        # BUG-02: Notify the requester about the return
+        returner_name = request.user.get_full_name() or request.user.username
+        if req.requested_by != request.user:
+            Notification.objects.create(
+                recipient=req.requested_by,
+                sender=request.user,
+                request=req,
+                type='STATUS_CHANGE',
+                message=f'{returner_name} returned your borrowed item "{req.item_name}".',
+            )
+
         return Response(RequestSerializer(req).data)
 
     @action(detail=False, methods=['delete'])
     def clear_completed(self, request):
+        # SEC-05: only staff/admin can bulk-clear
+        if not request.user.has_min_role('STAFF'):
+            return Response(
+                {'error': 'Staff access required to clear requests'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         clearable_statuses = ['COMPLETED', 'RETURNED', 'REJECTED', 'CANCELLED']
         qs = self.get_queryset().filter(status__in=clearable_statuses)
         count, _ = qs.delete()
+
+        # Audit log
+        log_action(AuditLog.OTHER, user=request.user,
+                   details=f'Cleared {count} completed/returned/rejected/cancelled requests',
+                   request=request)
+
         return Response({'status': f'{count} requests cleared'})
 
     @action(detail=True, methods=['get', 'post'])
@@ -325,10 +383,9 @@ class RequestViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def stats(self, request):
         queryset = self.get_queryset()
-        from datetime import date
         overdue_qs = queryset.filter(
             status__in=['APPROVED', 'COMPLETED'],
-            expected_return__lt=date.today(),
+            expected_return__lt=timezone.now(),
         )
 
         stats = {
@@ -356,14 +413,35 @@ class RequestViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def check_overdue(self, request):
         """Scans for overdue borrows, flags the user, and sends notifications.
-        Only fires one notification per request per day to avoid spam."""
+        Only fires one notification per request per day to avoid spam.
+        BUG-01 fix: uses select_related + batch operations to avoid N+1 queries."""
         now = timezone.now()
-        overdue = self.get_queryset().filter(
-            status__in=['APPROVED', 'COMPLETED'],
-            expected_return__lt=now,
+        overdue = (
+            self.get_queryset()
+            .filter(status__in=['APPROVED', 'COMPLETED'], expected_return__lt=now)
+            .select_related('requested_by')
         )
-        created_count = 0
+
+        # Batch-exclude requests already notified today
+        already_notified_ids = set(
+            Notification.objects.filter(
+                type='OVERDUE',
+                created_at__date=now.date(),
+                request__in=overdue,
+            ).values_list('request_id', flat=True)
+        )
+
+        # Pre-fetch staff users once
+        staff_users = list(User.objects.filter(role__in=['STAFF', 'ADMIN']))
+
+        borrower_notifications = []
+        staff_notifications = []
+        flagged_user_ids = set()
+
         for req in overdue:
+            if req.id in already_notified_ids:
+                continue
+
             # Calculate overdue duration
             overdue_delta = now - req.expected_return
             total_minutes = int(overdue_delta.total_seconds() / 60)
@@ -373,42 +451,39 @@ class RequestViewSet(viewsets.ModelViewSet):
                 overdue_text = f'{total_minutes // 60} hour(s)'
             else:
                 overdue_text = f'{overdue_delta.days} day(s)'
-            # Only create notification if one hasn't been sent today
-            already_notified = Notification.objects.filter(
+
+            borrower = req.requested_by
+            flagged_user_ids.add(borrower.pk)
+
+            # Borrower notification
+            borrower_notifications.append(Notification(
+                recipient=borrower,
                 request=req,
                 type='OVERDUE',
-                created_at__date=now.date(),
-            ).exists()
-            if not already_notified:
-                # Flag the borrower's account
-                borrower = req.requested_by
-                borrower.overdue_count += 1
-                borrower.is_flagged = True
-                borrower.save(update_fields=['overdue_count', 'is_flagged'])
+                message=f'Your request for "{req.item_name}" is {overdue_text} overdue. Please return it.',
+            ))
 
-                # Notify the borrower
-                Notification.objects.create(
-                    recipient=borrower,
+            # Staff notifications
+            borrower_name = borrower.get_full_name() or borrower.username
+            for staff in staff_users:
+                staff_notifications.append(Notification(
+                    recipient=staff,
                     request=req,
                     type='OVERDUE',
-                    message=f'Your request for "{req.item_name}" is {overdue_text} overdue. Please return it.',
-                )
-                # Notify all staff/admin
-                staff_users = User.objects.filter(
-                    role__in=['STAFF', 'ADMIN']
-                )
-                borrower_name = borrower.get_full_name() or borrower.username
-                Notification.objects.bulk_create([
-                    Notification(
-                        recipient=staff,
-                        request=req,
-                        type='OVERDUE',
-                        message=f'{borrower_name}\'s request for "{req.item_name}" is {overdue_text} overdue.',
-                    )
-                    for staff in staff_users
-                ])
-                created_count += 1
-        return Response({'status': f'{created_count} overdue notifications created'})
+                    message=f'{borrower_name}\'s request for "{req.item_name}" is {overdue_text} overdue.',
+                ))
+
+        # Batch create all notifications
+        Notification.objects.bulk_create(borrower_notifications + staff_notifications)
+
+        # Atomic increment overdue_count and flag users in one query per user
+        if flagged_user_ids:
+            User.objects.filter(pk__in=flagged_user_ids).update(
+                overdue_count=F('overdue_count') + 1,
+                is_flagged=True,
+            )
+
+        return Response({'status': f'{len(borrower_notifications)} overdue notifications created'})
 
 
 class NotificationViewSet(viewsets.ModelViewSet):

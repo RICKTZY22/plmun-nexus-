@@ -1,7 +1,6 @@
 // Charts.jsx - RECHARTS WRAPPER COMPONENTS for Dashboard and Reports
 // Reusable chart components: BarChart, LineChart, AreaChart, PieChart
-// All have Card wrapper, title, responsive container, and dark mode support
-// Uses recharts library for data visualization
+// Uses accent-aware color palette
 
 import React from 'react';
 import {
@@ -22,16 +21,17 @@ import {
     AreaChart
 } from 'recharts';
 
-const COLORS = ['#006837', '#1e40af', '#0891b2', '#7c3aed', '#db2777', '#ea580c', '#65a30d'];
+// Modern color palette that works well with accent colors
+const COLORS = ['#6366f1', '#3b82f6', '#0891b2', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-// Custom tooltip with dark mode support
+// Custom tooltip
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload) return null;
     return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg p-3">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{label}</p>
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</p>
             {payload.map((entry, index) => (
-                <p key={index} className="text-sm" style={{ color: entry.color }}>
+                <p key={index} className="text-xs" style={{ color: entry.color }}>
                     {entry.name}: <span className="font-semibold">{entry.value}</span>
                 </p>
             ))}
@@ -39,32 +39,26 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
 };
 
-// Bar Chart Component - supports multiple bars via `bars` array
-// bars: [{ dataKey: 'electronics', name: 'Electronics', color: '#006837' }, ...]
-// Falls back to single `dataKey` prop for backwards compatibility
+// Shared axis styling
+const axisStyle = { fontSize: 11, fill: '#9ca3af' };
+const gridStyle = { strokeDasharray: '3 3', stroke: '#e5e7eb', opacity: 0.5 };
+
+// Bar Chart Component
 export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-        {title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
-        <ResponsiveContainer width="100%" height={300}>
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+        {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
+        <ResponsiveContainer width="100%" height={280}>
             <BarChart data={data} barGap={2} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
-                <XAxis
-                    dataKey={xAxisKey}
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <YAxis
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    allowDecimals={false}
-                />
+                <CartesianGrid {...gridStyle} />
+                <XAxis dataKey={xAxisKey} tick={axisStyle} axisLine={false} tickLine={false} />
+                <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
                 {bars ? (
                     <>
                         <Legend
                             verticalAlign="top"
-                            height={36}
-                            formatter={(value) => <span className="text-sm text-gray-600 dark:text-gray-300">{value}</span>}
+                            height={32}
+                            formatter={(value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>}
                         />
                         {bars.map((bar, index) => (
                             <Bar
@@ -77,11 +71,7 @@ export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
                         ))}
                     </>
                 ) : (
-                    <Bar
-                        dataKey={dataKey}
-                        fill="#006837"
-                        radius={[8, 8, 0, 0]}
-                    />
+                    <Bar dataKey={dataKey} fill={COLORS[0]} radius={[4, 4, 0, 0]} />
                 )}
             </BarChart>
         </ResponsiveContainer>
@@ -90,24 +80,16 @@ export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
 
 // Line Chart Component
 export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-        {title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
-        <ResponsiveContainer width="100%" height={300}>
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+        {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
+        <ResponsiveContainer width="100%" height={280}>
             <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
-                <XAxis
-                    dataKey={xAxisKey}
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <YAxis
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    allowDecimals={false}
-                />
+                <CartesianGrid {...gridStyle} />
+                <XAxis dataKey={xAxisKey} tick={axisStyle} axisLine={false} tickLine={false} />
+                <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend
-                    formatter={(value) => <span className="text-sm text-gray-600 dark:text-gray-300">{value}</span>}
+                    formatter={(value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>}
                 />
                 {lines.map((line, index) => (
                     <Line
@@ -116,7 +98,8 @@ export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
                         dataKey={line.dataKey}
                         stroke={COLORS[index % COLORS.length]}
                         strokeWidth={2}
-                        dot={{ fill: COLORS[index % COLORS.length], strokeWidth: 2 }}
+                        dot={{ fill: COLORS[index % COLORS.length], strokeWidth: 2, r: 3 }}
+                        activeDot={{ r: 5, strokeWidth: 0 }}
                         name={line.name || line.dataKey}
                     />
                 ))}
@@ -126,28 +109,20 @@ export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
 );
 
 // Area Chart Component
-export const AreaChartComponent = ({ data, dataKey, xAxisKey, title, color = '#006837' }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-        {title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
-        <ResponsiveContainer width="100%" height={300}>
+export const AreaChartComponent = ({ data, dataKey, xAxisKey, title, color = COLORS[0] }) => (
+    <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+        {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
+        <ResponsiveContainer width="100%" height={280}>
             <AreaChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:opacity-20" />
-                <XAxis
-                    dataKey={xAxisKey}
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                />
-                <YAxis
-                    tick={{ fontSize: 12, fill: '#6b7280' }}
-                    axisLine={{ stroke: '#e5e7eb' }}
-                    allowDecimals={false}
-                />
+                <CartesianGrid {...gridStyle} />
+                <XAxis dataKey={xAxisKey} tick={axisStyle} axisLine={false} tickLine={false} />
+                <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                     type="monotone"
                     dataKey={dataKey}
                     stroke={color}
-                    fill={`${color}20`}
+                    fill={`${color}15`}
                     strokeWidth={2}
                 />
             </AreaChart>
@@ -155,7 +130,7 @@ export const AreaChartComponent = ({ data, dataKey, xAxisKey, title, color = '#0
     </div>
 );
 
-// Pie Chart Component — with percentage labels on slices
+// Pie Chart Component — with percentage labels
 export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
     const total = data.reduce((sum, entry) => sum + (entry[dataKey] || 0), 0);
 
@@ -166,26 +141,26 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
         const x = cx + radius * Math.cos(-midAngle * RADIAN);
         const y = cy + radius * Math.sin(-midAngle * RADIAN);
         const percent = ((data[index]?.[dataKey] || 0) / total * 100).toFixed(0);
-        if (percent < 5) return null; // hide tiny slices
+        if (percent < 5) return null;
         return (
-            <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+            <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
                 {percent}%
             </text>
         );
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-            {title && <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
-            <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+            {title && <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h3>}
+            <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                     <Pie
                         data={data}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
+                        innerRadius={55}
+                        outerRadius={95}
+                        paddingAngle={4}
                         dataKey={dataKey}
                         nameKey={nameKey}
                         label={renderLabel}
@@ -201,9 +176,9 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
                             const item = payload[0];
                             const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
                             return (
-                                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg p-3">
-                                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.name}</p>
-                                    <p className="text-sm" style={{ color: item.payload.fill }}>
+                                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+                                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
+                                    <p className="text-xs" style={{ color: item.payload.fill }}>
                                         Count: <span className="font-semibold">{item.value}</span> ({pct}%)
                                     </p>
                                 </div>
@@ -212,11 +187,11 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
                     />
                     <Legend
                         verticalAlign="bottom"
-                        height={36}
-                        formatter={(value, entry) => {
+                        height={32}
+                        formatter={(value) => {
                             const item = data.find(d => d[nameKey] === value);
                             const pct = item && total > 0 ? ((item[dataKey] / total) * 100).toFixed(0) : 0;
-                            return <span className="text-sm text-gray-600 dark:text-gray-300">{value} ({pct}%)</span>;
+                            return <span className="text-xs text-gray-500 dark:text-gray-400">{value} ({pct}%)</span>;
                         }}
                     />
                 </PieChart>
@@ -225,7 +200,6 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
     );
 };
 
-// Export all as default object for convenience
 export default {
     Bar: BarChartComponent,
     Line: LineChartComponent,

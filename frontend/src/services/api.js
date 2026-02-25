@@ -20,7 +20,7 @@ const getTokens = () => {
                 refresh: state?.refreshToken,
             };
         } catch (e) {
-            console.error('Error parsing auth data:', e);
+            // corrupted storage — treat as unauthenticated
         }
     }
     return { access: null, refresh: null };

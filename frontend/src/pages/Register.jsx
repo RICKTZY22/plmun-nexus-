@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Users, Shield, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { AnimatedInput } from '../components/ui';
+import universityBuilding from '../assets/images/university-building.jpg';
+import plmunLogo from '../assets/images/logo.png';
 
 // Password strength meter helper
 const getPasswordStrength = (password) => {
@@ -39,8 +41,7 @@ const PasswordStrengthBar = ({ password }) => {
     );
 };
 
-import universityBuilding from '../assets/images/university-building.jpg';
-import plmunLogo from '../assets/images/logo.png';
+
 
 const Register = () => {
     const navigate = useNavigate();
@@ -104,11 +105,11 @@ const Register = () => {
                     className="absolute inset-0 bg-cover bg-center scale-105 transition-transform duration-[20s] hover:scale-100"
                     style={{ backgroundImage: `url(${universityBuilding})` }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-primary/30 to-gray-900/75" />
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-accent/25 to-gray-900/75" />
 
                 {/* Animated orbs */}
-                <div className="absolute top-20 right-12 w-40 h-40 bg-primary/20 rounded-full blur-3xl animate-float" />
-                <div className="absolute bottom-40 left-8 w-56 h-56 bg-secondary/15 rounded-full blur-3xl animate-float-reverse" />
+                <div className="absolute top-20 right-12 w-40 h-40 bg-accent/15 rounded-full blur-3xl animate-float" />
+                <div className="absolute bottom-40 left-8 w-56 h-56 bg-accent-light/10 rounded-full blur-3xl animate-float-reverse" />
                 <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-white/5 rounded-full blur-2xl animate-float-slow" />
 
                 {/* Decorative grid */}
@@ -133,7 +134,7 @@ const Register = () => {
                             style={{ transitionDelay: '200ms' }}
                         >
                             Join the<br />
-                            <span className="text-primary-light">PLMun</span><br />
+                            <span className="text-accent-light">PLMun</span><br />
                             Community.
                         </h1>
                         <p
@@ -172,7 +173,7 @@ const Register = () => {
 
                     {/* Card */}
                     <div
-                        className={`bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-700 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                         style={{ transitionDelay: '250ms' }}
                     >
                         <div
@@ -206,23 +207,10 @@ const Register = () => {
                                 <AnimatedInput icon={Mail} type="email" placeholder="your@plmun.edu.ph" value={formData.email} onChange={handleChange('email')} />
                             </div>
 
-                            {/* Department + Role */}
-                            <div className={`grid grid-cols-2 gap-3 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '500ms' }}>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Department</label>
-                                    <AnimatedInput icon={Users} type="text" placeholder="e.g. CCS, CBA" value={formData.department} onChange={handleChange('department')} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Role</label>
-                                    <select
-                                        value={formData.role} onChange={handleChange('role')}
-                                        className="w-full px-3 py-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-500"
-                                    >
-                                        <option value="STUDENT">Student</option>
-                                        <option value="FACULTY">Faculty</option>
-                                        <option value="STAFF">Staff</option>
-                                    </select>
-                                </div>
+                            {/* Department */}
+                            <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '500ms' }}>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Department</label>
+                                <AnimatedInput icon={Users} type="text" placeholder="e.g. CCS, CBA" value={formData.department} onChange={handleChange('department')} />
                             </div>
 
                             {/* Password */}
@@ -286,7 +274,7 @@ const Register = () => {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
+                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-lg shadow-sm hover:bg-accent-dark hover:shadow-md transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed text-sm"
                                 >
                                     {isLoading ? (
                                         <>
@@ -301,7 +289,7 @@ const Register = () => {
                         <div className={`mt-5 text-center transition-all duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '780ms' }}>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Already have an account?{' '}
-                                <Link to="/login" className="text-primary font-semibold hover:underline underline-offset-2 hover:text-primary-dark transition-colors">
+                                <Link to="/login" className="text-accent font-semibold hover:underline underline-offset-2 hover:text-accent-dark transition-colors">
                                     Sign in
                                 </Link>
                             </p>

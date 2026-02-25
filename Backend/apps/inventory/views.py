@@ -2,11 +2,12 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Q
+from django.utils import timezone
 
 from .models import Item
 from .serializers import ItemSerializer, ItemCreateUpdateSerializer
-from apps.authentication.models import User
-from apps.permissions import IsFacultyOrAbove, IsStaffOrAbove, IsAdmin
+from apps.authentication.models import User, AuditLog, log_action
+from apps.permissions import IsStaffOrAbove, IsAdmin
 
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -22,7 +23,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
-        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+        elif self.action in ['create', 'update', 'partial_update', 'destroy', 'change_status']:
             return [IsStaffOrAbove()]
         return [permissions.IsAuthenticated()]
 
@@ -30,6 +31,11 @@ class ItemViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         item = serializer.save()
+
+        log_action(AuditLog.ITEM_CREATED, user=request.user,
+                   details=f'Created item "{item.name}" (category: {item.category}, qty: {item.quantity})',
+                   request=request)
+
         return Response(
             ItemSerializer(item).data,
             status=status.HTTP_201_CREATED,
@@ -41,11 +47,28 @@ class ItemViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         item = serializer.save()
+
+        log_action(AuditLog.ITEM_UPDATED, user=request.user,
+                   details=f'Updated item "{item.name}" (id: {item.id})',
+                   request=request)
+
         return Response(ItemSerializer(item).data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        item_name = instance.name
+        item_id = instance.id
+        response = super().destroy(request, *args, **kwargs)
+
+        log_action(AuditLog.ITEM_DELETED, user=request.user,
+                   details=f'Deleted item "{item_name}" (id: {item_id})',
+                   request=request)
+
+        return response
 
     def get_queryset(self):
         """Filter items based on user role and query params."""
-        queryset = Item.objects.all()
+        queryset = Item.objects.select_related('status_changed_by').all()
         user = self.request.user
 
         # Role-based access filtering
@@ -57,6 +80,10 @@ class ItemViewSet(viewsets.ModelViewSet):
             if level <= user_level
         ]
         queryset = queryset.filter(access_level__in=accessible_levels)
+
+        # Hide RETIRED items from students and faculty
+        if user.role in ['STUDENT', 'FACULTY']:
+            queryset = queryset.exclude(status='RETIRED')
 
         # Query params
         search = self.request.query_params.get('search', '')
@@ -77,6 +104,45 @@ class ItemViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=item_status)
 
         return queryset
+
+    @action(detail=True, methods=['post'])
+    def change_status(self, request, pk=None):
+        """Change an item's status with metadata (note, ETA)."""
+        item = self.get_object()
+        new_status = request.data.get('status')
+        note = request.data.get('note', '')
+        maintenance_eta = request.data.get('maintenanceEta')
+
+        # Validate status
+        valid_statuses = [s[0] for s in Item.Status.choices]
+        if not new_status or new_status not in valid_statuses:
+            return Response(
+                {'detail': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_status = item.status
+        item.status = new_status
+        item.status_note = note
+        item.status_changed_at = timezone.now()
+        item.status_changed_by = request.user
+
+        # Set or clear maintenance ETA
+        if new_status == 'MAINTENANCE' and maintenance_eta:
+            from django.utils.dateparse import parse_datetime
+            parsed = parse_datetime(maintenance_eta)
+            item.maintenance_eta = parsed
+        else:
+            item.maintenance_eta = None
+
+        item.save()
+
+        log_action(AuditLog.ITEM_UPDATED, user=request.user,
+                   details=f'Changed status of "{item.name}" from {old_status} to {new_status}'
+                           f'{" — " + note if note else ""}',
+                   request=request)
+
+        return Response(ItemSerializer(item).data)
 
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
@@ -115,3 +181,4 @@ class ItemViewSet(viewsets.ModelViewSet):
         }
 
         return Response(stats)
+

@@ -107,11 +107,11 @@ const Login = () => {
                     className="absolute inset-0 bg-cover bg-center scale-105 hover:scale-100 transition-transform duration-[20s]"
                     style={{ backgroundImage: `url(${universityBuilding})` }}
                 />
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-primary/40 to-gray-900/70" />
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-accent/30 to-gray-900/75" />
 
                 {/* Floating orbs */}
-                <div className="absolute top-24 left-16 w-48 h-48 bg-primary/20 rounded-full blur-3xl animate-float" />
-                <div className="absolute bottom-32 right-16 w-64 h-64 bg-secondary/15 rounded-full blur-3xl animate-float-reverse" />
+                <div className="absolute top-24 left-16 w-48 h-48 bg-accent/15 rounded-full blur-3xl animate-float" />
+                <div className="absolute bottom-32 right-16 w-64 h-64 bg-accent-light/10 rounded-full blur-3xl animate-float-reverse" />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-float-slow" />
 
                 {/* Grid */}
@@ -133,7 +133,7 @@ const Login = () => {
                     <div className="space-y-6">
                         <h1 className="text-5xl font-black text-white leading-tight animate-fade-in-up animate-fill-both animate-delay-200">
                             Smarter<br />
-                            <span className="text-primary-light">Inventory</span><br />
+                            <span className="text-accent-light">Inventory</span><br />
                             Management.
                         </h1>
                         <p className="text-white/70 text-lg leading-relaxed max-w-sm animate-fade-in-up animate-fill-both animate-delay-300">
@@ -168,7 +168,7 @@ const Login = () => {
                     </div>
 
                     {/* Card — plain white, no entrance animation so remounts don't flash */}
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-700">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
 
                         <div className="mb-7">
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Welcome back</h2>
@@ -190,14 +190,20 @@ const Login = () => {
                         )}
 
                         {/* ── ATTEMPTS WARNING ── */}
-                        {!isLocked && attempts >= 3 && attempts < MAX_ATTEMPTS && (
-                            <div className="mb-5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 flex items-center gap-2 animate-slide-in">
-                                <AlertTriangle size={15} className="text-amber-500 flex-shrink-0" />
-                                <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                                    {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining before 30-second lockout
-                                </p>
-                            </div>
-                        )}
+                        {!isLocked && attempts >= 3 && attempts < MAX_ATTEMPTS && (() => {
+                            const nextTierMs = LOCKOUT_TIERS[Math.min(offenses, LOCKOUT_TIERS.length - 1)];
+                            const nextTierLabel = nextTierMs >= 3_600_000 ? `${nextTierMs / 3_600_000}-hour`
+                                : nextTierMs >= 60_000 ? `${nextTierMs / 60_000}-minute`
+                                    : `${nextTierMs / 1_000}-second`;
+                            return (
+                                <div className="mb-5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 flex items-center gap-2 animate-slide-in">
+                                    <AlertTriangle size={15} className="text-amber-500 flex-shrink-0" />
+                                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                                        {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining before {nextTierLabel} lockout
+                                    </p>
+                                </div>
+                            );
+                        })()}
 
                         {/* ── ERROR BANNER — local state, renders independently of store ── */}
                         {errorMsg && !isLocked && (
@@ -234,19 +240,11 @@ const Login = () => {
                                 />
                             </div>
 
-                            <div className="flex items-center justify-between pt-1">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                                    <span className="text-xs text-gray-600 dark:text-gray-400">Remember me</span>
-                                </label>
-                                <a href="#" className="text-xs text-primary font-medium hover:underline underline-offset-2">Forgot password?</a>
-                            </div>
-
                             <div className="pt-2">
                                 <button
                                     type="submit"
                                     disabled={isLoading || isLocked}
-                                    className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary to-primary-dark text-white font-semibold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm group"
+                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-lg shadow-sm hover:bg-accent-dark hover:shadow-md transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed text-sm group"
                                 >
                                     {isLoading ? (
                                         <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Signing in...</>
@@ -262,7 +260,7 @@ const Login = () => {
                         <div className="mt-6 text-center">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 Don't have an account?{' '}
-                                <Link to="/register" className="text-primary font-semibold hover:underline underline-offset-2 hover:text-primary-dark transition-colors">
+                                <Link to="/register" className="text-accent font-semibold hover:underline underline-offset-2 hover:text-accent-dark transition-colors">
                                     Create one now
                                 </Link>
                             </p>

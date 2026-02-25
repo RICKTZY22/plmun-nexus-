@@ -4,10 +4,13 @@ const Card = ({ children, className = '', padding = true, ...props }) => {
     return (
         <div
             className={`
-        bg-white rounded-2xl border border-gray-100 shadow-sm
-        ${padding ? 'p-6' : ''}
-        ${className}
-      `}
+                bg-white dark:bg-gray-800/50
+                rounded-xl border border-gray-200 dark:border-gray-700/50
+                shadow-card
+                transition-shadow duration-200
+                ${padding ? 'p-5' : ''}
+                ${className}
+            `}
             {...props}
         >
             {children}
@@ -16,19 +19,19 @@ const Card = ({ children, className = '', padding = true, ...props }) => {
 };
 
 const CardHeader = ({ children, className = '' }) => (
-    <div className={`flex items-center justify-between mb-4 ${className}`}>
+    <div className={`flex items-center justify-between mb-3 ${className}`}>
         {children}
     </div>
 );
 
 const CardTitle = ({ children, className = '' }) => (
-    <h3 className={`text-lg font-bold text-gray-900 ${className}`}>
+    <h3 className={`text-base font-semibold text-gray-900 dark:text-gray-100 ${className}`}>
         {children}
     </h3>
 );
 
 const CardDescription = ({ children, className = '' }) => (
-    <p className={`text-sm text-gray-500 ${className}`}>
+    <p className={`text-sm text-gray-500 dark:text-gray-400 ${className}`}>
         {children}
     </p>
 );
@@ -40,7 +43,7 @@ const CardContent = ({ children, className = '' }) => (
 );
 
 const CardFooter = ({ children, className = '' }) => (
-    <div className={`mt-4 pt-4 border-t border-gray-100 ${className}`}>
+    <div className={`mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/50 ${className}`}>
         {children}
     </div>
 );

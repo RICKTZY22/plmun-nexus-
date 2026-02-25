@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar } from 'lucide-react';
 import { Button, Input, Card, Modal, Table, ImageUpload, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
 import { FacultyOnly, StaffOnly } from '../components/auth';
 import { exportCSV, exportPDF } from '../utils/exportUtils';
 import useUIStore from '../store/uiStore';
+import useAuthStore from '../store/authStore';
+import { resolveImageUrl } from '../utils/imageUtils';
+import { useNavigate } from 'react-router-dom';
+import { hasMinRole, ROLES } from '../utils/roles';
 
 const statusColors = {
     AVAILABLE: 'bg-emerald-100 text-emerald-700',
@@ -21,41 +25,105 @@ const categoryIcons = {
     OTHER: '📋',
 };
 
-// Resolve relative image URLs from Django backend
-const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
-const resolveImageUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${BACKEND_URL}${url.startsWith('/') ? '' : '/'}${url}`;
-};
-
 const Inventory = () => {
-    const { inventory, loading, stats, fetchInventory, addItem, updateItem, deleteItem } = useInventory();
+    const { inventory, loading, stats, fetchInventory, addItem, updateItem, deleteItem, changeItemStatus } = useInventory();
     const { viewMode, itemsPerPage, showImages } = useUIStore();
+    const { user } = useAuthStore();
+
+    // Load saved staff defaults from Settings → Inventory Settings tab
+    const staffDefaults = useMemo(() => {
+        if (!user?.id) return {};
+        try {
+            const raw = localStorage.getItem(`staff-prefs-${user.id}`);
+            return raw ? JSON.parse(raw) : {};
+        } catch { return {}; }
+    }, [user?.id]);
+
     const [search, setSearch] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [formData, setFormData] = useState({
+    const defaultFormData = {
         name: '',
-        category: 'ELECTRONICS',
+        category: staffDefaults.defaultCategory || 'ELECTRONICS',
         quantity: 1,
-        status: 'AVAILABLE',
-        location: '',
+        status: staffDefaults.defaultStatus || 'AVAILABLE',
+        location: staffDefaults.defaultLocation || '',
         description: '',
         imageUrl: null,
         accessLevel: 'STUDENT',
         isReturnable: true,
         borrowDuration: '',
         borrowDurationUnit: 'DAYS',
-    });
+    };
+    const [formData, setFormData] = useState(defaultFormData);
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const [qrItem, setQrItem] = useState(null);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [deleteItemId, setDeleteItemId] = useState(null);
     const [detailItem, setDetailItem] = useState(null);
+    const [collapsedSections, setCollapsedSections] = useState({});
+
+    // Status change modal state
+    const [statusModal, setStatusModal] = useState({ open: false, item: null, targetStatus: '' });
+    const [statusNote, setStatusNote] = useState('');
+    const [maintenanceEta, setMaintenanceEta] = useState('');
+
+    // Centralized filtered items — used by both card/table views and pagination
+    const filteredItems = useMemo(() => {
+        if (!inventory) return [];
+        return inventory.filter(item => {
+            const matchSearch = !search || item.name?.toLowerCase().includes(search.toLowerCase()) || item.category?.toLowerCase().includes(search.toLowerCase());
+            const matchCategory = !filterCategory || item.category === filterCategory;
+            const matchStatus = !filterStatus || item.status === filterStatus;
+            return matchSearch && matchCategory && matchStatus;
+        });
+    }, [inventory, search, filterCategory, filterStatus]);
+
+    // Stock-level groups
+    const LOW_STOCK_THRESHOLD = 5;
+    const stockGroups = useMemo(() => [
+        {
+            key: 'OUT_OF_STOCK',
+            label: 'Out of Stock',
+            icon: XCircle,
+            color: 'bg-red-500',
+            textColor: 'text-red-700 dark:text-red-400',
+            bgLight: 'bg-red-50 dark:bg-red-900/10',
+            borderColor: 'border-red-200 dark:border-red-800/30',
+            filter: item => item.quantity === 0,
+        },
+        {
+            key: 'LOW_STOCK',
+            label: 'Low Stock',
+            icon: TrendingDown,
+            color: 'bg-amber-500',
+            textColor: 'text-amber-700 dark:text-amber-400',
+            bgLight: 'bg-amber-50 dark:bg-amber-900/10',
+            borderColor: 'border-amber-200 dark:border-amber-800/30',
+            filter: item => item.quantity > 0 && item.quantity <= LOW_STOCK_THRESHOLD,
+        },
+        {
+            key: 'NORMAL_STOCK',
+            label: 'Normal Stock',
+            icon: CheckCircle,
+            color: 'bg-emerald-500',
+            textColor: 'text-emerald-700 dark:text-emerald-400',
+            bgLight: 'bg-emerald-50 dark:bg-emerald-900/10',
+            borderColor: 'border-emerald-200 dark:border-emerald-800/30',
+            filter: item => item.quantity > LOW_STOCK_THRESHOLD,
+        },
+    ], []);
+    const navigate = useNavigate();
+    const isStaffPlus = hasMinRole(user?.role, ROLES.STAFF);
+
+    // F-04: Navigate to Requests with item pre-filled
+    const handleRequestItem = (item, e) => {
+        e?.stopPropagation();
+        navigate('/requests', { state: { prefillItem: item } });
+    };
 
     useEffect(() => {
         fetchInventory({ search, category: filterCategory, status: filterStatus });
@@ -70,7 +138,7 @@ const Inventory = () => {
         }
         setIsAddModalOpen(false);
         setEditingItem(null);
-        setFormData({ name: '', category: 'ELECTRONICS', quantity: 1, status: 'AVAILABLE', location: '', description: '', imageUrl: null, accessLevel: 'STUDENT', isReturnable: true, borrowDuration: '', borrowDurationUnit: 'DAYS' });
+        setFormData(defaultFormData);
     };
 
     const handleEdit = (item) => {
@@ -105,6 +173,66 @@ const Inventory = () => {
         }
         setDeleteModalOpen(false);
         setDeleteItemId(null);
+    };
+
+    // ── Status change helpers ──
+    const openStatusModal = (item, targetStatus, e) => {
+        e?.stopPropagation();
+        setStatusModal({ open: true, item, targetStatus });
+        setStatusNote('');
+        setMaintenanceEta('');
+    };
+
+    const handleStatusChange = async () => {
+        if (!statusModal.item) return;
+        const result = await changeItemStatus(statusModal.item.id, {
+            status: statusModal.targetStatus,
+            note: statusNote,
+            maintenanceEta: statusModal.targetStatus === 'MAINTENANCE' ? maintenanceEta : null,
+        });
+        if (result.success) {
+            // Also refresh detail modal if it's showing this item
+            if (detailItem?.id === statusModal.item.id) {
+                const updated = inventory.find(i => i.id === statusModal.item.id);
+                if (updated) setDetailItem(updated);
+            }
+        } else {
+            alert(result.error || 'Failed to change status');
+        }
+        setStatusModal({ open: false, item: null, targetStatus: '' });
+    };
+
+    // Quick-action: go straight to AVAILABLE without modal
+    const handleQuickReturn = async (item, e) => {
+        e?.stopPropagation();
+        const result = await changeItemStatus(item.id, {
+            status: 'AVAILABLE',
+            note: `Returned to available from ${item.status}`,
+        });
+        if (!result.success) alert(result.error || 'Failed to change status');
+    };
+
+    // Status action config for quick buttons
+    const getStatusActions = (item) => {
+        const actions = [];
+        switch (item.status) {
+            case 'IN_USE':
+                actions.push({ label: 'Mark Returned', icon: RotateCcw, color: 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20', onClick: (e) => handleQuickReturn(item, e) });
+                break;
+            case 'MAINTENANCE':
+                actions.push({ label: 'Mark Fixed', icon: CheckCircle, color: 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20', onClick: (e) => handleQuickReturn(item, e) });
+                break;
+            case 'RETIRED':
+                actions.push({ label: 'Reactivate', icon: RefreshCw, color: 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20', onClick: (e) => handleQuickReturn(item, e) });
+                break;
+            case 'AVAILABLE':
+                actions.push({ label: 'Set Maintenance', icon: Wrench, color: 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20', onClick: (e) => openStatusModal(item, 'MAINTENANCE', e) });
+                actions.push({ label: 'Retire', icon: Power, color: 'text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-900/20', onClick: (e) => openStatusModal(item, 'RETIRED', e) });
+                break;
+            default:
+                break;
+        }
+        return actions;
     };
 
     // Export to CSV
@@ -243,7 +371,7 @@ const Inventory = () => {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <Card className="relative overflow-hidden py-5 px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 dark:bg-primary/10 rounded-bl-full" />
                         <Package size={20} className="text-primary mb-2" />
@@ -268,9 +396,15 @@ const Inventory = () => {
                     </Card>
                     <Card className="relative overflow-hidden py-5 px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 dark:bg-amber-500/10 rounded-bl-full" />
-                        <AlertTriangle size={20} className="text-amber-500 mb-2" />
-                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.maintenance}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Maintenance</p>
+                        <TrendingDown size={20} className="text-amber-500 mb-2" />
+                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{filteredItems.filter(i => i.quantity > 0 && i.quantity <= LOW_STOCK_THRESHOLD).length}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
+                    </Card>
+                    <Card className="relative overflow-hidden py-5 px-4">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 dark:bg-red-500/10 rounded-bl-full" />
+                        <XCircle size={20} className="text-red-500 mb-2" />
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">{filteredItems.filter(i => i.quantity === 0).length}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
                     </Card>
                 </div>
 
@@ -311,251 +445,213 @@ const Inventory = () => {
                     </div>
                 </Card>
 
-                {/* Items Display — Table or Card View */}
-                {viewMode === 'card' ? (
-                    /* ===== CARD VIEW ===== */
-                    <div>
-                        {loading ? (
-                            <div className="text-center py-12 text-gray-500 dark:text-gray-400">Loading...</div>
-                        ) : inventory.length === 0 ? (
-                            <div className="text-center py-12 text-gray-500 dark:text-gray-400">No items found</div>
-                        ) : (
-                            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
-                                {inventory
-                                    .filter(item => {
-                                        const matchSearch = !search || item.name?.toLowerCase().includes(search.toLowerCase()) || item.category?.toLowerCase().includes(search.toLowerCase());
-                                        const matchCategory = !filterCategory || item.category === filterCategory;
-                                        const matchStatus = !filterStatus || item.status === filterStatus;
-                                        return matchSearch && matchCategory && matchStatus;
-                                    })
-                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                    .map((item) => (
-                                        <Card key={item.id} className="relative overflow-hidden p-0 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group/card" onClick={() => setDetailItem(item)}>
-                                            {/* Card Header — Image or Icon */}
-                                            {showImages && (
-                                                <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center relative overflow-hidden">
-                                                    {item.imageUrl ? (
-                                                        <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" onError={(e) => { e.target.style.display = 'none'; }} />
-                                                    ) : (
-                                                        <span className="text-4xl transition-transform duration-300 group-hover/card:scale-110">{categoryIcons[item.category] || '📋'}</span>
-                                                    )}
-                                                    {/* Hover overlay */}
-                                                    <div className="absolute inset-0 bg-primary/0 group-hover/card:bg-primary/10 transition-colors duration-300 flex items-center justify-center">
-                                                        <Eye size={24} className="text-white opacity-0 group-hover/card:opacity-80 transition-all duration-300 drop-shadow-lg" />
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Card Body */}
-                                            <div className="p-4 space-y-3">
-                                                {/* Name + Category */}
-                                                <div>
-                                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover/card:text-primary transition-colors duration-200">{item.name}</h3>
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                                        {categoryIcons[item.category] || '📋'} {item.category}
-                                                    </p>
-                                                </div>
-
-                                                {/* Status + Quantity Row */}
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
-                                                        {item.status}
-                                                    </span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className={`text-sm font-bold ${item.quantity <= 5 ? 'text-red-600' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                            Qty: {item.quantity}
-                                                        </span>
-                                                        {item.quantity <= 5 && item.quantity > 0 && (
-                                                            <AlertTriangle size={14} className="text-red-500" />
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Location */}
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-                                                    <MapPin size={12} />
-                                                    {item.location || 'No location'}
-                                                </p>
-
-                                                {/* View Details hint */}
-                                                <div className="flex items-center justify-center gap-1.5 text-xs text-primary/60 group-hover/card:text-primary transition-colors duration-200 pt-1">
-                                                    <span>View Details</span>
-                                                    <ArrowRight size={12} className="transition-transform duration-200 group-hover/card:translate-x-1" />
-                                                </div>
-
-                                                {/* Actions */}
-                                                <FacultyOnly>
-                                                    <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-                                                        <Button variant="ghost" size="sm" onClick={() => { setQrItem(item); setQrModalOpen(true); }} title="QR Code" className="flex-1 hover:scale-105 transition-transform">
-                                                            <QrCode size={14} className="text-primary" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} title="Edit" className="flex-1 hover:scale-105 transition-transform">
-                                                            <Edit size={14} />
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} title="Delete" className="flex-1 hover:scale-105 transition-transform">
-                                                            <Trash2 size={14} className="text-red-500" />
-                                                        </Button>
-                                                    </div>
-                                                </FacultyOnly>
-                                            </div>
-                                        </Card>
-                                    ))}
-                            </div>
-                        )}
+                {/* Items Display — Grouped by Stock Level */}
+                {loading ? (
+                    <div className="flex items-center justify-center py-16">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+                        <span className="ml-3 text-gray-500 dark:text-gray-400">Loading inventory...</span>
                     </div>
+                ) : filteredItems.length === 0 ? (
+                    <Card className="py-12 text-center">
+                        <Package size={40} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                        <p className="text-gray-500 dark:text-gray-400 text-sm">No items found matching your filters</p>
+                    </Card>
                 ) : (
-                    /* ===== TABLE VIEW ===== */
-                    <Table>
-                        <Table.Header>
-                            <Table.Row>
-                                <Table.Head>Item</Table.Head>
-                                <Table.Head>Category</Table.Head>
-                                <Table.Head>Quantity</Table.Head>
-                                <Table.Head>Status</Table.Head>
-                                <Table.Head>Location</Table.Head>
-                                <Table.Head className="text-right"><FacultyOnly>Actions</FacultyOnly></Table.Head>
-                            </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                            {loading ? (
-                                <Table.Empty message="Loading..." colSpan={6} />
-                            ) : inventory.length === 0 ? (
-                                <Table.Empty message="No items found" colSpan={6} />
-                            ) : (
-                                inventory
-                                    .filter(item => {
-                                        const matchSearch = !search || item.name?.toLowerCase().includes(search.toLowerCase()) || item.category?.toLowerCase().includes(search.toLowerCase());
-                                        const matchCategory = !filterCategory || item.category === filterCategory;
-                                        const matchStatus = !filterStatus || item.status === filterStatus;
-                                        return matchSearch && matchCategory && matchStatus;
-                                    })
-                                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                                    .map((item) => (
-                                        <Table.Row key={item.id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200" onClick={() => setDetailItem(item)}>
-                                            <Table.Cell>
-                                                <div className="flex items-center gap-3">
-                                                    {showImages && (
-                                                        item.imageUrl ? (
-                                                            <img
-                                                                src={resolveImageUrl(item.imageUrl)}
-                                                                alt={item.name}
-                                                                className="w-10 h-10 rounded-lg object-cover border border-gray-200 transition-transform duration-200 hover:scale-110"
-                                                                onError={(e) => { e.target.style.display = 'none'; }}
-                                                            />
-                                                        ) : (
-                                                            <span className="text-xl">{categoryIcons[item.category] || '📋'}</span>
-                                                        )
-                                                    )}
-                                                    <span className="font-medium hover:text-primary transition-colors">{item.name}</span>
+                    <div className="space-y-4">
+                        {stockGroups.map(group => {
+                            const groupItems = filteredItems.filter(group.filter);
+                            if (groupItems.length === 0) return null;
+                            const isCollapsed = collapsedSections[group.key];
+                            const GroupIcon = group.icon;
+                            const paginatedItems = groupItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+                            return (
+                                <div key={group.key} className={`rounded-xl border ${group.borderColor} overflow-hidden`}>
+                                    {/* Group header — clickable to collapse */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setCollapsedSections(prev => ({ ...prev, [group.key]: !prev[group.key] }))}
+                                        className={`w-full flex items-center justify-between px-4 py-3 ${group.bgLight} cursor-pointer hover:opacity-90 transition-opacity`}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${group.color} text-white`}>
+                                                <GroupIcon size={16} />
+                                            </span>
+                                            <span className={`font-semibold text-sm ${group.textColor}`}>{group.label}</span>
+                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${group.color} text-white`}>
+                                                {groupItems.length}
+                                            </span>
+                                        </div>
+                                        {isCollapsed ? <ChevronRight size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+                                    </button>
+
+                                    {/* Group body */}
+                                    {!isCollapsed && (
+                                        viewMode === 'card' ? (
+                                            /* ===== CARD VIEW ===== */
+                                            <div className="p-4">
+                                                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+                                                    {groupItems.map(item => (
+                                                        <Card key={item.id} className={`relative overflow-hidden p-0 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group/card ${item.status === 'RETIRED' ? 'opacity-60 grayscale-[30%]' : ''}`} onClick={() => setDetailItem(item)}>
+                                                            {showImages && (
+                                                                <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center relative overflow-hidden">
+                                                                    {item.imageUrl ? (
+                                                                        <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" onError={(e) => { e.target.style.display = 'none'; }} />
+                                                                    ) : (
+                                                                        <span className="text-4xl transition-transform duration-300 group-hover/card:scale-110">{categoryIcons[item.category] || '📋'}</span>
+                                                                    )}
+                                                                    <div className="absolute inset-0 bg-primary/0 group-hover/card:bg-primary/10 transition-colors duration-300 flex items-center justify-center">
+                                                                        <Eye size={24} className="text-white opacity-0 group-hover/card:opacity-80 transition-all duration-300 drop-shadow-lg" />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="p-4 space-y-3">
+                                                                <div>
+                                                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover/card:text-primary transition-colors duration-200">{item.name}</h3>
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                                                                        {categoryIcons[item.category] || '📋'} {item.category}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
+                                                                        {item.status}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className={`text-sm font-bold ${item.quantity <= 5 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                                            Qty: {item.quantity}
+                                                                        </span>
+                                                                        {item.quantity <= 5 && item.quantity > 0 && <AlertTriangle size={14} className="text-amber-500" />}
+                                                                        {item.quantity === 0 && <XCircle size={14} className="text-red-500" />}
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
+                                                                    <MapPin size={12} />
+                                                                    {item.location || 'No location'}
+                                                                </p>
+                                                                <div className="flex items-center justify-center gap-1.5 text-xs text-primary/60 group-hover/card:text-primary transition-colors duration-200 pt-1">
+                                                                    <span>View Details</span>
+                                                                    <ArrowRight size={12} className="transition-transform duration-200 group-hover/card:translate-x-1" />
+                                                                </div>
+                                                                <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+                                                                    {item.status === 'AVAILABLE' && item.quantity > 0 && (
+                                                                        <Button variant="ghost" size="sm" onClick={(e) => handleRequestItem(item, e)} title="Request This Item" className="flex-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:scale-105 transition-transform">
+                                                                            <FileText size={14} className="mr-1" />
+                                                                            {!isStaffPlus && <span className="text-xs">Request</span>}
+                                                                        </Button>
+                                                                    )}
+                                                                    {item.status !== 'AVAILABLE' && item.quantity > 0 && (
+                                                                        <span className="flex-1 flex items-center justify-center text-[10px] text-gray-400 dark:text-gray-500 italic">
+                                                                            {item.status === 'IN_USE' ? '🔵 In Use' : item.status === 'MAINTENANCE' ? '🟡 Maintenance' : item.status === 'RETIRED' ? '⚫ Retired' : ''}
+                                                                        </span>
+                                                                    )}
+                                                                    <FacultyOnly>
+                                                                        {getStatusActions(item).map((action, idx) => {
+                                                                            const ActionIcon = action.icon;
+                                                                            return (
+                                                                                <Button key={idx} variant="ghost" size="sm" onClick={action.onClick} title={action.label} className={`flex-1 hover:scale-105 transition-transform ${action.color}`}>
+                                                                                    <ActionIcon size={14} />
+                                                                                </Button>
+                                                                            );
+                                                                        })}
+                                                                        <Button variant="ghost" size="sm" onClick={() => { setQrItem(item); setQrModalOpen(true); }} title="QR Code" className="flex-1 hover:scale-105 transition-transform"><QrCode size={14} className="text-primary" /></Button>
+                                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} title="Edit" className="flex-1 hover:scale-105 transition-transform"><Edit size={14} /></Button>
+                                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} title="Delete" className="flex-1 hover:scale-105 transition-transform"><Trash2 size={14} className="text-red-500" /></Button>
+                                                                    </FacultyOnly>
+                                                                </div>
+                                                            </div>
+                                                        </Card>
+                                                    ))}
                                                 </div>
-                                            </Table.Cell>
-                                            <Table.Cell>{item.category}</Table.Cell>
-                                            <Table.Cell>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={item.quantity <= 5 ? 'font-bold text-red-600' : ''}>
-                                                        {item.quantity}
-                                                    </span>
-                                                    {item.quantity <= 5 && item.quantity > 0 && (
-                                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
-                                                            <AlertTriangle size={12} />
-                                                            Low
-                                                        </span>
-                                                    )}
-                                                    {item.quantity === 0 && (
-                                                        <span className="px-2 py-0.5 bg-gray-800 text-white rounded-full text-xs font-medium">
-                                                            Out
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
-                                                    {item.status}
-                                                </span>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <div className="flex items-center gap-1">
-                                                    <MapPin size={12} className="text-gray-400" />
-                                                    {item.location}
-                                                </div>
-                                            </Table.Cell>
-                                            <FacultyOnly>
-                                                <Table.Cell onClick={(e) => e.stopPropagation()}>
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setQrItem(item);
-                                                                setQrModalOpen(true);
-                                                            }}
-                                                            title="Generate QR Code"
-                                                            className="hover:scale-110 transition-transform"
-                                                        >
-                                                            <QrCode size={16} className="text-primary" />
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} className="hover:scale-110 transition-transform">
-                                                            <Edit size={16} />
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} className="hover:scale-110 transition-transform">
-                                                            <Trash2 size={16} className="text-red-500" />
-                                                        </Button>
-                                                    </div>
-                                                </Table.Cell>
-                                            </FacultyOnly>
-                                        </Table.Row>
-                                    ))
-                            )}
-                        </Table.Body>
-                    </Table>
+                                            </div>
+                                        ) : (
+                                            /* ===== TABLE VIEW ===== */
+                                            <Table>
+                                                <Table.Header>
+                                                    <Table.Row>
+                                                        <Table.Head>Item</Table.Head>
+                                                        <Table.Head>Category</Table.Head>
+                                                        <Table.Head>Quantity</Table.Head>
+                                                        <Table.Head>Status</Table.Head>
+                                                        <Table.Head>Location</Table.Head>
+                                                        <Table.Head className="text-right"><FacultyOnly>Actions</FacultyOnly></Table.Head>
+                                                    </Table.Row>
+                                                </Table.Header>
+                                                <Table.Body>
+                                                    {groupItems.map(item => (
+                                                        <Table.Row key={item.id} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200" onClick={() => setDetailItem(item)}>
+                                                            <Table.Cell>
+                                                                <div className="flex items-center gap-3">
+                                                                    {showImages && (
+                                                                        item.imageUrl ? (
+                                                                            <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-gray-600 transition-transform duration-200 hover:scale-110" onError={(e) => { e.target.style.display = 'none'; }} />
+                                                                        ) : (
+                                                                            <span className="text-xl">{categoryIcons[item.category] || '📋'}</span>
+                                                                        )
+                                                                    )}
+                                                                    <span className="font-medium hover:text-primary transition-colors">{item.name}</span>
+                                                                </div>
+                                                            </Table.Cell>
+                                                            <Table.Cell>
+                                                                <span className="inline-flex items-center gap-1 text-sm">
+                                                                    {categoryIcons[item.category] || '📋'} {item.category}
+                                                                </span>
+                                                            </Table.Cell>
+                                                            <Table.Cell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className={`font-semibold ${item.quantity === 0 ? 'text-red-600 dark:text-red-400' : item.quantity <= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-gray-100'}`}>
+                                                                        {item.quantity}
+                                                                    </span>
+                                                                </div>
+                                                            </Table.Cell>
+                                                            <Table.Cell>
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
+                                                                    {item.status}
+                                                                </span>
+                                                            </Table.Cell>
+                                                            <Table.Cell>
+                                                                <div className="flex items-center gap-1 text-sm">
+                                                                    <MapPin size={12} className="text-gray-400" />
+                                                                    {item.location || '—'}
+                                                                </div>
+                                                            </Table.Cell>
+                                                            <Table.Cell onClick={(e) => e.stopPropagation()}>
+                                                                <div className="flex justify-end gap-1">
+                                                                    {item.status === 'AVAILABLE' && item.quantity > 0 && (
+                                                                        <Button variant="ghost" size="sm" onClick={(e) => handleRequestItem(item, e)} title="Request This Item" className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><FileText size={16} /></Button>
+                                                                    )}
+                                                                    <FacultyOnly>
+                                                                        {getStatusActions(item).map((action, idx) => {
+                                                                            const ActionIcon = action.icon;
+                                                                            return (
+                                                                                <Button key={idx} variant="ghost" size="sm" onClick={action.onClick} title={action.label} className={action.color}>
+                                                                                    <ActionIcon size={16} />
+                                                                                </Button>
+                                                                            );
+                                                                        })}
+                                                                        <Button variant="ghost" size="sm" onClick={() => { setQrItem(item); setQrModalOpen(true); }} title="QR Code"><QrCode size={16} className="text-primary" /></Button>
+                                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} title="Edit"><Edit size={16} /></Button>
+                                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} title="Delete"><Trash2 size={16} className="text-red-500" /></Button>
+                                                                    </FacultyOnly>
+                                                                </div>
+                                                            </Table.Cell>
+                                                        </Table.Row>
+                                                    ))}
+                                                </Table.Body>
+                                            </Table>
+                                        )
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
 
-                {/* Pagination */}
-                {(() => {
-                    const filtered = inventory.filter(item => {
-                        const matchSearch = !search || item.name?.toLowerCase().includes(search.toLowerCase()) || item.category?.toLowerCase().includes(search.toLowerCase());
-                        const matchCategory = !filterCategory || item.category === filterCategory;
-                        const matchStatus = !filterStatus || item.status === filterStatus;
-                        return matchSearch && matchCategory && matchStatus;
-                    });
-                    const totalPages = Math.ceil(filtered.length / itemsPerPage);
-                    if (totalPages <= 1) return null;
-                    return (
-                        <div className="flex items-center justify-between">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filtered.length)}–{Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length} items
-                            </p>
-                            <div className="flex gap-1">
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
-                                >
-                                    Prev
-                                </button>
-                                {Array.from({ length: totalPages }, (_, i) => (
-                                    <button
-                                        key={i + 1}
-                                        onClick={() => setCurrentPage(i + 1)}
-                                        className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${currentPage === i + 1
-                                            ? 'bg-primary text-white'
-                                            : 'border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })()}
+                {/* Summary footer */}
+                {!loading && filteredItems.length > 0 && (
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                        <p>Showing {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} across {stockGroups.filter(g => filteredItems.some(g.filter)).length} group{stockGroups.filter(g => filteredItems.some(g.filter)).length !== 1 ? 's' : ''}</p>
+                    </div>
+                )}
 
                 {/* Add/Edit Modal */}
                 <Modal
@@ -857,6 +953,64 @@ const Inventory = () => {
                                 </div>
                             )}
 
+                            {/* Status Metadata */}
+                            {(detailItem.statusNote || detailItem.statusChangedAt || detailItem.maintenanceEta) && (
+                                <div className="p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700/50">
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold flex items-center gap-1">
+                                        <Clock size={10} /> Status History
+                                    </p>
+                                    {detailItem.statusNote && (
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                                            "​{detailItem.statusNote}"
+                                        </p>
+                                    )}
+                                    {detailItem.statusChangedByName && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            Changed by <span className="font-semibold text-gray-700 dark:text-gray-300">{detailItem.statusChangedByName}</span>
+                                            {detailItem.statusChangedAt && (
+                                                <> on {new Date(detailItem.statusChangedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</>
+                                            )}
+                                        </p>
+                                    )}
+                                    {detailItem.maintenanceEta && detailItem.status === 'MAINTENANCE' && (
+                                        <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                                            <Calendar size={14} className="text-amber-600" />
+                                            <div>
+                                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">Expected Back</p>
+                                                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                                                    {new Date(detailItem.maintenanceEta).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                    {new Date(detailItem.maintenanceEta) > new Date() && (
+                                                        <span className="ml-1 text-xs font-normal text-amber-500">
+                                                            ({Math.ceil((new Date(detailItem.maintenanceEta) - new Date()) / (1000 * 60 * 60 * 24))} days left)
+                                                        </span>
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Detail Modal — Quick Actions (staff+) */}
+                            {isStaffPlus && detailItem.status !== 'AVAILABLE' && (
+                                <div className="flex gap-2">
+                                    {getStatusActions(detailItem).map((action, idx) => {
+                                        const ActionIcon = action.icon;
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={(e) => { action.onClick(e); setDetailItem(null); }}
+                                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${action.color} bg-opacity-10`}
+                                                style={{ backgroundColor: 'var(--tw-bg-opacity, 0.05)' }}
+                                            >
+                                                <ActionIcon size={16} />
+                                                {action.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
                             {/* Close Button */}
                             <button
                                 onClick={() => setDetailItem(null)}
@@ -868,13 +1022,73 @@ const Inventory = () => {
                     )}
                 </Modal>
 
-                {/* Detail Modal Animation */}
-                <style>{`
-                    @keyframes fadeInUp {
-                        from { opacity: 0; transform: translateY(12px); }
-                        to { opacity: 1; transform: translateY(0); }
-                    }
-                `}</style>
+                {/* ===== Status Change Modal ===== */}
+                <Modal
+                    isOpen={statusModal.open}
+                    onClose={() => setStatusModal({ open: false, item: null, targetStatus: '' })}
+                    title={`Change Status to ${statusModal.targetStatus?.replace('_', ' ')}`}
+                    size="sm"
+                >
+                    <div className="space-y-4 pt-2">
+                        {/* Status badge preview */}
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                            <span className="text-sm text-gray-600 dark:text-gray-300">Item:</span>
+                            <span className="font-semibold text-sm text-gray-900 dark:text-white">{statusModal.item?.name}</span>
+                            <ArrowRight size={14} className="text-gray-400" />
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${statusColors[statusModal.targetStatus] || 'bg-gray-100 text-gray-700'}`}>
+                                {statusModal.targetStatus?.replace('_', ' ')}
+                            </span>
+                        </div>
+
+                        {/* Reason / Note */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                                Reason / Note <span className="text-gray-400">(optional)</span>
+                            </label>
+                            <textarea
+                                value={statusNote}
+                                onChange={(e) => setStatusNote(e.target.value)}
+                                rows={3}
+                                placeholder={statusModal.targetStatus === 'MAINTENANCE' ? 'e.g., Screen cracked — sent for repair' : statusModal.targetStatus === 'RETIRED' ? 'e.g., Obsolete, beyond economical repair' : 'Enter a reason...'}
+                                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Maintenance ETA date picker */}
+                        {statusModal.targetStatus === 'MAINTENANCE' && (
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                                    <Calendar size={12} className="inline mr-1" />
+                                    Estimated Return Date <span className="text-gray-400">(optional)</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={maintenanceEta}
+                                    onChange={(e) => setMaintenanceEta(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                />
+                            </div>
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="flex-1"
+                                onClick={() => setStatusModal({ open: false, item: null, targetStatus: '' })}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                onClick={handleStatusChange}
+                            >
+                                Confirm Change
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
             </div>
         </>
     );

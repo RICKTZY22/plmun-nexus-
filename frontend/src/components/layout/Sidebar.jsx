@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -15,211 +15,247 @@ import {
 import useAuthStore from '../../store/authStore';
 import plmunLogo from '../../assets/images/logo.png';
 import { ROLES, hasMinRole } from '../../utils/roles';
+import { requestService } from '../../services';
 
-// Navigation items with minimum role requirements
-const getNavItems = (userRole) => [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', minRole: ROLES.FACULTY },
-    { icon: Package, label: hasMinRole(userRole, ROLES.STAFF) ? 'Inventory' : 'Items', path: '/inventory', minRole: null },
-    { icon: FileText, label: 'Requests', path: '/requests', minRole: null },
-    { icon: BarChart3, label: 'Reports', path: '/reports', minRole: ROLES.STAFF },
-    { icon: Users, label: 'Users', path: '/users', minRole: ROLES.ADMIN },
-    { icon: Settings, label: 'Settings', path: '/settings', minRole: null },
-];
+// Grouped navigation with section labels
+const getNavGroups = (userRole) => {
+    const groups = [
+        {
+            label: 'Main',
+            items: [
+                { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+                { icon: Package, label: hasMinRole(userRole, ROLES.STAFF) ? 'Inventory' : 'Items', path: '/inventory' },
+                { icon: FileText, label: 'Requests', path: '/requests', badge: true },
+            ]
+        },
+    ];
+
+    // Analytics group (staff+)
+    if (hasMinRole(userRole, ROLES.STAFF)) {
+        groups.push({
+            label: 'Analytics',
+            items: [
+                { icon: BarChart3, label: 'Reports', path: '/reports' },
+            ]
+        });
+    }
+
+    // Management group
+    const mgmtItems = [];
+    if (hasMinRole(userRole, ROLES.ADMIN)) {
+        mgmtItems.push({ icon: Users, label: 'Users', path: '/users' });
+    }
+    mgmtItems.push({ icon: Settings, label: 'Settings', path: '/settings' });
+
+    groups.push({ label: 'Management', items: mgmtItems });
+
+    return groups;
+};
 
 const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, logout } = useAuthStore();
+    const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
         setMobileOpen?.(false);
     }, [location.pathname, setMobileOpen]);
+
+    // F-05: Fetch pending count for badge
+    const fetchPendingCount = useCallback(async () => {
+        try {
+            const data = await requestService.getAll();
+            const items = Array.isArray(data) ? data : data.results || [];
+            const isStaffPlus = hasMinRole(user?.role, ROLES.STAFF);
+            const pending = items.filter(r =>
+                r.status === 'PENDING' && (isStaffPlus || r.requestedById === user?.id)
+            ).length;
+            setPendingCount(pending);
+        } catch { /* non-critical */ }
+    }, [user?.role, user?.id]);
+
+    useEffect(() => {
+        fetchPendingCount();
+        const interval = setInterval(fetchPendingCount, 60000);
+        return () => clearInterval(interval);
+    }, [fetchPendingCount]);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
-    const navItems = getNavItems(user?.role);
-    const visibleNavItems = navItems.filter(item => {
-        if (!item.minRole) return true;
-        return hasMinRole(user?.role, item.minRole);
-    });
+    const navGroups = getNavGroups(user?.role);
 
     return (
         <>
             {/* Mobile Overlay */}
             {mobileOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm"
                     onClick={() => setMobileOpen(false)}
-                    style={{ animation: 'fadeIn 0.2s ease-out' }}
                 />
             )}
 
             {/* Sidebar */}
             <aside className={`
-                fixed left-0 top-0 h-screen
-                bg-gradient-to-b from-gray-900 via-gray-850 to-gray-800
-                text-white z-50
+                fixed left-0 top-0 h-screen z-50
+                bg-white dark:bg-gray-900
+                border-r border-gray-200 dark:border-gray-800
                 transition-all duration-300 ease-in-out
                 flex flex-col
-                shadow-2xl shadow-black/20
-                ${collapsed ? 'w-20' : 'w-64'}
+                ${collapsed ? 'w-[68px]' : 'w-60'}
                 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}
                 md:translate-x-0
             `}>
-                {/* Logo Section */}
-                <div className="p-3 border-b border-gray-700/50">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden sidebar-logo">
-                                <img src={plmunLogo} alt="PLMun" className="w-8 h-8 object-contain" />
-                            </div>
-                            {!collapsed && (
-                                <div className="overflow-hidden" style={{ animation: 'slideInLeft 0.3s ease-out' }}>
-                                    <h1 className="font-bold text-lg leading-tight">PLMun</h1>
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Inventory Nexus</p>
-                                </div>
-                            )}
+                {/* Logo Header */}
+                <div className="h-14 flex items-center justify-between px-3 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img src={plmunLogo} alt="PLMun" className="w-7 h-7 object-contain" />
                         </div>
-                        <button
-                            onClick={() => {
-                                if (window.innerWidth < 768) {
-                                    setMobileOpen(false);
-                                } else {
-                                    setCollapsed(!collapsed);
-                                }
-                            }}
-                            className="p-2 hover:bg-gray-700/50 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
-                        >
-                            {mobileOpen && window.innerWidth < 768 ? (
-                                <X size={20} />
-                            ) : collapsed ? (
-                                <Menu size={20} />
-                            ) : (
-                                <ChevronLeft size={20} />
-                            )}
-                        </button>
+                        {!collapsed && (
+                            <div className="min-w-0">
+                                <h1 className="font-bold text-sm text-gray-900 dark:text-white leading-tight truncate">PLMun Nexus</h1>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">Inventory</p>
+                            </div>
+                        )}
                     </div>
+                    <button
+                        onClick={() => {
+                            if (window.innerWidth < 768) {
+                                setMobileOpen(false);
+                            } else {
+                                setCollapsed(!collapsed);
+                            }
+                        }}
+                        className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    >
+                        {mobileOpen && window.innerWidth < 768 ? (
+                            <X size={18} />
+                        ) : collapsed ? (
+                            <Menu size={18} />
+                        ) : (
+                            <ChevronLeft size={18} />
+                        )}
+                    </button>
                 </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 py-3 px-2.5 space-y-0.5 overflow-y-auto">
-                    {visibleNavItems.map((item, index) => (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            style={{ animationDelay: `${index * 50}ms` }}
-                            className={({ isActive }) => `
-                                flex items-center gap-3 px-3 py-2 rounded-xl
-                                transition-all duration-300 ease-out
-                                group relative overflow-hidden
-                                sidebar-nav-item
-                                ${isActive
-                                    ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30'
-                                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white hover:translate-x-1'
-                                }
-                            `}
-                        >
-                            {({ isActive }) => (
-                                <>
-                                    {/* Active indicator */}
-                                    {isActive && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full shadow-lg shadow-white/50"
-                                            style={{ animation: 'slideInLeft 0.3s ease-out' }}
-                                        />
-                                    )}
-
-                                    <item.icon size={20} className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110" />
-
-                                    {!collapsed && (
-                                        <span className="font-medium transition-all duration-200">{item.label}</span>
-                                    )}
-
-                                    {/* Hover glow */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 
-                                        translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
-
-                                    {collapsed && (
-                                        <div className="
-                                            absolute left-full ml-3 px-3 py-1.5 
-                                            bg-gray-900 text-white text-sm rounded-lg
-                                            opacity-0 invisible group-hover:opacity-100 group-hover:visible
-                                            transition-all duration-200 transform group-hover:translate-x-0 translate-x-[-8px]
-                                            whitespace-nowrap z-50 shadow-xl
-                                            hidden md:block
-                                            border border-gray-700/50
-                                        ">
-                                            {item.label}
-                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45 border-l border-b border-gray-700/50" />
-                                        </div>
-                                    )}
-                                </>
+                {/* Navigation Groups */}
+                <nav className="flex-1 py-2 px-2 overflow-y-auto scrollbar-hide">
+                    {navGroups.map((group, gi) => (
+                        <div key={group.label} className={gi > 0 ? 'mt-4' : ''}>
+                            {/* Section Label */}
+                            {!collapsed && (
+                                <span className="block px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                                    {group.label}
+                                </span>
                             )}
-                        </NavLink>
+                            {collapsed && gi > 0 && (
+                                <div className="mx-3 mb-2 border-t border-gray-100 dark:border-gray-800" />
+                            )}
+
+                            {/* Nav Items */}
+                            <div className="space-y-0.5">
+                                {group.items.map((item) => (
+                                    <NavLink
+                                        key={item.path}
+                                        to={item.path}
+                                        className={({ isActive }) => `
+                                            flex items-center gap-2.5 px-3 py-2 rounded-lg
+                                            transition-all duration-150 ease-out
+                                            group relative
+                                            ${isActive
+                                                ? 'bg-accent/10 text-accent dark:bg-accent/15 dark:text-accent-light font-semibold'
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-200'
+                                            }
+                                        `}
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                <item.icon size={18} className={`flex-shrink-0 ${isActive ? 'text-accent dark:text-accent-light' : ''}`} />
+
+                                                {!collapsed && (
+                                                    <span className="text-[13px] truncate">{item.label}</span>
+                                                )}
+
+                                                {/* Pending badge */}
+                                                {item.badge && pendingCount > 0 && (
+                                                    <span className={`
+                                                        ${collapsed ? 'absolute -top-0.5 -right-0.5' : 'ml-auto'}
+                                                        min-w-[18px] h-[18px] px-1
+                                                        flex items-center justify-center
+                                                        text-[10px] font-bold rounded-full
+                                                        bg-red-500 text-white
+                                                    `}>
+                                                        {pendingCount > 99 ? '99+' : pendingCount}
+                                                    </span>
+                                                )}
+
+                                                {/* Collapsed tooltip */}
+                                                {collapsed && (
+                                                    <div className="
+                                                        absolute left-full ml-2 px-2.5 py-1.5
+                                                        bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md
+                                                        opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                                                        transition-all duration-150
+                                                        whitespace-nowrap z-50 shadow-lg
+                                                        hidden md:block
+                                                    ">
+                                                        {item.label}
+                                                        {item.badge && pendingCount > 0 && (
+                                                            <span className="ml-1.5 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                                                                {pendingCount}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                    </NavLink>
+                                ))}
+                            </div>
+                        </div>
                     ))}
                 </nav>
 
                 {/* User Section */}
-                <div className="p-2 border-t border-gray-700/50">
-                    <div className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-700/30 transition-all duration-300 hover:bg-gray-700/50">
+                <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                    <div className={`flex items-center gap-2 p-2 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
                         {user?.avatar ? (
                             <img
                                 src={user.avatar}
                                 alt="Profile"
-                                className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/30 transition-all duration-300 hover:ring-primary/60 hover:scale-105"
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                             />
                         ) : (
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold transition-transform duration-300 hover:scale-105 shadow-lg shadow-primary/20 text-sm">
+                            <div className="w-8 h-8 rounded-full bg-accent/10 dark:bg-accent/20 flex items-center justify-center text-accent font-semibold text-sm flex-shrink-0">
                                 {user?.fullName?.charAt(0) || 'U'}
                             </div>
                         )}
                         {!collapsed && (
                             <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-xs truncate">{user?.fullName || 'User'}</p>
-                                <p className="text-[10px] text-gray-400 truncate">{user?.email || 'user@plmun.edu.ph'}</p>
+                                <p className="font-medium text-xs text-gray-900 dark:text-gray-100 truncate">{user?.fullName || 'User'}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{user?.role || 'Student'}</p>
                             </div>
                         )}
                     </div>
                     <button
                         onClick={handleLogout}
                         className={`
-                            w-full mt-1.5 flex items-center justify-center gap-2
-                            px-3 py-2 rounded-xl
-                            text-gray-400 hover:text-white hover:bg-red-500/20
-                            transition-all duration-300
-                            group/logout
-                            hover:shadow-lg hover:shadow-red-500/10
+                            w-full mt-1 flex items-center gap-2
+                            px-3 py-2 rounded-lg
+                            text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10
+                            transition-all duration-150
+                            ${collapsed ? 'justify-center' : ''}
                         `}
                     >
-                        <LogOut size={16} className="transition-transform duration-300 group-hover/logout:rotate-[-12deg] group-hover/logout:scale-110" />
-                        {!collapsed && <span className="font-medium text-xs">Logout</span>}
+                        <LogOut size={16} />
+                        {!collapsed && <span className="text-xs font-medium">Logout</span>}
                     </button>
                 </div>
             </aside>
-
-            {/* Sidebar Animation Styles */}
-            <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes slideInLeft {
-                    from { opacity: 0; transform: translateX(-12px); }
-                    to { opacity: 1; transform: translateX(0); }
-                }
-                .sidebar-nav-item {
-                    animation: slideInLeft 0.4s ease-out both;
-                }
-                .sidebar-logo {
-                    transition: transform 0.3s ease, box-shadow 0.3s ease;
-                }
-                .sidebar-logo:hover {
-                    transform: rotate(8deg) scale(1.05);
-                    box-shadow: 0 0 20px rgba(var(--color-primary-rgb, 59, 130, 246), 0.3);
-                }
-            `}</style>
         </>
     );
 };

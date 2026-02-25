@@ -67,7 +67,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=first_name,
             last_name=last_name,
-            role=validated_data.get('role', 'STUDENT'),
+            role='STUDENT',  # SEC-04: always force STUDENT — admins promote via user management
             department=validated_data.get('department', ''),
             student_id=validated_data.get('student_id', ''),
         )

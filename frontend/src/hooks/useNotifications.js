@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import notificationService from '../services/notificationService';
 
-const POLL_INTERVAL = 30000; // 30 seconds
+const POLL_INTERVAL = 10000; // 10 seconds — near-real-time
 
 const useNotifications = () => {
     const [notifications, setNotifications] = useState([]);
@@ -17,9 +17,29 @@ const useNotifications = () => {
             setNotifications(list);
             setUnreadCount(list.filter(n => !n.isRead).length);
         } catch (err) {
-            console.error('Failed to fetch notifications:', err);
+            // silently fail — error state handled by UI
         } finally {
             setLoading(false);
+        }
+    }, []);
+
+    // Lightweight poll that only updates state if something changed
+    const pollNotifications = useCallback(async () => {
+        try {
+            const data = await notificationService.getAll();
+            const list = Array.isArray(data) ? data : data.results || [];
+            setNotifications(prev => {
+                // Only update if the count or content actually changed
+                if (prev.length !== list.length || JSON.stringify(prev.map(n => n.id)) !== JSON.stringify(list.map(n => n.id))) {
+                    return list;
+                }
+                // Check for read status changes
+                const hasReadChanges = prev.some((n, i) => list[i] && n.isRead !== list[i].isRead);
+                return hasReadChanges ? list : prev;
+            });
+            setUnreadCount(list.filter(n => !n.isRead).length);
+        } catch (err) {
+            // silently fail on polling
         }
     }, []);
 
@@ -40,7 +60,7 @@ const useNotifications = () => {
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
-            console.error('Failed to mark notification as read:', err);
+            // silently fail
         }
     }, []);
 
@@ -50,7 +70,7 @@ const useNotifications = () => {
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (err) {
-            console.error('Failed to mark all notifications as read:', err);
+            // silently fail
         }
     }, []);
 
@@ -63,7 +83,7 @@ const useNotifications = () => {
                 return updated;
             });
         } catch (err) {
-            console.error('Failed to delete notification:', err);
+            // silently fail
         }
     }, []);
 
@@ -73,18 +93,32 @@ const useNotifications = () => {
             setNotifications([]);
             setUnreadCount(0);
         } catch (err) {
-            console.error('Failed to clear notifications:', err);
+            // silently fail
         }
     }, []);
 
-    // Initial fetch + polling
+    // Initial fetch + polling — only when authenticated (BUG-03)
     useEffect(() => {
+        // Check if user has a valid auth token before polling
+        const hasToken = () => {
+            try {
+                const stored = localStorage.getItem('auth-storage');
+                const parsed = stored ? JSON.parse(stored) : null;
+                return Boolean(parsed?.state?.accessToken);
+            } catch { return false; }
+        };
+
+        if (!hasToken()) return;
+
         fetchNotifications();
-        intervalRef.current = setInterval(fetchUnreadCount, POLL_INTERVAL);
+        intervalRef.current = setInterval(() => {
+            if (hasToken()) pollNotifications();
+            else clearInterval(intervalRef.current);
+        }, POLL_INTERVAL);
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [fetchNotifications, fetchUnreadCount]);
+    }, [fetchNotifications, pollNotifications]);
 
     return {
         notifications,

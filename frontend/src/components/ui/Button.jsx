@@ -1,19 +1,20 @@
 import React from 'react';
 
 const variants = {
-    primary: 'bg-primary text-white hover:bg-primary-dark shadow-lg shadow-primary/20 hover:shadow-primary/40',
-    secondary: 'bg-secondary text-white hover:bg-secondary-dark shadow-lg shadow-secondary/20 hover:shadow-secondary/40',
-    outline: 'border-2 border-primary text-primary hover:bg-primary hover:text-white',
-    ghost: 'text-gray-600 hover:bg-gray-100',
-    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20',
-    gradient: 'bg-gradient-to-r from-primary to-primary-light text-white shadow-lg shadow-primary/30',
+    primary: 'bg-accent text-white hover:bg-accent-dark shadow-sm hover:shadow-md',
+    secondary: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600',
+    outline: 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800',
+    ghost: 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800',
+    danger: 'bg-red-500 text-white hover:bg-red-600 shadow-sm',
+    gradient: 'bg-gradient-to-r from-accent to-accent-light text-white shadow-sm',
 };
 
 const sizes = {
+    xs: 'px-2 py-1 text-xs',
     sm: 'px-3 py-1.5 text-xs',
-    md: 'px-4 py-2.5 text-sm',
-    lg: 'px-6 py-3.5 text-base',
-    xl: 'px-8 py-4 text-lg',
+    md: 'px-4 py-2 text-sm',
+    lg: 'px-5 py-2.5 text-sm',
+    xl: 'px-6 py-3 text-base',
 };
 
 const Button = ({
@@ -32,13 +33,11 @@ const Button = ({
         <button
             disabled={disabled || loading}
             className={`
-                inline-flex items-center justify-center gap-2
-                font-semibold rounded-xl
-                transition-all duration-300 ease-out
-                transform hover:scale-[1.02] active:scale-[0.98]
-                disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
-                focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2
-                relative overflow-hidden
+                inline-flex items-center justify-center gap-1.5
+                font-medium rounded-lg
+                transition-all duration-150 ease-out
+                disabled:opacity-50 disabled:cursor-not-allowed
+                focus:outline-none focus:ring-2 focus:ring-accent/30 focus:ring-offset-1
                 ${variants[variant]}
                 ${sizes[size]}
                 ${fullWidth ? 'w-full' : ''}
@@ -46,36 +45,19 @@ const Button = ({
             `}
             {...props}
         >
-            {/* Shine effect overlay */}
-            <span className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-                <span className="absolute inset-0 -translate-x-full hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            </span>
-
             {loading ? (
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                    />
-                    <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                    />
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
             ) : Icon && iconPosition === 'left' ? (
-                <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : size === 'xl' ? 22 : 16} className="transition-transform group-hover:scale-110" />
+                <Icon size={size === 'xs' ? 12 : size === 'sm' ? 14 : size === 'lg' || size === 'xl' ? 18 : 16} />
             ) : null}
 
-            <span className="relative z-10">{children}</span>
+            <span>{children}</span>
 
             {!loading && Icon && iconPosition === 'right' && (
-                <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : size === 'xl' ? 22 : 16} className="transition-transform group-hover:scale-110" />
+                <Icon size={size === 'xs' ? 12 : size === 'sm' ? 14 : size === 'lg' || size === 'xl' ? 18 : 16} />
             )}
         </button>
     );

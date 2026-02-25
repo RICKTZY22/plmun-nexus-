@@ -15,6 +15,12 @@ class ItemSerializer(serializers.ModelSerializer):
     borrowDuration = serializers.IntegerField(source='borrow_duration', read_only=True, allow_null=True)
     borrowDurationUnit = serializers.CharField(source='borrow_duration_unit', read_only=True)
 
+    # Status metadata
+    statusNote = serializers.CharField(source='status_note', read_only=True, default='')
+    statusChangedAt = serializers.DateTimeField(source='status_changed_at', read_only=True, allow_null=True)
+    statusChangedByName = serializers.SerializerMethodField()
+    maintenanceEta = serializers.DateTimeField(source='maintenance_eta', read_only=True, allow_null=True)
+
     class Meta:
         model = Item
         fields = [
@@ -22,6 +28,7 @@ class ItemSerializer(serializers.ModelSerializer):
             'description', 'imageUrl', 'accessLevel', 'dateAdded',
             'isLowStock', 'isOutOfStock', 'isReturnable',
             'borrowDuration', 'borrowDurationUnit',
+            'statusNote', 'statusChangedAt', 'statusChangedByName', 'maintenanceEta',
         ]
         read_only_fields = ['id', 'dateAdded', 'isLowStock', 'isOutOfStock']
 
@@ -30,6 +37,12 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def get_isOutOfStock(self, obj):
         return obj.is_out_of_stock
+
+    def get_statusChangedByName(self, obj):
+        if obj.status_changed_by:
+            full = obj.status_changed_by.get_full_name()
+            return full if full.strip() else obj.status_changed_by.email
+        return None
 
 
 class ItemCreateUpdateSerializer(serializers.ModelSerializer):
@@ -63,3 +76,4 @@ class ItemCreateUpdateSerializer(serializers.ModelSerializer):
         if value:
             return strip_tags(value).strip()
         return value
+
