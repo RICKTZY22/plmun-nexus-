@@ -95,12 +95,10 @@ const Requests = () => {
         fetchRequests({ search, status: filterStatus });
     }, [search, filterStatus, fetchRequests]);
 
-    // Auto-trigger overdue check on page load (staff/admin only)
+    // Auto-trigger overdue check on page load (all authenticated users)
     useEffect(() => {
-        if (hasMinRole(user?.role, ROLES.STAFF)) {
-            checkOverdue();
-        }
-    }, [checkOverdue, user?.role]);
+        checkOverdue();
+    }, [checkOverdue]);
 
     // Fetch inventory items so the item search dropdown works
     useEffect(() => {

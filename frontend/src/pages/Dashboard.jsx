@@ -11,7 +11,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recha
 
 const Dashboard = () => {
     const { stats: inventoryStats, inventory, fetchInventory, fetchStats: fetchInventoryStats, getLowStockItems, LOW_STOCK_THRESHOLD, loading: inventoryLoading, error: inventoryError } = useInventory();
-    const { stats: requestStats, requests, fetchRequests, loading: requestsLoading, error: requestsError } = useRequests();
+    const { stats: requestStats, requests, fetchRequests, checkOverdue, loading: requestsLoading, error: requestsError } = useRequests();
     const [lowStockItems, setLowStockItems] = useState([]);
     const { user } = useAuthStore();
     const navigate = useNavigate();
@@ -21,7 +21,8 @@ const Dashboard = () => {
         fetchInventory();
         fetchInventoryStats();
         fetchRequests();
-    }, [fetchInventory, fetchInventoryStats, fetchRequests]);
+        checkOverdue();
+    }, [fetchInventory, fetchInventoryStats, fetchRequests, checkOverdue]);
 
     // Fetch low stock items (async)
     useEffect(() => {

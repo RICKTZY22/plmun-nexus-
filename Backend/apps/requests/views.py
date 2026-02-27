@@ -27,7 +27,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         return RequestSerializer
 
     def get_permissions(self):
-        if self.action in ['approve', 'reject', 'check_overdue']:
+        if self.action in ['approve', 'reject']:
             return [IsStaffOrAbove()]
         return [permissions.IsAuthenticated()]
 
