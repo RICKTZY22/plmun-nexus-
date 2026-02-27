@@ -6,6 +6,12 @@ const authService = {
         return response.data;
     },
 
+    // used by the background profile refresh to pick up flag/active changes
+    getProfile: async () => {
+        const response = await api.get('/auth/profile/');
+        return response.data;
+    },
+
     register: async (userData) => {
         const response = await api.post('/auth/register/', userData);
         return response.data;

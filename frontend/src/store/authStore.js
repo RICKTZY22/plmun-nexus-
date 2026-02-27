@@ -222,6 +222,30 @@ const useAuthStore = create(
 
             _idleHandler: null,
 
+            // background profile refresh — picks up flag/active changes
+            // without forcing the user to log out and back in.
+            // called every 30s from DashboardLayout
+            refreshProfile: async () => {
+                try {
+                    const profile = await authService.getProfile();
+                    const mapped = mapUserResponse(profile);
+                    const current = get().user;
+                    // only update if something actually changed
+                    if (current && (
+                        current.isFlagged !== mapped.isFlagged ||
+                        current.isActive !== mapped.isActive
+                    )) {
+                        set({ user: { ...current, ...mapped } });
+                    }
+                    // if account was deactivated, force logout
+                    if (mapped.isActive === false) {
+                        get().logout();
+                    }
+                } catch {
+                    // don't care if this fails — it's just a background check
+                }
+            },
+
             logout: () => {
                 // Clear idle timer and listeners
                 clearIdleTimer();

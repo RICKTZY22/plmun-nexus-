@@ -14,7 +14,7 @@ const DashboardLayout = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [flagDismissed, setFlagDismissed] = useState(false);
-    const { user } = useAuthStore();
+    const { user, refreshProfile } = useAuthStore();
     const isMobile = useIsMobile();
     const location = useLocation();
 
@@ -22,6 +22,14 @@ const DashboardLayout = () => {
     React.useEffect(() => {
         setFlagDismissed(false);
     }, [location.pathname]);
+
+    // poll the backend every 30s to pick up flag/active changes
+    // without this, flagging a user wouldn't take effect until they re-logged in
+    useEffect(() => {
+        if (!user) return;
+        const id = setInterval(refreshProfile, 30_000);
+        return () => clearInterval(id);
+    }, [user, refreshProfile]);
 
     // ── Maintenance mode check ──
     const [maintenanceActive, setMaintenanceActive] = useState(false);

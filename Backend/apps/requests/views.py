@@ -499,19 +499,27 @@ class RequestViewSet(viewsets.ModelViewSet):
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
-    """User notifications — scoped to the authenticated user.
-    Capped at 100 most recent to prevent unbounded growth."""
+    """User notifications — scoped to the authenticated user."""
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        # Cap at 100 most recent; select_related avoids N+1 on sender/request
+        # BUG FIX: previously this had [:100] slicing which broke clear_all
+        # and read_all — Django doesn't let you filter or delete a sliced QS.
+        # Learned that the hard way. Limit is now applied only in list().
         return (
             Notification.objects
             .filter(recipient=self.request.user)
-            .select_related('sender', 'request')[:100]
+            .select_related('sender', 'request')
+            .order_by('-created_at')
         )
+
+    def list(self, request, *args, **kwargs):
+        # cap at 100 so we don't send thousands of old notifs
+        qs = self.get_queryset()[:100]
+        serializer = self.get_serializer(qs, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['patch'])
     def read(self, request, pk=None):
@@ -522,8 +530,8 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def read_all(self, request):
-        self.get_queryset().filter(is_read=False).update(is_read=True)
-        return Response({'status': 'all marked as read'})
+        updated = self.get_queryset().filter(is_read=False).update(is_read=True)
+        return Response({'status': f'{updated} marked as read'})
 
     @action(detail=False, methods=['get'])
     def unread_count(self, request):

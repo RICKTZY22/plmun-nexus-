@@ -1,45 +1,50 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import notificationService from '../services/notificationService';
 
-const POLL_INTERVAL = 10000; // 10 seconds — near-real-time
+// dropped from 10s to 5s — users were complaining notifs felt "late"
+const POLL_INTERVAL = 5000;
 
 const useNotifications = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const intervalRef = useRef(null);
+    const hasFetchedOnce = useRef(false);
 
     const fetchNotifications = useCallback(async () => {
         try {
-            setLoading(true);
+            // only show the spinner on the very first load,
+            // otherwise the dropdown flickers every 5s which is annoying
+            if (!hasFetchedOnce.current) setLoading(true);
+
             const data = await notificationService.getAll();
             const list = Array.isArray(data) ? data : data.results || [];
             setNotifications(list);
             setUnreadCount(list.filter(n => !n.isRead).length);
+            hasFetchedOnce.current = true;
         } catch (err) {
-            // silently fail — error state handled by UI
+            // swallow — UI handles empty state fine
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // Lightweight poll that only updates state if something changed
+    // lightweight poll — skips setState if nothing actually changed,
+    // which avoids unnecessary re-renders in the dropdown
     const pollNotifications = useCallback(async () => {
         try {
             const data = await notificationService.getAll();
             const list = Array.isArray(data) ? data : data.results || [];
             setNotifications(prev => {
-                // Only update if the count or content actually changed
                 if (prev.length !== list.length || JSON.stringify(prev.map(n => n.id)) !== JSON.stringify(list.map(n => n.id))) {
                     return list;
                 }
-                // Check for read status changes
                 const hasReadChanges = prev.some((n, i) => list[i] && n.isRead !== list[i].isRead);
                 return hasReadChanges ? list : prev;
             });
             setUnreadCount(list.filter(n => !n.isRead).length);
-        } catch (err) {
-            // silently fail on polling
+        } catch {
+            // polling failure is fine, next tick will retry
         }
     }, []);
 
@@ -47,8 +52,8 @@ const useNotifications = () => {
         try {
             const count = await notificationService.getUnreadCount();
             setUnreadCount(count);
-        } catch (err) {
-            // silently fail on polling
+        } catch {
+            // same as above
         }
     }, []);
 
@@ -60,7 +65,7 @@ const useNotifications = () => {
             );
             setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
-            // silently fail
+            console.warn('Failed to mark notification as read:', err);
         }
     }, []);
 
@@ -70,7 +75,7 @@ const useNotifications = () => {
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
             setUnreadCount(0);
         } catch (err) {
-            // silently fail
+            console.warn('markAllAsRead failed:', err);
         }
     }, []);
 
@@ -83,7 +88,7 @@ const useNotifications = () => {
                 return updated;
             });
         } catch (err) {
-            // silently fail
+            console.warn('delete notification failed:', err);
         }
     }, []);
 
@@ -93,18 +98,18 @@ const useNotifications = () => {
             setNotifications([]);
             setUnreadCount(0);
         } catch (err) {
-            // silently fail
+            // this was silently failing before because of backend queryset bug
+            console.warn('clearAll failed:', err);
         }
     }, []);
 
-    // Initial fetch + polling — only when authenticated (BUG-03)
+    // poll only when logged in
     useEffect(() => {
-        // Check if user has a valid auth token before polling
         const hasToken = () => {
             try {
                 const stored = localStorage.getItem('auth-storage');
                 const parsed = stored ? JSON.parse(stored) : null;
-                return Boolean(parsed?.state?.accessToken);
+                return Boolean(parsed?.state?.token);
             } catch { return false; }
         };
 
