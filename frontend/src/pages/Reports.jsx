@@ -58,7 +58,7 @@ const Reports = () => {
         if (!requests || requests.length === 0) return [];
         const cutoff = getDateCutoff(dateRange);
         return requests.filter(r => {
-            const d = new Date(r.created_at || r.createdAt || r.requestDate);
+            const d = new Date(r.createdAt || r.requestDate);
             return d >= cutoff;
         });
     }, [requests, dateRange]);
@@ -101,9 +101,9 @@ const Reports = () => {
         }
     };
 
-    // Monthly request trends broken down by status — uses filtered data
+    // Monthly request trends broken down by status — uses ALL request data
     const requestTrendData = useMemo(() => {
-        if (!filteredRequests || filteredRequests.length === 0) return [];
+        if (!requests || requests.length === 0) return [];
         const now = new Date();
         const numMonths = getNumMonths();
         const months = [];
@@ -111,8 +111,8 @@ const Reports = () => {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
             const monthName = date.toLocaleString('default', { month: 'short' });
-            const monthReqs = filteredRequests.filter(r => {
-                const d = new Date(r.created_at || r.createdAt || r.requestDate);
+            const monthReqs = requests.filter(r => {
+                const d = new Date(r.createdAt || r.requestDate);
                 return d >= date && d < nextMonth;
             });
             const approved = monthReqs.filter(r => r.status === 'APPROVED' || r.status === 'COMPLETED').length;
@@ -128,7 +128,7 @@ const Reports = () => {
             });
         }
         return months;
-    }, [filteredRequests, dateRange]);
+    }, [requests, dateRange]);
 
     // Cumulative inventory trend with per-category breakdown
     const CATEGORY_COLORS = {
@@ -154,14 +154,14 @@ const Reports = () => {
                 .toLocaleString('default', { month: 'short' });
             const entry = { month: monthName };
             entry.total = inventory.filter(item => {
-                const d = new Date(item.created_at || item.dateAdded);
+                const d = new Date(item.createdAt || item.created_at || item.dateAdded);
                 return d < cutoff;
             }).length;
             allCategories.forEach(cat => {
                 entry[cat] = inventory.filter(item => {
                     const rawCat = item.category || 'Other';
                     const itemCat = rawCat.charAt(0).toUpperCase() + rawCat.slice(1).toLowerCase();
-                    const d = new Date(item.created_at || item.dateAdded);
+                    const d = new Date(item.createdAt || item.created_at || item.dateAdded);
                     return itemCat === cat && d < cutoff;
                 }).length;
             });
