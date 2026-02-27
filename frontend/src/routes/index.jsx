@@ -24,9 +24,10 @@ const DashboardLayout = () => {
     }, [location.pathname]);
 
     // poll the backend every 30s to pick up flag/active changes
-    // without this, flagging a user wouldn't take effect until they re-logged in
+    // runs immediately on mount so flagging doesn't wait for the first tick
     useEffect(() => {
         if (!user) return;
+        refreshProfile(); // check right away
         const id = setInterval(refreshProfile, 30_000);
         return () => clearInterval(id);
     }, [user, refreshProfile]);

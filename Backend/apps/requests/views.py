@@ -17,6 +17,30 @@ from apps.authentication.models import User, AuditLog, log_action
 from apps.permissions import IsStaffOrAbove
 
 
+# helper: skip creating a notification if an identical one (same type, request,
+# recipient) was already created in the last 5 minutes. Prevents the annoying
+# duplicate spam from double-clicks, network retries, etc.
+from datetime import timedelta
+
+def _create_notif_if_new(recipient, request_obj, notif_type, message, sender=None):
+    """Create notification only if no duplicate exists in the last 5 min."""
+    recent_cutoff = timezone.now() - timedelta(minutes=5)
+    already_exists = Notification.objects.filter(
+        recipient=recipient,
+        request=request_obj,
+        type=notif_type,
+        created_at__gte=recent_cutoff,
+    ).exists()
+    if not already_exists:
+        Notification.objects.create(
+            recipient=recipient,
+            sender=sender,
+            request=request_obj,
+            type=notif_type,
+            message=message,
+        )
+
+
 # TODO(erick): the approve/reject/release actions share a lot of common
 # validation logic, might be worth extracting into a mixin at some point
 class RequestViewSet(viewsets.ModelViewSet):
@@ -70,20 +94,19 @@ class RequestViewSet(viewsets.ModelViewSet):
                    request=request)
 
         # Notify all staff/admin about the new request
+        # uses dedup helper so re-submitting the same request doesn't spam
         author_name = request.user.get_full_name() or request.user.username
         staff_users = User.objects.filter(
             role__in=['STAFF', 'ADMIN']
         ).exclude(id=request.user.id)
-        Notification.objects.bulk_create([
-            Notification(
+        for staff in staff_users:
+            _create_notif_if_new(
                 recipient=staff,
-                sender=request.user,
-                request=req,
-                type='STATUS_CHANGE',
+                request_obj=req,
+                notif_type='STATUS_CHANGE',
                 message=f'{author_name} submitted a new request for "{req.item_name}"',
+                sender=request.user,
             )
-            for staff in staff_users
-        ])
 
         return Response(
             RequestSerializer(req).data,
@@ -147,14 +170,14 @@ class RequestViewSet(viewsets.ModelViewSet):
                    details=f'Approved request #{req.id} for "{req.item_name}" (qty: {req.quantity})',
                    request=request)
 
-        # Notify the requester about approval
+        # Notify the requester about approval (deduped)
         approver_name = request.user.get_full_name() or request.user.username
-        Notification.objects.create(
+        _create_notif_if_new(
             recipient=req.requested_by,
-            sender=request.user,
-            request=req,
-            type='STATUS_CHANGE',
+            request_obj=req,
+            notif_type='STATUS_CHANGE',
             message=f'{approver_name} approved your request for "{req.item_name}"',
+            sender=request.user,
         )
 
         return Response(RequestSerializer(req).data)
@@ -183,15 +206,15 @@ class RequestViewSet(viewsets.ModelViewSet):
                    details=f'Rejected request #{req.id} for "{req.item_name}". Reason: {req.rejection_reason or "(none)"}',
                    request=request)
 
-        # Notify the requester about rejection
+        # Notify the requester about rejection (deduped)
         rejector_name = request.user.get_full_name() or request.user.username
         reason_text = f' Reason: "{req.rejection_reason}"' if req.rejection_reason else ''
-        Notification.objects.create(
+        _create_notif_if_new(
             recipient=req.requested_by,
-            sender=request.user,
-            request=req,
-            type='STATUS_CHANGE',
+            request_obj=req,
+            notif_type='STATUS_CHANGE',
             message=f'{rejector_name} rejected your request for "{req.item_name}".{reason_text}',
+            sender=request.user,
         )
 
         return Response(RequestSerializer(req).data)
@@ -216,14 +239,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         req.status = 'COMPLETED'
         req.save()
 
-        # Let the requester know
+        # Let the requester know (deduped)
         completer = request.user.get_full_name() or request.user.username
-        Notification.objects.create(
+        _create_notif_if_new(
             recipient=req.requested_by,
-            sender=request.user,
-            request=req,
-            type='STATUS_CHANGE',
+            request_obj=req,
+            notif_type='STATUS_CHANGE',
             message=f'{completer} marked your request for "{req.item_name}" as completed.',
+            sender=request.user,
         )
 
         return Response(RequestSerializer(req).data)
@@ -297,15 +320,15 @@ class RequestViewSet(viewsets.ModelViewSet):
                    details=f'Returned item for request #{req.id} "{req.item_name}" (qty: {req.quantity})',
                    request=request)
 
-        # BUG-02: Notify the requester about the return
+        # Notify the requester about the return (deduped, only if someone else returned it)
         returner_name = request.user.get_full_name() or request.user.username
         if req.requested_by != request.user:
-            Notification.objects.create(
+            _create_notif_if_new(
                 recipient=req.requested_by,
-                sender=request.user,
-                request=req,
-                type='STATUS_CHANGE',
+                request_obj=req,
+                notif_type='STATUS_CHANGE',
                 message=f'{returner_name} returned your borrowed item "{req.item_name}".',
+                sender=request.user,
             )
 
         return Response(RequestSerializer(req).data)
@@ -366,16 +389,15 @@ class RequestViewSet(viewsets.ModelViewSet):
 
             author_name = request.user.get_full_name() or request.user.username
             message = f'{author_name} commented on "{req.item_name}": "{comment.text[:80]}"'
-            Notification.objects.bulk_create([
-                Notification(
-                    recipient_id=recipient_id,
-                    sender=request.user,
-                    request=req,
-                    type='COMMENT',
+            # dedup comments too — rapid double-post shouldn't spam everyone
+            for recipient_id in recipients:
+                _create_notif_if_new(
+                    recipient=User.objects.get(pk=recipient_id),
+                    request_obj=req,
+                    notif_type='COMMENT',
                     message=message,
+                    sender=request.user,
                 )
-                for recipient_id in recipients
-            ])
 
             return Response(
                 CommentSerializer(comment).data,
