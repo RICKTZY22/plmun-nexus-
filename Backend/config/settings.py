@@ -135,10 +135,12 @@ SIMPLE_JWT = {
 
 
 # ===== CORS Settings =====
+# SEC-08: whitelist only — add production URLs via CORS_ORIGINS env var (comma-separated)
+_cors_env = os.environ.get('CORS_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-]
+] + [origin.strip() for origin in _cors_env.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
 # SEC-08: removed CORS_ALLOW_ALL_ORIGINS = DEBUG — use whitelist only
 CORS_ALLOW_HEADERS = [
@@ -183,12 +185,22 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Cache (required by django-ratelimit)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'plmun-ratelimit',
+# AUDIT-03: Use Redis in production (set REDIS_URL env var), LocMemCache for dev
+_redis_url = os.environ.get('REDIS_URL')
+if _redis_url:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': _redis_url,
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'plmun-ratelimit',
+        }
+    }
 RATELIMIT_USE_CACHE = 'default'
 
 # LocMemCache works fine for development; silence the ratelimit warnings
