@@ -461,8 +461,9 @@ class RequestViewSet(viewsets.ModelViewSet):
         staff_users = list(User.objects.filter(role__in=['STAFF', 'ADMIN']))
 
         borrower_notifications = []
-        staff_notifications = []
         flagged_user_ids = set()
+        # collect overdue summaries for the single staff digest
+        overdue_summaries = []
 
         for req in overdue:
             if req.id in already_notified_ids:
@@ -481,7 +482,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             borrower = req.requested_by
             flagged_user_ids.add(borrower.pk)
 
-            # Borrower notification
+            # each borrower still gets their own notification — they need
+            # to know exactly which item is overdue
             borrower_notifications.append(Notification(
                 recipient=borrower,
                 request=req,
@@ -489,18 +491,30 @@ class RequestViewSet(viewsets.ModelViewSet):
                 message=f'Your request for "{req.item_name}" is {overdue_text} overdue. Please return it.',
             ))
 
-            # Staff notifications
+            # collect for staff digest instead of spamming one notif per item
             borrower_name = borrower.get_full_name() or borrower.username
-            for staff in staff_users:
-                staff_notifications.append(Notification(
-                    recipient=staff,
-                    request=req,
-                    type='OVERDUE',
-                    message=f'{borrower_name}\'s request for "{req.item_name}" is {overdue_text} overdue.',
-                ))
+            overdue_summaries.append(f'"{req.item_name}" by {borrower_name} ({overdue_text})')
 
-        # Batch create all notifications
-        Notification.objects.bulk_create(borrower_notifications + staff_notifications)
+        # Batch create borrower notifications
+        Notification.objects.bulk_create(borrower_notifications)
+
+        # Staff gets ONE summary notification instead of N individual ones
+        # e.g. "3 items overdue: "Laptop" by John (2 days), "Projector" by Jane (1 hour)"
+        if overdue_summaries:
+            count = len(overdue_summaries)
+            # show first 5 items, truncate if more
+            preview = ', '.join(overdue_summaries[:5])
+            if count > 5:
+                preview += f' ... and {count - 5} more'
+            summary_msg = f'{count} overdue item{"s" if count != 1 else ""}: {preview}'
+
+            for staff in staff_users:
+                _create_notif_if_new(
+                    recipient=staff,
+                    request_obj=None,  # summary isn't tied to a single request
+                    notif_type='OVERDUE',
+                    message=summary_msg,
+                )
 
         # AUDIT-02: Only flag+increment users who aren't already flagged
         # This prevents overdue_count from inflating by +1 every day
