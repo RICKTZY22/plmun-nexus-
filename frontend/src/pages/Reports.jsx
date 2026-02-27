@@ -67,8 +67,8 @@ const Reports = () => {
     const filteredStats = useMemo(() => {
         const inv = filteredInventory;
         const req = filteredRequests;
-        const approved = req.filter(r => r.status === 'APPROVED' || r.status === 'COMPLETED').length;
-        const rejected = req.filter(r => r.status === 'REJECTED').length;
+        const approved = req.filter(r => ['APPROVED', 'COMPLETED', 'RETURNED'].includes(r.status)).length;
+        const rejected = req.filter(r => ['REJECTED', 'CANCELLED'].includes(r.status)).length;
         const total = approved + rejected;
         return {
             totalItems: inv.length,
@@ -102,22 +102,42 @@ const Reports = () => {
     };
 
     // Monthly request trends broken down by status — uses ALL request data
+    // Buckets each request into the month when its status-relevant action occurred:
+    //   APPROVED/COMPLETED/RETURNED → use approvedAt or createdAt
+    //   REJECTED/CANCELLED → use createdAt (no separate rejectedAt field)
+    //   PENDING → use createdAt
     const requestTrendData = useMemo(() => {
         if (!requests || requests.length === 0) return [];
         const now = new Date();
         const numMonths = getNumMonths();
         const months = [];
         for (let i = numMonths - 1; i >= 0; i--) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-            const monthName = date.toLocaleString('default', { month: 'short' });
-            const monthReqs = requests.filter(r => {
-                const d = new Date(r.createdAt || r.requestDate);
-                return d >= date && d < nextMonth;
+            const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+            const monthName = monthStart.toLocaleString('default', { month: 'short' });
+
+            // For each request, determine the relevant date and status bucket
+            let approved = 0, rejected = 0, pending = 0;
+            requests.forEach(r => {
+                // Pick the most relevant date for this request's current status
+                let relevantDate;
+                if (['APPROVED', 'COMPLETED', 'RETURNED'].includes(r.status)) {
+                    relevantDate = new Date(r.approvedAt || r.createdAt || r.requestDate);
+                } else {
+                    relevantDate = new Date(r.createdAt || r.requestDate);
+                }
+
+                if (relevantDate >= monthStart && relevantDate < monthEnd) {
+                    if (['APPROVED', 'COMPLETED', 'RETURNED'].includes(r.status)) {
+                        approved++;
+                    } else if (['REJECTED', 'CANCELLED'].includes(r.status)) {
+                        rejected++;
+                    } else if (r.status === 'PENDING') {
+                        pending++;
+                    }
+                }
             });
-            const approved = monthReqs.filter(r => r.status === 'APPROVED' || r.status === 'COMPLETED').length;
-            const rejected = monthReqs.filter(r => r.status === 'REJECTED').length;
-            const pending = monthReqs.filter(r => r.status === 'PENDING').length;
+
             const total = approved + rejected;
             months.push({
                 month: monthName,
