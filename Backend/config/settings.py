@@ -226,9 +226,21 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # Production-only HTTPS enforcement
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # Render handles SSL at the proxy level — if we enable SSL redirect,
+    # it causes an infinite loop. Only enable for non-Render deployments.
+    IS_RENDER = 'RENDER' in os.environ
+    if not IS_RENDER:
+        SECURE_SSL_REDIRECT = True
+    # trust the proxy's forwarded proto header on Render
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_HSTS_SECONDS = 31536000      # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# Auto-add Render hostname to ALLOWED_HOSTS
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
+
