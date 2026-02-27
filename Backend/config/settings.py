@@ -206,3 +206,29 @@ RATELIMIT_USE_CACHE = 'default'
 # LocMemCache works fine for development; silence the ratelimit warnings
 SILENCED_SYSTEM_CHECKS = ['django_ratelimit.W001', 'django_ratelimit.E003']
 
+
+# ===== XSS Defense-in-Depth Headers =====
+# Even though we have zero XSS vectors (no dangerouslySetInnerHTML, no eval),
+# these headers act as a safety net protecting the JWT in localStorage
+# in case a future code change introduces an XSS surface.
+
+# Prevent browsers from MIME-sniffing a response away from the declared type
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Block page from being embedded in an iframe (clickjacking protection)
+X_FRAME_OPTIONS = 'DENY'
+
+# Tell browsers to block reflected XSS attacks
+SECURE_BROWSER_XSS_FILTER = True
+
+# Referrer policy — don't leak full URLs to external sites
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Production-only HTTPS enforcement
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000      # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
