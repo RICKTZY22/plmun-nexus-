@@ -414,11 +414,13 @@ class RequestViewSet(viewsets.ModelViewSet):
     def check_overdue(self, request):
         """Scans for overdue borrows, flags the user, and sends notifications.
         Only fires one notification per request per day to avoid spam.
-        BUG-01 fix: uses select_related + batch operations to avoid N+1 queries."""
+        BUG-01 fix: uses select_related + batch operations to avoid N+1 queries.
+        AUDIT-01 fix: uses unscoped queryset so any user can trigger a full scan.
+        AUDIT-02 fix: only increments overdue_count for users not already flagged."""
         now = timezone.now()
+        # Use unscoped queryset — any authenticated user should trigger a system-wide scan
         overdue = (
-            self.get_queryset()
-            .filter(status__in=['APPROVED', 'COMPLETED'], expected_return__lt=now)
+            Request.objects.filter(status__in=['APPROVED', 'COMPLETED'], expected_return__lt=now)
             .select_related('requested_by')
         )
 
@@ -476,12 +478,20 @@ class RequestViewSet(viewsets.ModelViewSet):
         # Batch create all notifications
         Notification.objects.bulk_create(borrower_notifications + staff_notifications)
 
-        # Atomic increment overdue_count and flag users in one query per user
+        # AUDIT-02: Only flag+increment users who aren't already flagged
+        # This prevents overdue_count from inflating by +1 every day
         if flagged_user_ids:
-            User.objects.filter(pk__in=flagged_user_ids).update(
+            User.objects.filter(
+                pk__in=flagged_user_ids,
+                is_flagged=False,
+            ).update(
                 overdue_count=F('overdue_count') + 1,
                 is_flagged=True,
             )
+            # Ensure already-flagged users are still marked (idempotent)
+            User.objects.filter(
+                pk__in=flagged_user_ids,
+            ).update(is_flagged=True)
 
         return Response({'status': f'{len(borrower_notifications)} overdue notifications created'})
 
