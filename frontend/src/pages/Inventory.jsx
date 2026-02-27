@@ -67,15 +67,21 @@ const Inventory = () => {
     const [collapsedSections, setCollapsedSections] = useState({});
 
     // F-09: Favorites system
-    const favKey = `favorites-${user?.id}`;
-    const [favorites, setFavorites] = useState(() => {
-        try { return JSON.parse(localStorage.getItem(favKey) || '[]'); } catch { return []; }
-    });
+    const [favorites, setFavorites] = useState([]);
+    useEffect(() => {
+        if (!user?.id) return;
+        try {
+            const stored = JSON.parse(localStorage.getItem(`favorites-${user.id}`) || '[]');
+            setFavorites(stored);
+        } catch { setFavorites([]); }
+    }, [user?.id]);
     const toggleFavorite = (e, itemId) => {
         e.stopPropagation();
+        e.preventDefault();
+        if (!user?.id) return;
         const next = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
         setFavorites(next);
-        localStorage.setItem(favKey, JSON.stringify(next));
+        localStorage.setItem(`favorites-${user.id}`, JSON.stringify(next));
     };
 
     // Status change modal state
