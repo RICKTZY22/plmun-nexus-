@@ -36,6 +36,23 @@ const Login = () => {
     const [offenses, setOffenses] = useState(() => readGuard().offenses || 0);
     const [countdown, setCountdown] = useState(0);
 
+    // check if we were force-logged out because the account got deactivated
+    const [deactivatedNotice, setDeactivatedNotice] = useState(() => {
+        const flag = localStorage.getItem('plmun-deactivated');
+        if (flag) {
+            localStorage.removeItem('plmun-deactivated');
+            return true;
+        }
+        return false;
+    });
+
+    // auto-dismiss after 15s so it doesn't sit there forever
+    useEffect(() => {
+        if (!deactivatedNotice) return;
+        const t = setTimeout(() => setDeactivatedNotice(false), 15_000);
+        return () => clearTimeout(t);
+    }, [deactivatedNotice]);
+
     const timerRef = useRef(null);
 
     // Stay in sync with sessionStorage
@@ -174,6 +191,25 @@ const Login = () => {
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white">Welcome back</h2>
                             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Sign in to your PLMun Nexus account</p>
                         </div>
+
+                        {/* ── DEACTIVATION NOTICE ── */}
+                        {deactivatedNotice && (
+                            <div className="mb-5 p-4 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-start gap-3 animate-slide-in">
+                                <AlertTriangle size={18} className="text-red-500 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold text-red-700 dark:text-red-400">Account Deactivated</p>
+                                    <p className="text-xs text-red-600 dark:text-red-300 mt-0.5">
+                                        Your account has been deactivated by an administrator. Please contact a Staff member or Admin for assistance.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setDeactivatedNotice(false)}
+                                    className="ml-auto text-red-400 hover:text-red-600 flex-shrink-0"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
 
                         {/* ── LOCKOUT BANNER ── */}
                         {isLocked && (

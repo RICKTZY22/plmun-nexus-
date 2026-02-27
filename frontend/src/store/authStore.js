@@ -237,8 +237,9 @@ const useAuthStore = create(
                     )) {
                         set({ user: { ...current, ...mapped } });
                     }
-                    // if account was deactivated, force logout
+                    // if account was deactivated, tell them why before booting
                     if (mapped.isActive === false) {
+                        localStorage.setItem('plmun-deactivated', 'true');
                         get().logout();
                     }
                 } catch {
