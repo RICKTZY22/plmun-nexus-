@@ -136,55 +136,61 @@ const Dashboard = () => {
     const isLoading = inventoryLoading || requestsLoading;
     const hasError = inventoryError || requestsError;
 
+    // ── Student helpers (hooks must be outside conditionals) ──
+    const myRequests = useMemo(() => requests.filter(r => r.requestedById === user?.id), [requests, user?.id]);
+    const myStats = useMemo(() => ({
+        pending: myRequests.filter(r => r.status === 'PENDING').length,
+        approved: myRequests.filter(r => r.status === 'APPROVED').length,
+        completed: myRequests.filter(r => r.status === 'COMPLETED' || r.status === 'RETURNED').length,
+        overdue: myRequests.filter(r => r.isOverdue).length,
+    }), [myRequests]);
+    const myRecent = useMemo(() => myRequests.slice(0, 5), [myRequests]);
+    const activeBorrows = useMemo(() => myRequests.filter(r => r.status === 'APPROVED' && r.expectedReturn), [myRequests]);
+
+    // F-09: Favorites (must be top-level hooks)
+    const [favorites, setFavorites] = useState([]);
+    useEffect(() => {
+        if (!user?.id) return;
+        try {
+            const stored = JSON.parse(localStorage.getItem(`favorites-${user.id}`) || '[]');
+            setFavorites(stored);
+        } catch { setFavorites([]); }
+    }, [user?.id]);
+    const favoriteItems = useMemo(() => inventory.filter(i => favorites.includes(i.id)), [inventory, favorites]);
+    const toggleFavorite = (itemId) => {
+        if (!user?.id) return;
+        const next = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
+        setFavorites(next);
+        localStorage.setItem(`favorites-${user.id}`, JSON.stringify(next));
+    };
+
+    // F-12: Mini chart — last 3 months
+    const monthlyBorrows = useMemo(() => {
+        const now = new Date();
+        const months = [];
+        for (let i = 2; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const label = d.toLocaleString('default', { month: 'short' });
+            const count = myRequests.filter(r => {
+                const rd = new Date(r.requestDate || r.createdAt);
+                return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear();
+            }).length;
+            months.push({ month: label, requests: count });
+        }
+        return months;
+    }, [myRequests]);
+
+    const statusColors = {
+        PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+        APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+        REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+        COMPLETED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        RETURNED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+        CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+    };
+
     // ── Student Dashboard ──
     if (!isFacultyPlus) {
-        const myRequests = requests.filter(r => r.requestedById === user?.id);
-        const myStats = {
-            pending: myRequests.filter(r => r.status === 'PENDING').length,
-            approved: myRequests.filter(r => r.status === 'APPROVED').length,
-            completed: myRequests.filter(r => r.status === 'COMPLETED' || r.status === 'RETURNED').length,
-            overdue: myRequests.filter(r => r.isOverdue).length,
-        };
-        const myRecent = myRequests.slice(0, 5);
-        const activeBorrows = myRequests.filter(r => r.status === 'APPROVED' && r.expectedReturn);
-
-        // F-09: Favorites
-        const favKey = `favorites-${user?.id}`;
-        const [favorites, setFavorites] = useState(() => {
-            try { return JSON.parse(localStorage.getItem(favKey) || '[]'); } catch { return []; }
-        });
-        const favoriteItems = inventory.filter(i => favorites.includes(i.id));
-        const toggleFavorite = (itemId) => {
-            const next = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
-            setFavorites(next);
-            localStorage.setItem(favKey, JSON.stringify(next));
-        };
-
-        // F-12: Mini chart — last 3 months
-        const monthlyBorrows = useMemo(() => {
-            const now = new Date();
-            const months = [];
-            for (let i = 2; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const label = d.toLocaleString('default', { month: 'short' });
-                const count = myRequests.filter(r => {
-                    const rd = new Date(r.requestDate || r.createdAt);
-                    return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear();
-                }).length;
-                months.push({ month: label, requests: count });
-            }
-            return months;
-        }, [myRequests]);
-
-        const statusColors = {
-            PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-            APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-            REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-            COMPLETED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-            RETURNED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-            CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-        };
-
         return (
             <div className="space-y-6">
                 <div>
@@ -304,45 +310,103 @@ const Dashboard = () => {
 
                     {/* Right column: Mini Chart + Favorites */}
                     <div className="space-y-6">
-                        {/* F-12: Mini Borrowing Chart */}
+                        {/* F-12: Mini Borrowing Chart — Revamped */}
                         <Card>
-                            <Card.Header><Card.Title>My Borrowing History</Card.Title></Card.Header>
+                            <Card.Header><Card.Title className="flex items-center gap-2">📊 My Borrowing History</Card.Title></Card.Header>
                             <Card.Content>
-                                <ResponsiveContainer width="100%" height={140}>
-                                    <BarChart data={monthlyBorrows}>
-                                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 12 }} cursor={{ fill: 'rgba(99,102,241,0.08)' }} />
-                                        <Bar dataKey="requests" name="Requests" fill="var(--accent, #6366f1)" radius={[6, 6, 0, 0]} />
+                                <ResponsiveContainer width="100%" height={160}>
+                                    <BarChart data={monthlyBorrows} barCategoryGap="25%">
+                                        <defs>
+                                            <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                                                <stop offset="100%" stopColor="#818cf8" stopOpacity={0.6} />
+                                            </linearGradient>
+                                        </defs>
+                                        <XAxis
+                                            dataKey="month"
+                                            tick={{ fontSize: 12, fill: '#9ca3af', fontWeight: 500 }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                        />
+                                        <YAxis
+                                            tick={{ fontSize: 11, fill: '#9ca3af' }}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            allowDecimals={false}
+                                            width={30}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                borderRadius: 12,
+                                                border: 'none',
+                                                boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                                                fontSize: 12,
+                                                background: '#1f2937',
+                                                color: '#f3f4f6',
+                                            }}
+                                            cursor={{ fill: 'rgba(99,102,241,0.08)', radius: 8 }}
+                                            formatter={(value) => [`${value} request${value !== 1 ? 's' : ''}`, 'Borrowing']}
+                                        />
+                                        <Bar
+                                            dataKey="requests"
+                                            name="Requests"
+                                            fill="url(#barGradient)"
+                                            radius={[8, 8, 4, 4]}
+                                            maxBarSize={50}
+                                        />
                                     </BarChart>
                                 </ResponsiveContainer>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">Total: {myRequests.length} request{myRequests.length !== 1 ? 's' : ''} all time</p>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-3">
+                                    Total: <span className="font-medium text-gray-500 dark:text-gray-400">{myRequests.length}</span> request{myRequests.length !== 1 ? 's' : ''} all time
+                                </p>
                             </Card.Content>
                         </Card>
 
                         {/* F-09: Favorite Items */}
                         <Card>
-                            <Card.Header><Card.Title className="flex items-center gap-2"><Star size={16} className="text-amber-500" />My Favorites</Card.Title></Card.Header>
+                            <Card.Header>
+                                <Card.Title className="flex items-center gap-2">
+                                    <Heart size={16} className="text-rose-500" fill="currentColor" />
+                                    My Favorites
+                                </Card.Title>
+                            </Card.Header>
                             <Card.Content>
                                 {favoriteItems.length === 0 ? (
                                     <div className="text-center py-6">
-                                        <Heart size={28} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
-                                        <p className="text-sm text-gray-400 dark:text-gray-500">No favorites yet. Star items from the <Link to="/inventory" className="text-primary hover:underline">Inventory</Link> page!</p>
+                                        <Heart size={32} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">No favorites yet</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                            Star items from the <Link to="/inventory" className="text-primary hover:underline font-medium">Inventory</Link> page!
+                                        </p>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
                                         {favoriteItems.slice(0, 4).map(item => (
-                                            <div key={item.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <button onClick={() => toggleFavorite(item.id)} className="text-amber-500 hover:text-amber-600 transition-colors"><Star size={14} fill="currentColor" /></button>
-                                                    <span className="text-sm text-gray-900 dark:text-white truncate">{item.name}</span>
+                                            <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <button onClick={() => toggleFavorite(item.id)} className="text-rose-500 hover:text-rose-600 transition-colors flex-shrink-0">
+                                                        <Heart size={16} fill="currentColor" />
+                                                    </button>
+                                                    <div className="min-w-0">
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-white truncate block">{item.name}</span>
+                                                        <span className="text-xs text-gray-400">{item.category}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${item.quantity > 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700'}`}>{item.quantity > 0 ? `${item.quantity} avail` : 'Out of stock'}</span>
-                                                    {item.quantity > 0 && <button onClick={() => navigate('/requests', { state: { openNewRequest: true } })} className="text-xs text-primary hover:underline font-medium">Request</button>}
+                                                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${item.quantity > 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
+                                                        {item.quantity > 0 ? `${item.quantity} avail` : 'Out'}
+                                                    </span>
+                                                    {item.quantity > 0 && (
+                                                        <button onClick={() => navigate('/requests', { state: { openNewRequest: true } })} className="text-xs text-primary hover:underline font-semibold">
+                                                            Request
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
+                                        {favoriteItems.length > 4 && (
+                                            <p className="text-xs text-center text-gray-400 mt-2">+ {favoriteItems.length - 4} more favorites</p>
+                                        )}
                                     </div>
                                 )}
                             </Card.Content>
