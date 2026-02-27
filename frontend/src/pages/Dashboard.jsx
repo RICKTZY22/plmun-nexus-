@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { Package, FileText, AlertCircle, Clock, AlertTriangle, ExternalLink, Plus, ArrowRight, CheckCircle, RotateCcw } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Package, FileText, AlertCircle, Clock, AlertTriangle, ExternalLink, Plus, ArrowRight, CheckCircle, RotateCcw, Star, Heart } from 'lucide-react';
 import { StatCard, BarChartComponent, PieChartComponent, LineChartComponent } from '../components/dashboard';
-import { Card, Button } from '../components/ui';
+import { Card, Button, RequestProgressBar, DueCountdown } from '../components/ui';
 import { FacultyOnly, StaffOnly } from '../components/auth';
 import { useInventory, useRequests } from '../hooks';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import { hasMinRole, ROLES } from '../utils/roles';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 
 const Dashboard = () => {
     const { stats: inventoryStats, inventory, fetchInventory, fetchStats: fetchInventoryStats, getLowStockItems, LOW_STOCK_THRESHOLD, loading: inventoryLoading, error: inventoryError } = useInventory();
@@ -136,7 +137,6 @@ const Dashboard = () => {
 
     // ── Student Dashboard ──
     if (!isFacultyPlus) {
-        // Calculate student's personal stats
         const myRequests = requests.filter(r => r.requestedById === user?.id);
         const myStats = {
             pending: myRequests.filter(r => r.status === 'PENDING').length,
@@ -145,6 +145,35 @@ const Dashboard = () => {
             overdue: myRequests.filter(r => r.isOverdue).length,
         };
         const myRecent = myRequests.slice(0, 5);
+        const activeBorrows = myRequests.filter(r => r.status === 'APPROVED' && r.expectedReturn);
+
+        // F-09: Favorites
+        const favKey = `favorites-${user?.id}`;
+        const [favorites, setFavorites] = useState(() => {
+            try { return JSON.parse(localStorage.getItem(favKey) || '[]'); } catch { return []; }
+        });
+        const favoriteItems = inventory.filter(i => favorites.includes(i.id));
+        const toggleFavorite = (itemId) => {
+            const next = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
+            setFavorites(next);
+            localStorage.setItem(favKey, JSON.stringify(next));
+        };
+
+        // F-12: Mini chart — last 3 months
+        const monthlyBorrows = useMemo(() => {
+            const now = new Date();
+            const months = [];
+            for (let i = 2; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const label = d.toLocaleString('default', { month: 'short' });
+                const count = myRequests.filter(r => {
+                    const rd = new Date(r.requestDate || r.createdAt);
+                    return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear();
+                }).length;
+                months.push({ month: label, requests: count });
+            }
+            return months;
+        }, [myRequests]);
 
         const statusColors = {
             PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
@@ -157,7 +186,6 @@ const Dashboard = () => {
 
         return (
             <div className="space-y-6">
-                {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -165,7 +193,6 @@ const Dashboard = () => {
                     </p>
                 </div>
 
-                {/* Loading */}
                 {requestsLoading && !requests.length && (
                     <div className="flex flex-col items-center justify-center py-20">
                         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
@@ -177,129 +204,150 @@ const Dashboard = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <Card className="p-4 border-l-4 border-l-amber-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                                <Clock size={20} className="text-amber-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.pending}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Pending</p>
-                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center"><Clock size={20} className="text-amber-600" /></div>
+                            <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.pending}</p><p className="text-xs text-gray-500 dark:text-gray-400">Pending</p></div>
                         </div>
                     </Card>
                     <Card className="p-4 border-l-4 border-l-emerald-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                                <CheckCircle size={20} className="text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.approved}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Approved</p>
-                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center"><CheckCircle size={20} className="text-emerald-600" /></div>
+                            <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.approved}</p><p className="text-xs text-gray-500 dark:text-gray-400">Active Borrows</p></div>
                         </div>
                     </Card>
                     <Card className="p-4 border-l-4 border-l-blue-500">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <RotateCcw size={20} className="text-blue-600" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.completed}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Completed</p>
-                            </div>
+                            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center"><RotateCcw size={20} className="text-blue-600" /></div>
+                            <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.completed}</p><p className="text-xs text-gray-500 dark:text-gray-400">Completed</p></div>
                         </div>
                     </Card>
                     <Card className={`p-4 border-l-4 ${myStats.overdue > 0 ? 'border-l-red-500' : 'border-l-gray-300 dark:border-l-gray-600'}`}>
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${myStats.overdue > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}>
-                                <AlertTriangle size={20} className={myStats.overdue > 0 ? 'text-red-600' : 'text-gray-400'} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.overdue}</p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">Overdue</p>
-                            </div>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${myStats.overdue > 0 ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}><AlertTriangle size={20} className={myStats.overdue > 0 ? 'text-red-600' : 'text-gray-400'} /></div>
+                            <div><p className="text-2xl font-bold text-gray-900 dark:text-white">{myStats.overdue}</p><p className="text-xs text-gray-500 dark:text-gray-400">Overdue</p></div>
                         </div>
                     </Card>
                 </div>
 
+                {/* F-11: Active Borrows with Due Countdown */}
+                {activeBorrows.length > 0 && (
+                    <Card>
+                        <Card.Header><Card.Title className="flex items-center gap-2"><Clock size={18} className="text-amber-500" />Active Borrows — Return Due</Card.Title></Card.Header>
+                        <Card.Content>
+                            <div className="space-y-2">
+                                {activeBorrows.map(req => (
+                                    <div key={req.id} className="flex items-center justify-between p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-800/30">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <Package size={16} className="text-amber-600 flex-shrink-0" />
+                                            <div className="min-w-0"><p className="text-sm font-medium text-gray-900 dark:text-white truncate">{req.itemName}</p><p className="text-xs text-gray-500">Qty: {req.quantity}</p></div>
+                                        </div>
+                                        <DueCountdown expectedReturn={req.expectedReturn} />
+                                    </div>
+                                ))}
+                            </div>
+                        </Card.Content>
+                    </Card>
+                )}
+
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <button
-                        onClick={() => navigate('/requests', { state: { openNewRequest: true } })}
-                        className="group flex items-center gap-4 p-5 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-2xl border border-primary/20 hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10"
-                    >
-                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Plus size={24} className="text-primary" />
-                        </div>
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-900 dark:text-white">New Request</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Request items for your needs</p>
-                        </div>
+                    <button onClick={() => navigate('/requests', { state: { openNewRequest: true } })} className="group flex items-center gap-4 p-5 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10 rounded-2xl border border-primary/20 hover:border-primary/40 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10">
+                        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform"><Plus size={24} className="text-primary" /></div>
+                        <div className="text-left"><p className="font-semibold text-gray-900 dark:text-white">New Request</p><p className="text-sm text-gray-500 dark:text-gray-400">Request items for your needs</p></div>
                         <ArrowRight size={18} className="ml-auto text-gray-400 group-hover:translate-x-1 transition-transform" />
                     </button>
-                    <Link
-                        to="/inventory"
-                        className="group flex items-center gap-4 p-5 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/20 dark:to-emerald-500/10 rounded-2xl border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/10"
-                    >
-                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Package size={24} className="text-emerald-600" />
-                        </div>
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-900 dark:text-white">Browse Items</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">See what's available to request</p>
-                        </div>
+                    <Link to="/inventory" className="group flex items-center gap-4 p-5 bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/20 dark:to-emerald-500/10 rounded-2xl border border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-200 hover:shadow-lg hover:shadow-emerald-500/10">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><Package size={24} className="text-emerald-600" /></div>
+                        <div className="text-left"><p className="font-semibold text-gray-900 dark:text-white">Browse Items</p><p className="text-sm text-gray-500 dark:text-gray-400">See what's available to request</p></div>
                         <ArrowRight size={18} className="ml-auto text-gray-400 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </div>
 
-                {/* Recent Requests */}
-                <Card>
-                    <Card.Header>
-                        <div className="flex items-center justify-between">
-                            <Card.Title>My Recent Requests</Card.Title>
-                            <Link to="/requests">
-                                <Button variant="ghost" size="sm">
-                                    View All <ArrowRight size={14} className="ml-1" />
-                                </Button>
-                            </Link>
-                        </div>
-                    </Card.Header>
-                    <Card.Content>
-                        {myRecent.length === 0 ? (
-                            <div className="text-center py-8">
-                                <Package size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                                <p className="text-gray-500 dark:text-gray-400">No requests yet</p>
-                                <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Start by browsing available items!</p>
+                {/* Two-column: Recent Requests + Mini Chart / Favorites */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Recent Requests with Progress Bars (F-07) */}
+                    <Card>
+                        <Card.Header>
+                            <div className="flex items-center justify-between">
+                                <Card.Title>My Recent Requests</Card.Title>
+                                <Link to="/requests"><Button variant="ghost" size="sm">View All <ArrowRight size={14} className="ml-1" /></Button></Link>
                             </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {myRecent.map((req) => (
-                                    <div
-                                        key={req.id}
-                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                                        onClick={() => navigate('/requests')}
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                <Package size={16} className="text-primary" />
+                        </Card.Header>
+                        <Card.Content>
+                            {myRecent.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <Package size={40} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                                    <p className="text-gray-500 dark:text-gray-400">No requests yet</p>
+                                    <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Start by browsing available items!</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {myRecent.map((req) => (
+                                        <div key={req.id} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer" onClick={() => navigate('/requests')}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <Package size={14} className="text-primary flex-shrink-0" />
+                                                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{req.itemName}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {req.status === 'APPROVED' && req.expectedReturn && <DueCountdown expectedReturn={req.expectedReturn} />}
+                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium ${statusColors[req.status] || 'bg-gray-100 text-gray-600'}`}>{req.status}</span>
+                                                </div>
                                             </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                    {req.itemName}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                    Qty: {req.quantity} • {req.requestDate}
-                                                </p>
-                                            </div>
+                                            <RequestProgressBar status={req.status} compact />
                                         </div>
-                                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${statusColors[req.status] || 'bg-gray-100 text-gray-600'}`}>
-                                            {req.status}
-                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </Card.Content>
+                    </Card>
+
+                    {/* Right column: Mini Chart + Favorites */}
+                    <div className="space-y-6">
+                        {/* F-12: Mini Borrowing Chart */}
+                        <Card>
+                            <Card.Header><Card.Title>My Borrowing History</Card.Title></Card.Header>
+                            <Card.Content>
+                                <ResponsiveContainer width="100%" height={140}>
+                                    <BarChart data={monthlyBorrows}>
+                                        <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e5e7eb', fontSize: 12 }} cursor={{ fill: 'rgba(99,102,241,0.08)' }} />
+                                        <Bar dataKey="requests" name="Requests" fill="var(--accent, #6366f1)" radius={[6, 6, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 text-center mt-2">Total: {myRequests.length} request{myRequests.length !== 1 ? 's' : ''} all time</p>
+                            </Card.Content>
+                        </Card>
+
+                        {/* F-09: Favorite Items */}
+                        <Card>
+                            <Card.Header><Card.Title className="flex items-center gap-2"><Star size={16} className="text-amber-500" />My Favorites</Card.Title></Card.Header>
+                            <Card.Content>
+                                {favoriteItems.length === 0 ? (
+                                    <div className="text-center py-6">
+                                        <Heart size={28} className="mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                                        <p className="text-sm text-gray-400 dark:text-gray-500">No favorites yet. Star items from the <Link to="/inventory" className="text-primary hover:underline">Inventory</Link> page!</p>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </Card.Content>
-                </Card>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {favoriteItems.slice(0, 4).map(item => (
+                                            <div key={item.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    <button onClick={() => toggleFavorite(item.id)} className="text-amber-500 hover:text-amber-600 transition-colors"><Star size={14} fill="currentColor" /></button>
+                                                    <span className="text-sm text-gray-900 dark:text-white truncate">{item.name}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${item.quantity > 0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700'}`}>{item.quantity > 0 ? `${item.quantity} avail` : 'Out of stock'}</span>
+                                                    {item.quantity > 0 && <button onClick={() => navigate('/requests', { state: { openNewRequest: true } })} className="text-xs text-primary hover:underline font-medium">Request</button>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </Card.Content>
+                        </Card>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -473,13 +521,13 @@ const Dashboard = () => {
                                     recentActivity.map((activity) => (
                                         <div key={activity.id} className="flex items-start gap-3">
                                             <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${(() => {
-                                                    const a = activity.action;
-                                                    if (a.includes('Approved')) return 'bg-emerald-500';
-                                                    if (a.includes('Created')) return 'bg-amber-500';
-                                                    if (a.includes('Completed') || a.includes('Returned')) return 'bg-blue-500';
-                                                    if (a.includes('Cancelled') || a.includes('Overdue')) return 'bg-orange-500';
-                                                    return 'bg-red-500';
-                                                })()
+                                                const a = activity.action;
+                                                if (a.includes('Approved')) return 'bg-emerald-500';
+                                                if (a.includes('Created')) return 'bg-amber-500';
+                                                if (a.includes('Completed') || a.includes('Returned')) return 'bg-blue-500';
+                                                if (a.includes('Cancelled') || a.includes('Overdue')) return 'bg-orange-500';
+                                                return 'bg-red-500';
+                                            })()
                                                 }`} />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar } from 'lucide-react';
+import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar, Star } from 'lucide-react';
 import { Button, Input, Card, Modal, Table, ImageUpload, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
 import { FacultyOnly, StaffOnly } from '../components/auth';
@@ -65,6 +65,18 @@ const Inventory = () => {
     const [deleteItemId, setDeleteItemId] = useState(null);
     const [detailItem, setDetailItem] = useState(null);
     const [collapsedSections, setCollapsedSections] = useState({});
+
+    // F-09: Favorites system
+    const favKey = `favorites-${user?.id}`;
+    const [favorites, setFavorites] = useState(() => {
+        try { return JSON.parse(localStorage.getItem(favKey) || '[]'); } catch { return []; }
+    });
+    const toggleFavorite = (e, itemId) => {
+        e.stopPropagation();
+        const next = favorites.includes(itemId) ? favorites.filter(id => id !== itemId) : [...favorites, itemId];
+        setFavorites(next);
+        localStorage.setItem(favKey, JSON.stringify(next));
+    };
 
     // Status change modal state
     const [statusModal, setStatusModal] = useState({ open: false, item: null, targetStatus: '' });
@@ -507,7 +519,12 @@ const Inventory = () => {
                                                             )}
                                                             <div className="p-4 space-y-3">
                                                                 <div>
-                                                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover/card:text-primary transition-colors duration-200">{item.name}</h3>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover/card:text-primary transition-colors duration-200">{item.name}</h3>
+                                                                        <button onClick={(e) => toggleFavorite(e, item.id)} className={`flex-shrink-0 p-1 rounded-full transition-colors ${favorites.includes(item.id) ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600 hover:text-amber-400'}`} title={favorites.includes(item.id) ? 'Remove from favorites' : 'Add to favorites'}>
+                                                                            <Star size={14} fill={favorites.includes(item.id) ? 'currentColor' : 'none'} />
+                                                                        </button>
+                                                                    </div>
                                                                     <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
                                                                         {categoryIcons[item.category] || '📋'} {item.category}
                                                                     </p>
