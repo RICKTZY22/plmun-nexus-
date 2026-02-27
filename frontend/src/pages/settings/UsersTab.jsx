@@ -137,8 +137,8 @@ const UsersTab = ({
                                     key={role}
                                     onClick={() => setRoleFilter(role)}
                                     className={`px-3 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${isActive
-                                            ? 'bg-primary text-white shadow-sm'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                        ? 'bg-primary text-white shadow-sm'
+                                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                                         }`}
                                 >
                                     {role === 'ALL' ? 'All' : meta?.label}
@@ -168,10 +168,10 @@ const UsersTab = ({
                                 <div
                                     key={u.id}
                                     className={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${u.isFlagged
-                                            ? 'border-red-200 dark:border-red-800/40 bg-red-50/30 dark:bg-red-900/5'
-                                            : !u.isActive
-                                                ? 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 opacity-60'
-                                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
+                                        ? 'border-red-200 dark:border-red-800/40 bg-red-50/30 dark:bg-red-900/5'
+                                        : !u.isActive
+                                            ? 'border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 opacity-60'
+                                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-gray-300 dark:hover:border-gray-600'
                                         }`}
                                 >
                                     {/* Avatar */}
@@ -204,14 +204,13 @@ const UsersTab = ({
                                     </div>
 
                                     {/* Role Selector */}
-                                    <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${meta.bg}`}>
+                                    <div className="hidden sm:flex items-center flex-shrink-0">
+                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${meta.bg} w-[120px]`}>
                                             <RoleIcon size={13} className={meta.text} />
                                             <select
                                                 value={u.role}
                                                 onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                                className={`bg-transparent text-xs font-semibold ${meta.text} outline-none cursor-pointer appearance-none pr-3`}
-                                                style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0 center', backgroundRepeat: 'no-repeat', backgroundSize: '16px' }}
+                                                className={`flex-1 bg-transparent text-xs font-semibold ${meta.text} outline-none cursor-pointer`}
                                             >
                                                 <option value={ROLES.STUDENT}>Student</option>
                                                 <option value={ROLES.FACULTY}>Faculty</option>
@@ -224,8 +223,8 @@ const UsersTab = ({
                                     {/* Status Badge */}
                                     <div className="hidden md:block flex-shrink-0">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${u.isActive
-                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                                             }`}>
                                             <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
                                             {u.isActive ? 'Active' : 'Inactive'}
@@ -261,8 +260,8 @@ const UsersTab = ({
                                         <button
                                             onClick={() => handleToggleUserStatus(u.id)}
                                             className={`p-2 rounded-lg transition-colors ${u.isActive
-                                                    ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                                                    : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                                                ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                                : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
                                                 }`}
                                             title={u.isActive ? 'Deactivate user' : 'Activate user'}
                                         >
