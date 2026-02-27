@@ -17,6 +17,8 @@ from apps.authentication.models import User, AuditLog, log_action
 from apps.permissions import IsStaffOrAbove
 
 
+# TODO(erick): the approve/reject/release actions share a lot of common
+# validation logic, might be worth extracting into a mixin at some point
 class RequestViewSet(viewsets.ModelViewSet):
 
     queryset = Request.objects.all()

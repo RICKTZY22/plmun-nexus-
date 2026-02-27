@@ -1,6 +1,6 @@
-// Add/Edit item form — extracted from Inventory.jsx.
-// All state is managed by the parent; this component just renders the form
-// and calls the provided onSubmit/onClose callbacks.
+// form modal for adding/editing inventory items
+// NOTE: the select dropdowns don't have dark mode styles yet,
+// they look fine-ish but could be better
 import React from 'react';
 import { Button, Input, Modal, ImageUpload } from '../ui';
 

@@ -1,5 +1,7 @@
 import api from './api';
 
+// TODO: the create() and update() functions have almost identical FormData
+// logic — should probably extract a buildFormData() helper at some point
 const inventoryService = {
     getAll: async (filters = {}) => {
         const params = new URLSearchParams();
@@ -52,7 +54,7 @@ const inventoryService = {
 
     delete: async (id) => {
         const response = await api.delete(`/inventory/${id}/`);
-        return response.data;
+        return response.data;  // backend returns 204 but axios wraps it
     },
 
     getLowStock: async () => {
@@ -65,6 +67,8 @@ const inventoryService = {
         return response.data;
     },
 
+    // this one's kinda redundant since we recompute stats from items
+    // on the frontend, but the dashboard still uses it
     getStats: async () => {
         const response = await api.get('/inventory/stats/');
         return response.data;

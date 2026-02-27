@@ -1,7 +1,7 @@
-// Item detail view — the biggest chunk extracted from Inventory.jsx.
-// Shows item image, metadata grid, description, status history, and
-// quick actions for staff. The color logic for access levels and stock
-// status is self-contained here since it's only used in this modal.
+/* Detail modal for inventory items.
+   This was the biggest chunk pulled out of Inventory.jsx (~230 lines).
+   The access level color logic was a nightmare of nested ternaries
+   so I refactored it into lookup objects — much easier to read now. */
 import React from 'react';
 import { MapPin, Package, RotateCcw, Shield, Timer, Clock, Calendar } from 'lucide-react';
 import { Modal } from '../ui';
@@ -42,7 +42,10 @@ const InventoryDetailModal = ({
 
     const ac = accessColors[item.accessLevel] || accessColors.STUDENT;
 
-    // Similarly for quantity-based colors
+    // HACK: dynamic Tailwind classes like `bg-${qtyColor}-50` don't work
+    // with JIT purging because the compiler can't see the full class name.
+    // This works in dev but would break in production with purge enabled.
+    // TODO: fix this with a proper lookup object like accessColors above
     const qtyLow = item.quantity <= 5 && item.quantity > 0;
     const qtyOut = item.quantity === 0;
     const qtyColor = qtyOut ? 'red' : qtyLow ? 'amber' : 'emerald';

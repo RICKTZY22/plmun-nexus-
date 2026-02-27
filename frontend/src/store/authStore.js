@@ -63,6 +63,9 @@ const useAuthStore = create(
     persist(
         (set, get) => ({
             // --- state ---
+            // FIXME: the idle timer still counts down when the tab is in the
+            // background. Should probably use visibilitychange event to pause it.
+            // Not urgent since 30min is generous enough for most campus sessions.
             user: null,
             token: null,
             refreshToken: null,
