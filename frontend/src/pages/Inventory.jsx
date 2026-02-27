@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar, Star } from 'lucide-react';
+import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar, Star, Shield } from 'lucide-react';
 import { Button, Input, Card, Modal, Table, ImageUpload, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
 import { FacultyOnly, StaffOnly } from '../components/auth';
@@ -531,9 +531,18 @@ const Inventory = () => {
                                                                             <Star size={14} fill={favorites.includes(item.id) ? 'currentColor' : 'none'} />
                                                                         </button>
                                                                     </div>
-                                                                    <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                                                                        {categoryIcons[item.category] || '📋'} {item.category}
-                                                                    </p>
+                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                                            {categoryIcons[item.category] || '📋'} {item.category}
+                                                                        </p>
+                                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.accessLevel === 'STUDENT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                                                                            : item.accessLevel === 'FACULTY' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                                                                                : item.accessLevel === 'STAFF' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                                                                            }`}>
+                                                                            {item.accessLevel || 'STUDENT'}+
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="flex items-center justify-between">
                                                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
@@ -739,6 +748,20 @@ const Inventory = () => {
                                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                                 placeholder="Storage location"
                             />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Access Level</label>
+                            <select
+                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
+                                value={formData.accessLevel}
+                                onChange={(e) => setFormData({ ...formData, accessLevel: e.target.value })}
+                            >
+                                <option value="STUDENT">Student (Everyone can access)</option>
+                                <option value="FACULTY">Faculty (Faculty & above)</option>
+                                <option value="STAFF">Staff (Staff & Admin only)</option>
+                                <option value="ADMIN">Admin (Admin only)</option>
+                            </select>
+                            <p className="text-[11px] text-gray-400 ml-1">Controls which roles can see and request this item</p>
                         </div>
                         <ImageUpload
                             value={formData.imageUrl}
@@ -946,6 +969,35 @@ const Inventory = () => {
                                         <p className={`text-sm font-semibold ${detailItem.isReturnable ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500'
                                             }`}>
                                             {detailItem.isReturnable ? 'Yes' : 'No'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Access Level */}
+                                <div className={`flex items-center gap-2.5 p-3 rounded-xl ${detailItem.accessLevel === 'STUDENT' ? 'bg-blue-50 dark:bg-blue-900/20'
+                                    : detailItem.accessLevel === 'FACULTY' ? 'bg-violet-50 dark:bg-violet-900/20'
+                                        : detailItem.accessLevel === 'STAFF' ? 'bg-amber-50 dark:bg-amber-900/20'
+                                            : 'bg-red-50 dark:bg-red-900/20'
+                                    }`}>
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${detailItem.accessLevel === 'STUDENT' ? 'bg-blue-100 dark:bg-blue-800/40'
+                                        : detailItem.accessLevel === 'FACULTY' ? 'bg-violet-100 dark:bg-violet-800/40'
+                                            : detailItem.accessLevel === 'STAFF' ? 'bg-amber-100 dark:bg-amber-800/40'
+                                                : 'bg-red-100 dark:bg-red-800/40'
+                                        }`}>
+                                        <Shield size={18} className={`${detailItem.accessLevel === 'STUDENT' ? 'text-blue-600'
+                                            : detailItem.accessLevel === 'FACULTY' ? 'text-violet-600'
+                                                : detailItem.accessLevel === 'STAFF' ? 'text-amber-600'
+                                                    : 'text-red-600'
+                                            }`} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Access Level</p>
+                                        <p className={`text-sm font-semibold ${detailItem.accessLevel === 'STUDENT' ? 'text-blue-700 dark:text-blue-300'
+                                            : detailItem.accessLevel === 'FACULTY' ? 'text-violet-700 dark:text-violet-300'
+                                                : detailItem.accessLevel === 'STAFF' ? 'text-amber-700 dark:text-amber-300'
+                                                    : 'text-red-700 dark:text-red-300'
+                                            }`}>
+                                            {detailItem.accessLevel || 'STUDENT'}+
                                         </p>
                                     </div>
                                 </div>
