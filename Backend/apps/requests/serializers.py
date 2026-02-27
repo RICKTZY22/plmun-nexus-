@@ -22,13 +22,18 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class CommentCreateSerializer(serializers.ModelSerializer):
 
+    text = serializers.CharField(max_length=2000)
+
     class Meta:
         model = Comment
         fields = ['text']
 
     def validate_text(self, value):
-        """Strip HTML tags to prevent stored XSS."""
-        return strip_tags(value).strip()
+        """Strip HTML tags and enforce minimum content length."""
+        cleaned = strip_tags(value).strip()
+        if len(cleaned) < 1:
+            raise serializers.ValidationError('Comment cannot be empty.')
+        return cleaned
 
 
 class RequestSerializer(serializers.ModelSerializer):

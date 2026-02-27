@@ -71,13 +71,15 @@ class Item(models.Model):
     )
 
     def get_return_timedelta(self):
-        """Return the timedelta for this item's borrow duration."""
+        """Return the timedelta for this item's borrow duration.
+        Uses 30.44 days/month (average Gregorian month length) since
+        timedelta doesn't support calendar months natively."""
         if not self.borrow_duration:
             return None
         unit_map = {
             'MINUTES': timedelta(minutes=self.borrow_duration),
             'HOURS':   timedelta(hours=self.borrow_duration),
-            'MONTHS':  timedelta(days=self.borrow_duration * 30),
+            'MONTHS':  timedelta(days=int(self.borrow_duration * 30.44)),
             'DAYS':    timedelta(days=self.borrow_duration),
         }
         return unit_map.get(self.borrow_duration_unit)

@@ -94,13 +94,21 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class RegisterView(generics.CreateAPIView):
-    """Creates a new user and returns JWT tokens so they're logged in right away."""
+    """Creates a new user and returns JWT tokens so they're logged in right away.
+    Rate-limited to 5 registrations per hour per IP to mitigate bot sign-ups."""
 
     queryset = User.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RegisterSerializer
 
+    @method_decorator(ratelimit(key='ip', rate='5/h', method='POST', block=False))
     def create(self, request, *args, **kwargs):
+        # Block if rate-limited — prevents bot sign-up floods
+        if getattr(request, 'limited', False):
+            return Response(
+                {'detail': 'Too many registration attempts. Please try again later.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         from rest_framework_simplejwt.tokens import RefreshToken
 
         serializer = self.get_serializer(data=request.data)

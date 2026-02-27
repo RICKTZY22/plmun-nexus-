@@ -1,9 +1,8 @@
-// RoleGuard.jsx - ROLE-BASED ACCESS CONTROL COMPONENT
-// Pinaka-importante na security component sa frontend!
-// Ina-wrap nito yung mga pages/sections para i-restrict base sa user role
-// Pag hindi authorized: redirect, show "Access Denied", or hide lang
-// Shortcut components: AdminOnly, StaffOnly, FacultyOnly
-// HOC version: withRoleGuard() para sa class/function components
+// RoleGuard.jsx — Core frontend authorization component.
+// Wraps pages and sections to enforce role-based access.
+// Unauthorized users are redirected, shown "Access Denied", or hidden.
+// Convenience wrappers: AdminOnly, StaffOnly, FacultyOnly
+// HOC version: withRoleGuard() for any component
 
 import React from 'react';
 import { Navigate } from 'react-router-dom';

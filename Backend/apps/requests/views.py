@@ -497,12 +497,19 @@ class RequestViewSet(viewsets.ModelViewSet):
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
+    """User notifications — scoped to the authenticated user.
+    Capped at 100 most recent to prevent unbounded growth."""
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        # Cap at 100 most recent; select_related avoids N+1 on sender/request
+        return (
+            Notification.objects
+            .filter(recipient=self.request.user)
+            .select_related('sender', 'request')[:100]
+        )
 
     @action(detail=True, methods=['patch'])
     def read(self, request, pk=None):
