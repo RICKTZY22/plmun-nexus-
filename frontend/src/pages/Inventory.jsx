@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Filter, Package, Edit, Trash2, Download, Printer, AlertTriangle, QrCode, FileText, MapPin, Clock, Timer, Eye, ArrowRight, RotateCcw, X, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, Calendar, Star, Shield } from 'lucide-react';
-import { Button, Input, Card, Modal, Table, ImageUpload, QRCodeModal } from '../components/ui';
+import { Plus, Search, Package, Download, Printer, FileText, MapPin, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, RotateCcw, Edit, Trash2, QrCode, AlertTriangle, Star, Eye, ArrowRight, Calendar } from 'lucide-react';
+import { Button, Input, Card, Modal, Table, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
 import { FacultyOnly, StaffOnly } from '../components/auth';
+import { InventoryItemCard, InventoryFormModal, InventoryDetailModal } from '../components/inventory';
 import { exportCSV, exportPDF } from '../utils/exportUtils';
 import useUIStore from '../store/uiStore';
 import useAuthStore from '../store/authStore';
@@ -10,19 +11,16 @@ import { resolveImageUrl } from '../utils/imageUtils';
 import { useNavigate } from 'react-router-dom';
 import { hasMinRole, ROLES } from '../utils/roles';
 
+// Status/category visuals moved to sub-components (InventoryItemCard, InventoryDetailModal).
+// Kept here only for the table view since it's still inline.
 const statusColors = {
     AVAILABLE: 'bg-emerald-100 text-emerald-700',
     IN_USE: 'bg-blue-100 text-blue-700',
     MAINTENANCE: 'bg-amber-100 text-amber-700',
     RETIRED: 'bg-gray-100 text-gray-700',
 };
-
 const categoryIcons = {
-    ELECTRONICS: '💻',
-    FURNITURE: '🪑',
-    EQUIPMENT: '🔧',
-    SUPPLIES: '📦',
-    OTHER: '📋',
+    ELECTRONICS: '💻', FURNITURE: '🪑', EQUIPMENT: '🔧', SUPPLIES: '📦', OTHER: '📋',
 };
 
 const Inventory = () => {
@@ -510,88 +508,20 @@ const Inventory = () => {
                                             <div className="p-4">
                                                 <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
                                                     {groupItems.map(item => (
-                                                        <Card key={item.id} className={`relative overflow-hidden p-0 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer group/card ${item.status === 'RETIRED' ? 'opacity-60 grayscale-[30%]' : ''}`} onClick={() => setDetailItem(item)}>
-                                                            {showImages && (
-                                                                <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center relative overflow-hidden">
-                                                                    {item.imageUrl ? (
-                                                                        <img src={resolveImageUrl(item.imageUrl)} alt={item.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" onError={(e) => { e.target.style.display = 'none'; }} />
-                                                                    ) : (
-                                                                        <span className="text-4xl transition-transform duration-300 group-hover/card:scale-110">{categoryIcons[item.category] || '📋'}</span>
-                                                                    )}
-                                                                    <div className="absolute inset-0 bg-primary/0 group-hover/card:bg-primary/10 transition-colors duration-300 flex items-center justify-center">
-                                                                        <Eye size={24} className="text-white opacity-0 group-hover/card:opacity-80 transition-all duration-300 drop-shadow-lg" />
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                            <div className="p-4 space-y-3">
-                                                                <div>
-                                                                    <div className="flex items-center justify-between">
-                                                                        <h3 className="font-semibold text-gray-900 dark:text-white truncate group-hover/card:text-primary transition-colors duration-200">{item.name}</h3>
-                                                                        <button onClick={(e) => toggleFavorite(e, item.id)} className={`flex-shrink-0 p-1 rounded-full transition-colors ${favorites.includes(item.id) ? 'text-amber-500' : 'text-gray-300 dark:text-gray-600 hover:text-amber-400'}`} title={favorites.includes(item.id) ? 'Remove from favorites' : 'Add to favorites'}>
-                                                                            <Star size={14} fill={favorites.includes(item.id) ? 'currentColor' : 'none'} />
-                                                                        </button>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                                        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                                                            {categoryIcons[item.category] || '📋'} {item.category}
-                                                                        </p>
-                                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${item.accessLevel === 'STUDENT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                                                                            : item.accessLevel === 'FACULTY' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
-                                                                                : item.accessLevel === 'STAFF' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                                                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                                                                            }`}>
-                                                                            {item.accessLevel || 'STUDENT'}+
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center justify-between">
-                                                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
-                                                                        {item.status}
-                                                                    </span>
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className={`text-sm font-bold ${item.quantity <= 5 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                                                            Qty: {item.quantity}
-                                                                        </span>
-                                                                        {item.quantity <= 5 && item.quantity > 0 && <AlertTriangle size={14} className="text-amber-500" />}
-                                                                        {item.quantity === 0 && <XCircle size={14} className="text-red-500" />}
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate flex items-center gap-1">
-                                                                    <MapPin size={12} />
-                                                                    {item.location || 'No location'}
-                                                                </p>
-                                                                <div className="flex items-center justify-center gap-1.5 text-xs text-primary/60 group-hover/card:text-primary transition-colors duration-200 pt-1">
-                                                                    <span>View Details</span>
-                                                                    <ArrowRight size={12} className="transition-transform duration-200 group-hover/card:translate-x-1" />
-                                                                </div>
-                                                                <div className="flex gap-1 pt-2 border-t border-gray-100 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
-                                                                    {item.status === 'AVAILABLE' && item.quantity > 0 && (
-                                                                        <Button variant="ghost" size="sm" onClick={(e) => handleRequestItem(item, e)} title="Request This Item" className="flex-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:scale-105 transition-transform">
-                                                                            <FileText size={14} className="mr-1" />
-                                                                            {!isStaffPlus && <span className="text-xs">Request</span>}
-                                                                        </Button>
-                                                                    )}
-                                                                    {item.status !== 'AVAILABLE' && item.quantity > 0 && (
-                                                                        <span className="flex-1 flex items-center justify-center text-[10px] text-gray-400 dark:text-gray-500 italic">
-                                                                            {item.status === 'IN_USE' ? '🔵 In Use' : item.status === 'MAINTENANCE' ? '🟡 Maintenance' : item.status === 'RETIRED' ? '⚫ Retired' : ''}
-                                                                        </span>
-                                                                    )}
-                                                                    <FacultyOnly>
-                                                                        {getStatusActions(item).map((action, idx) => {
-                                                                            const ActionIcon = action.icon;
-                                                                            return (
-                                                                                <Button key={idx} variant="ghost" size="sm" onClick={action.onClick} title={action.label} className={`flex-1 hover:scale-105 transition-transform ${action.color}`}>
-                                                                                    <ActionIcon size={14} />
-                                                                                </Button>
-                                                                            );
-                                                                        })}
-                                                                        <Button variant="ghost" size="sm" onClick={() => { setQrItem(item); setQrModalOpen(true); }} title="QR Code" className="flex-1 hover:scale-105 transition-transform"><QrCode size={14} className="text-primary" /></Button>
-                                                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} title="Edit" className="flex-1 hover:scale-105 transition-transform"><Edit size={14} /></Button>
-                                                                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} title="Delete" className="flex-1 hover:scale-105 transition-transform"><Trash2 size={14} className="text-red-500" /></Button>
-                                                                    </FacultyOnly>
-                                                                </div>
-                                                            </div>
-                                                        </Card>
+                                                        <InventoryItemCard
+                                                            key={item.id}
+                                                            item={item}
+                                                            showImages={showImages}
+                                                            isFavorite={favorites.includes(item.id)}
+                                                            isStaffPlus={isStaffPlus}
+                                                            onToggleFavorite={toggleFavorite}
+                                                            onViewDetail={setDetailItem}
+                                                            onRequestItem={handleRequestItem}
+                                                            onEdit={handleEdit}
+                                                            onDelete={handleDelete}
+                                                            onQrCode={(item) => { setQrItem(item); setQrModalOpen(true); }}
+                                                            getStatusActions={getStatusActions}
+                                                        />
                                                     ))}
                                                 </div>
                                             </div>
@@ -685,139 +615,19 @@ const Inventory = () => {
                     </div>
                 )}
 
-                {/* Add/Edit Modal */}
-                <Modal
+                {/* Add/Edit Modal — extracted to InventoryFormModal */}
+                <InventoryFormModal
                     isOpen={isAddModalOpen}
                     onClose={() => {
                         setIsAddModalOpen(false);
                         setEditingItem(null);
-                        setFormData({ name: '', category: 'ELECTRONICS', quantity: 1, status: 'AVAILABLE', location: '', description: '', imageUrl: null, accessLevel: 'STUDENT', isReturnable: true, borrowDuration: '', borrowDurationUnit: 'DAYS' });
+                        setFormData(defaultFormData);
                     }}
-                    title={editingItem ? 'Edit Item' : 'Add New Item'}
-                    description={editingItem ? 'Update the inventory item details' : 'Add a new item to your inventory'}
-                >
-                    <form onSubmit={handleSubmit} className="space-y-2.5">
-                        <Input
-                            label="Item Name"
-                            required
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="Enter item name"
-                        />
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
-                                <select
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                                    value={formData.category}
-                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                >
-                                    <option value="ELECTRONICS">Electronics</option>
-                                    <option value="FURNITURE">Furniture</option>
-                                    <option value="EQUIPMENT">Equipment</option>
-                                    <option value="SUPPLIES">Supplies</option>
-                                    <option value="OTHER">Other</option>
-                                </select>
-                            </div>
-                            <Input
-                                label="Quantity"
-                                type="number"
-                                min="1"
-                                required
-                                value={formData.quantity}
-                                onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Status</label>
-                                <select
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
-                                    value={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                >
-                                    <option value="AVAILABLE">Available</option>
-                                    <option value="IN_USE">In Use</option>
-                                    <option value="MAINTENANCE">Maintenance</option>
-                                    <option value="RETIRED">Retired</option>
-                                </select>
-                            </div>
-                            <Input
-                                label="Location"
-                                value={formData.location}
-                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                placeholder="Storage location"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Access Level</label>
-                            <select
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
-                                value={formData.accessLevel}
-                                onChange={(e) => setFormData({ ...formData, accessLevel: e.target.value })}
-                            >
-                                <option value="STUDENT">Student (Everyone can access)</option>
-                                <option value="FACULTY">Faculty (Faculty & above)</option>
-                                <option value="STAFF">Staff (Staff & Admin only)</option>
-                                <option value="ADMIN">Admin (Admin only)</option>
-                            </select>
-                            <p className="text-[11px] text-gray-400 ml-1">Controls which roles can see and request this item</p>
-                        </div>
-                        <ImageUpload
-                            value={formData.imageUrl}
-                            onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                            compact
-                        />
-                        <label className="flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={formData.isReturnable}
-                                onChange={(e) => setFormData({ ...formData, isReturnable: e.target.checked, borrowDuration: e.target.checked ? formData.borrowDuration : '' })}
-                                className="w-4 h-4 rounded text-primary"
-                            />
-                            <div>
-                                <span className="text-sm font-medium text-gray-700">Returnable Item</span>
-                                <p className="text-xs text-gray-500">Borrowers must return this item</p>
-                            </div>
-                        </label>
-                        {formData.isReturnable && (
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Borrow Duration</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
-                                        value={formData.borrowDuration}
-                                        onChange={(e) => setFormData({ ...formData, borrowDuration: parseInt(e.target.value) || '' })}
-                                        placeholder="e.g. 3"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Unit</label>
-                                    <select
-                                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
-                                        value={formData.borrowDurationUnit}
-                                        onChange={(e) => setFormData({ ...formData, borrowDurationUnit: e.target.value })}
-                                    >
-                                        <option value="MINUTES">Minutes</option>
-                                        <option value="HOURS">Hours</option>
-                                        <option value="DAYS">Days</option>
-                                        <option value="MONTHS">Months</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-                        <div className="flex gap-3 pt-3">
-                            <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsAddModalOpen(false)}>
-                                Cancel
-                            </Button>
-                            <Button type="submit" className="flex-1">
-                                {editingItem ? 'Update' : 'Add'} Item
-                            </Button>
-                        </div>
-                    </form>
-                </Modal>
+                    onSubmit={handleSubmit}
+                    editingItem={editingItem}
+                    formData={formData}
+                    setFormData={setFormData}
+                />
 
                 {/* QR Code Modal */}
                 <QRCodeModal
@@ -863,239 +673,14 @@ const Inventory = () => {
                     </div>
                 </Modal>
 
-                {/* ===== Item Detail Modal ===== */}
-                <Modal
+                {/* Item Detail — extracted to InventoryDetailModal */}
+                <InventoryDetailModal
+                    item={detailItem}
                     isOpen={!!detailItem}
                     onClose={() => setDetailItem(null)}
-                    title="Item Details"
-                    size="md"
-                >
-                    {detailItem && (
-                        <div className="space-y-4" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
-                            {/* Item Image / Icon Header */}
-                            <div className="relative rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800">
-                                {detailItem.imageUrl ? (
-                                    <img
-                                        src={resolveImageUrl(detailItem.imageUrl)}
-                                        alt={detailItem.name}
-                                        className="w-full h-48 object-cover"
-                                        onError={(e) => { e.target.style.display = 'none'; }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-36 flex items-center justify-center">
-                                        <span className="text-6xl">{categoryIcons[detailItem.category] || '📋'}</span>
-                                    </div>
-                                )}
-                                {/* Status badge overlay */}
-                                <div className="absolute top-3 right-3">
-                                    <span className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${statusColors[detailItem.status]}`}>
-                                        {detailItem.status}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Name + Category */}
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{detailItem.name}</h2>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mt-1">
-                                    <span>{categoryIcons[detailItem.category] || '📋'}</span>
-                                    {detailItem.category}
-                                </p>
-                            </div>
-
-                            {/* Info Grid */}
-                            <div className="grid grid-cols-2 gap-3">
-                                {/* Location */}
-                                <div className="flex items-center gap-2.5 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                                    <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-800/40 flex items-center justify-center">
-                                        <MapPin size={18} className="text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Location</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                                            {detailItem.location || 'Not specified'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Quantity */}
-                                <div className={`flex items-center gap-2.5 p-3 rounded-xl ${detailItem.quantity <= 5 && detailItem.quantity > 0
-                                    ? 'bg-amber-50 dark:bg-amber-900/20'
-                                    : detailItem.quantity === 0
-                                        ? 'bg-red-50 dark:bg-red-900/20'
-                                        : 'bg-emerald-50 dark:bg-emerald-900/20'
-                                    }`}>
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${detailItem.quantity <= 5 && detailItem.quantity > 0
-                                        ? 'bg-amber-100 dark:bg-amber-800/40'
-                                        : detailItem.quantity === 0
-                                            ? 'bg-red-100 dark:bg-red-800/40'
-                                            : 'bg-emerald-100 dark:bg-emerald-800/40'
-                                        }`}>
-                                        <Package size={18} className={`${detailItem.quantity <= 5 && detailItem.quantity > 0
-                                            ? 'text-amber-600'
-                                            : detailItem.quantity === 0
-                                                ? 'text-red-600'
-                                                : 'text-emerald-600'
-                                            }`} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Quantity</p>
-                                        <div className="flex items-center gap-1.5">
-                                            <p className={`text-sm font-bold ${detailItem.quantity <= 5 ? 'text-red-600' : 'text-gray-800 dark:text-gray-100'
-                                                }`}>{detailItem.quantity}</p>
-                                            {detailItem.quantity <= 5 && detailItem.quantity > 0 && (
-                                                <span className="text-[10px] px-1.5 py-0.5 bg-amber-200 text-amber-800 rounded font-bold">LOW</span>
-                                            )}
-                                            {detailItem.quantity === 0 && (
-                                                <span className="text-[10px] px-1.5 py-0.5 bg-red-200 text-red-800 rounded font-bold">OUT</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Returnable */}
-                                <div className={`flex items-center gap-2.5 p-3 rounded-xl ${detailItem.isReturnable
-                                    ? 'bg-purple-50 dark:bg-purple-900/20'
-                                    : 'bg-gray-50 dark:bg-gray-800/50'
-                                    }`}>
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${detailItem.isReturnable
-                                        ? 'bg-purple-100 dark:bg-purple-800/40'
-                                        : 'bg-gray-200 dark:bg-gray-700'
-                                        }`}>
-                                        <RotateCcw size={18} className={detailItem.isReturnable ? 'text-purple-600' : 'text-gray-400'} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Returnable</p>
-                                        <p className={`text-sm font-semibold ${detailItem.isReturnable ? 'text-purple-700 dark:text-purple-300' : 'text-gray-500'
-                                            }`}>
-                                            {detailItem.isReturnable ? 'Yes' : 'No'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Access Level */}
-                                <div className={`flex items-center gap-2.5 p-3 rounded-xl ${detailItem.accessLevel === 'STUDENT' ? 'bg-blue-50 dark:bg-blue-900/20'
-                                    : detailItem.accessLevel === 'FACULTY' ? 'bg-violet-50 dark:bg-violet-900/20'
-                                        : detailItem.accessLevel === 'STAFF' ? 'bg-amber-50 dark:bg-amber-900/20'
-                                            : 'bg-red-50 dark:bg-red-900/20'
-                                    }`}>
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${detailItem.accessLevel === 'STUDENT' ? 'bg-blue-100 dark:bg-blue-800/40'
-                                        : detailItem.accessLevel === 'FACULTY' ? 'bg-violet-100 dark:bg-violet-800/40'
-                                            : detailItem.accessLevel === 'STAFF' ? 'bg-amber-100 dark:bg-amber-800/40'
-                                                : 'bg-red-100 dark:bg-red-800/40'
-                                        }`}>
-                                        <Shield size={18} className={`${detailItem.accessLevel === 'STUDENT' ? 'text-blue-600'
-                                            : detailItem.accessLevel === 'FACULTY' ? 'text-violet-600'
-                                                : detailItem.accessLevel === 'STAFF' ? 'text-amber-600'
-                                                    : 'text-red-600'
-                                            }`} />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Access Level</p>
-                                        <p className={`text-sm font-semibold ${detailItem.accessLevel === 'STUDENT' ? 'text-blue-700 dark:text-blue-300'
-                                            : detailItem.accessLevel === 'FACULTY' ? 'text-violet-700 dark:text-violet-300'
-                                                : detailItem.accessLevel === 'STAFF' ? 'text-amber-700 dark:text-amber-300'
-                                                    : 'text-red-700 dark:text-red-300'
-                                            }`}>
-                                            {detailItem.accessLevel || 'STUDENT'}+
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Borrow Duration */}
-                                {detailItem.isReturnable && detailItem.borrowDuration && (
-                                    <div className="flex items-center gap-2.5 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-                                        <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-800/40 flex items-center justify-center">
-                                            <Timer size={18} className="text-indigo-600 dark:text-indigo-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Borrow Limit</p>
-                                            <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
-                                                {detailItem.borrowDuration} {detailItem.borrowDurationUnit?.toLowerCase()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Description */}
-                            {detailItem.description && (
-                                <div className="p-3 bg-gradient-to-br from-gray-50 to-gray-100/50 dark:from-gray-800 dark:to-gray-700/50 rounded-xl">
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold mb-1">Description</p>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                        {detailItem.description}
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Status Metadata */}
-                            {(detailItem.statusNote || detailItem.statusChangedAt || detailItem.maintenanceEta) && (
-                                <div className="p-3 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/50 dark:to-slate-700/30 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700/50">
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold flex items-center gap-1">
-                                        <Clock size={10} /> Status History
-                                    </p>
-                                    {detailItem.statusNote && (
-                                        <p className="text-sm text-gray-700 dark:text-gray-300 italic">
-                                            "​{detailItem.statusNote}"
-                                        </p>
-                                    )}
-                                    {detailItem.statusChangedByName && (
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                            Changed by <span className="font-semibold text-gray-700 dark:text-gray-300">{detailItem.statusChangedByName}</span>
-                                            {detailItem.statusChangedAt && (
-                                                <> on {new Date(detailItem.statusChangedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</>
-                                            )}
-                                        </p>
-                                    )}
-                                    {detailItem.maintenanceEta && detailItem.status === 'MAINTENANCE' && (
-                                        <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                                            <Calendar size={14} className="text-amber-600" />
-                                            <div>
-                                                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase">Expected Back</p>
-                                                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                                                    {new Date(detailItem.maintenanceEta).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    {new Date(detailItem.maintenanceEta) > new Date() && (
-                                                        <span className="ml-1 text-xs font-normal text-amber-500">
-                                                            ({Math.ceil((new Date(detailItem.maintenanceEta) - new Date()) / (1000 * 60 * 60 * 24))} days left)
-                                                        </span>
-                                                    )}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Detail Modal — Quick Actions (staff+) */}
-                            {isStaffPlus && detailItem.status !== 'AVAILABLE' && (
-                                <div className="flex gap-2">
-                                    {getStatusActions(detailItem).map((action, idx) => {
-                                        const ActionIcon = action.icon;
-                                        return (
-                                            <button
-                                                key={idx}
-                                                onClick={(e) => { action.onClick(e); setDetailItem(null); }}
-                                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${action.color} bg-opacity-10`}
-                                                style={{ backgroundColor: 'var(--tw-bg-opacity, 0.05)' }}
-                                            >
-                                                <ActionIcon size={16} />
-                                                {action.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {/* Close Button */}
-                            <button
-                                onClick={() => setDetailItem(null)}
-                                className="w-full py-2.5 rounded-xl bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                            >
-                                Close
-                            </button>
-                        </div>
-                    )}
-                </Modal>
+                    isStaffPlus={isStaffPlus}
+                    getStatusActions={getStatusActions}
+                />
 
                 {/* ===== Status Change Modal ===== */}
                 <Modal
