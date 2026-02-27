@@ -176,8 +176,14 @@ const Settings = () => {
         retentionDays: 30,
     });
 
-    // Save success message
+    // Flash message helper — eliminates setSaveMessage+setTimeout duplication
     const [saveMessage, setSaveMessage] = useState('');
+    const flashTimerRef = React.useRef(null);
+    const flashMessage = React.useCallback((msg, ms = 3000) => {
+        clearTimeout(flashTimerRef.current);
+        setSaveMessage(msg);
+        flashTimerRef.current = setTimeout(() => setSaveMessage(''), ms);
+    }, []);
     const [backupLoading, setBackupLoading] = useState(false);
     const [passwordError, setPasswordError] = useState('');
     const [unflagConfirmId, setUnflagConfirmId] = useState(null);
@@ -209,7 +215,7 @@ const Settings = () => {
                 if (parsed.categories?.length) setCategories(parsed.categories);
                 if (parsed.conditions?.length) setConditions(parsed.conditions);
             }
-        } catch (e) {
+        } catch {
             // failed to load settings — use defaults
         }
     }, [user?.id]);
@@ -219,11 +225,9 @@ const Settings = () => {
         if (!key) return;
         try {
             localStorage.setItem(key, JSON.stringify(data));
-            setSaveMessage(`${label} saved successfully!`);
-            setTimeout(() => setSaveMessage(''), 3000);
-        } catch (e) {
-            setSaveMessage('Failed to save settings');
-            setTimeout(() => setSaveMessage(''), 3000);
+            flashMessage(`${label} saved successfully!`);
+        } catch {
+            flashMessage('Failed to save settings');
         }
     };
 
@@ -265,19 +269,16 @@ const Settings = () => {
         ]);
         exportPDF('PLMun_Audit_Logs', 'Audit Log Report — Auto Export', headers, rows);
         localStorage.setItem(lastExportKey, String(now));
-        setSaveMessage('✓ Daily audit log report exported automatically.');
-        setTimeout(() => setSaveMessage(''), 4000);
+        flashMessage('✓ Daily audit log report exported automatically.', 4000);
     }, [activeTab, auditLogs]);
 
     const handleClearAuditLogs = async () => {
         try {
             const { data } = await api.delete('/auth/audit-logs/');
-            setSaveMessage('✓ ' + (data.message || 'Audit logs cleared.'));
-            setTimeout(() => setSaveMessage(''), 3000);
+            flashMessage('✓ ' + (data.message || 'Audit logs cleared.'));
             fetchAuditLogs();
         } catch (err) {
-            setSaveMessage('✗ ' + formatApiError(err, 'Failed to clear logs'));
-            setTimeout(() => setSaveMessage(''), 5000);
+            flashMessage('✗ ' + formatApiError(err, 'Failed to clear logs'), 5000);
         }
         setClearLogsConfirm(false);
     };
@@ -310,8 +311,7 @@ const Settings = () => {
         try {
             setCreateUserLoading(true);
             await api.post('/auth/register/', { fullName, email, username, password, password2, role, department });
-            setSaveMessage(`✓ Account created for ${fullName} (${role})`);
-            setTimeout(() => setSaveMessage(''), 4000);
+            flashMessage(`✓ Account created for ${fullName} (${role})`, 4000);
             setShowCreateUserModal(false);
             setCreateUserForm({ fullName: '', email: '', username: '', password: '', password2: '', role: 'STUDENT', department: '' });
             fetchUsers();
@@ -358,12 +358,10 @@ const Settings = () => {
     const handleUnflagUser = async (userId) => {
         const result = await unflagUser(userId);
         if (result.success) {
-            setSaveMessage(result.message || 'User unflagged successfully!');
-            setTimeout(() => setSaveMessage(''), 3000);
+            flashMessage(result.message || 'User unflagged successfully!');
             fetchUsers();
         } else {
-            setSaveMessage(`✗ Failed to unflag user: ${result.error}`);
-            setTimeout(() => setSaveMessage(''), 5000);
+            flashMessage(`✗ Failed to unflag user: ${result.error}`, 5000);
         }
         setUnflagConfirmId(null);
     };
@@ -371,7 +369,7 @@ const Settings = () => {
     const handleBackupNow = async () => {
         if (backupLoading) return;
         setBackupLoading(true);
-        setSaveMessage('');
+        flashMessage('');
         try {
             const response = await api.get('/auth/backup/', { responseType: 'blob' });
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/json' }));
@@ -384,12 +382,10 @@ const Settings = () => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            setSaveMessage('✓ Backup downloaded successfully!');
-            setTimeout(() => setSaveMessage(''), 5000);
+            flashMessage('✓ Backup downloaded successfully!', 5000);
         } catch (err) {
             const msg = formatApiError(err, 'Backup failed');
-            setSaveMessage(`✗ Backup failed: ${msg}`);
-            setTimeout(() => setSaveMessage(''), 5000);
+            flashMessage(`✗ Backup failed: ${msg}`, 5000);
         } finally {
             setBackupLoading(false);
         }
@@ -496,7 +492,7 @@ const Settings = () => {
                         setNewCategory={setNewCategory}
                         newCondition={newCondition}
                         setNewCondition={setNewCondition}
-                        setSaveMessage={setSaveMessage}
+                        flashMessage={flashMessage}
                     />
                 );
 
@@ -522,7 +518,7 @@ const Settings = () => {
                         adminSettings={adminSettings}
                         setAdminSettings={setAdminSettings}
                         saveMessage={saveMessage}
-                        setSaveMessage={setSaveMessage}
+                        flashMessage={flashMessage}
                         saveSettings={saveSettings}
                         adminPrefsKey={adminPrefsKey}
                         users={users}

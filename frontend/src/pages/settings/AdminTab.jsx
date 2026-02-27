@@ -6,7 +6,7 @@ import api from '../../services/api';
 import { exportCSV } from '../../utils/exportUtils';
 
 const AdminTab = ({
-    adminSettings, setAdminSettings, saveMessage, setSaveMessage,
+    adminSettings, setAdminSettings, saveMessage, flashMessage,
     saveSettings, adminPrefsKey, users,
     auditLogs, auditLogsLoading, fetchAuditLogs,
     handleClearAuditLogs, handleExportAuditLogs, handleBackupNow, backupLoading,
@@ -40,8 +40,7 @@ const AdminTab = ({
                                     setAdminSettings({ ...adminSettings, maintenanceMode: enabled });
                                     if (!enabled) {
                                         localStorage.removeItem('plmun-maintenance');
-                                        setSaveMessage('✓ Maintenance mode disabled.');
-                                        setTimeout(() => setSaveMessage(''), 3000);
+                                        flashMessage('✓ Maintenance mode disabled.');
                                     }
                                 }}
                                 className="w-5 h-5 text-primary rounded focus:ring-primary"
@@ -67,8 +66,7 @@ const AdminTab = ({
                                             onClick={() => {
                                                 const endTime = Date.now() + opt.mins * 60 * 1000;
                                                 localStorage.setItem('plmun-maintenance', JSON.stringify({ enabled: true, endTime }));
-                                                setSaveMessage(`✓ Maintenance mode enabled for ${opt.label}. Students & Faculty are now blocked.`);
-                                                setTimeout(() => setSaveMessage(''), 5000);
+                                                flashMessage(`✓ Maintenance mode enabled for ${opt.label}. Students & Faculty are now blocked.`, 5000);
                                             }}
                                             className="px-3 py-1.5 text-sm rounded-lg bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-700/40 transition-colors font-medium"
                                         >
@@ -89,8 +87,7 @@ const AdminTab = ({
                                                 if (mins > 0) {
                                                     const endTime = Date.now() + mins * 60 * 1000;
                                                     localStorage.setItem('plmun-maintenance', JSON.stringify({ enabled: true, endTime }));
-                                                    setSaveMessage(`✓ Maintenance mode enabled for ${mins} minute(s).`);
-                                                    setTimeout(() => setSaveMessage(''), 5000);
+                                                    flashMessage(`✓ Maintenance mode enabled for ${mins} minute(s).`, 5000);
                                                     e.target.value = '';
                                                 }
                                             }
@@ -320,11 +317,9 @@ const AdminTab = ({
                                         ...usrs.map(u => ['User', `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username, u.isActive ? 'Active' : 'Inactive', u.role, u.dateJoined || u.date_joined || '']),
                                     ];
                                     await exportCSV('PLMun_All_Data_Export', headers, rows);
-                                    setSaveMessage('✓ Data exported successfully!');
-                                    setTimeout(() => setSaveMessage(''), 3000);
+                                    flashMessage('✓ Data exported successfully!');
                                 } catch (err) {
-                                    setSaveMessage('✗ Export failed. Please try again.');
-                                    setTimeout(() => setSaveMessage(''), 5000);
+                                    flashMessage('✗ Export failed. Please try again.', 5000);
                                 }
                             }}>Export All Data</Button>
                             <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-xl">
@@ -333,7 +328,7 @@ const AdminTab = ({
                             <Button variant="outline" fullWidth className="justify-start text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => {
                                 const keys = Object.keys(localStorage).filter(k => k.startsWith('plmun-') || k.startsWith('user-prefs-') || k.startsWith('notif-prefs-') || k.startsWith('faculty-prefs-') || k.startsWith('staff-prefs-') || k.startsWith('admin-prefs-') || k.startsWith('ui-prefs-') || k === 'sys-settings');
                                 keys.forEach(k => localStorage.removeItem(k));
-                                setSaveMessage(`✓ Cache cleared! Removed ${keys.length} cached setting(s). Reloading...`);
+                                flashMessage(`✓ Cache cleared! Removed ${keys.length} cached setting(s). Reloading...`);
                                 setTimeout(() => window.location.reload(), 1500);
                             }}>Clear Cache</Button>
                         </div>

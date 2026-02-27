@@ -7,7 +7,7 @@ const SystemTab = ({
     categories, setCategories, conditions, setConditions,
     editingCategory, setEditingCategory, editingCondition, setEditingCondition,
     newCategory, setNewCategory, newCondition, setNewCondition,
-    setSaveMessage,
+    flashMessage,
 }) => {
     return (
         <StaffOnly showAccessDenied>
@@ -152,11 +152,9 @@ const SystemTab = ({
                     <Button onClick={() => {
                         try {
                             localStorage.setItem('sys-settings', JSON.stringify({ categories, conditions }));
-                            setSaveMessage('System settings saved successfully!');
-                            setTimeout(() => setSaveMessage(''), 3000);
+                            flashMessage('System settings saved successfully!');
                         } catch (e) {
-                            setSaveMessage('Failed to save system settings');
-                            setTimeout(() => setSaveMessage(''), 3000);
+                            flashMessage('Failed to save system settings');
                         }
                     }} icon={Save}>
                         Save System Settings

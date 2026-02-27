@@ -35,15 +35,16 @@ const useUsers = () => {
             }));
             setUsers(items);
 
-            setStats({
-                total: items.length,
-                active: items.filter(u => u.isActive).length,
-                inactive: items.filter(u => !u.isActive).length,
-                admins: items.filter(u => u.role === ROLES.ADMIN).length,
-                staff: items.filter(u => u.role === ROLES.STAFF).length,
-                faculty: items.filter(u => u.role === ROLES.FACULTY).length,
-                students: items.filter(u => u.role === ROLES.STUDENT).length,
-            });
+            // Single-pass stats computation (was 7 separate .filter() calls)
+            const counts = items.reduce((acc, u) => {
+                if (u.isActive) acc.active++; else acc.inactive++;
+                if (u.role === ROLES.ADMIN) acc.admins++;
+                else if (u.role === ROLES.STAFF) acc.staff++;
+                else if (u.role === ROLES.FACULTY) acc.faculty++;
+                else acc.students++;
+                return acc;
+            }, { active: 0, inactive: 0, admins: 0, staff: 0, faculty: 0, students: 0 });
+            setStats({ total: items.length, ...counts });
         } catch (err) {
             setError(err.response?.data?.detail || 'Failed to fetch users');
         } finally {
