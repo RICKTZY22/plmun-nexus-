@@ -24,6 +24,10 @@ class Request(models.Model):
         on_delete=models.CASCADE,
         related_name='requests',
     )
+    # Denormalized on purpose: we snapshot the item name at request time
+    # so that if the item gets renamed later, the request history still
+    # shows what the user originally asked for. Tried using item.name
+    # directly but it confused staff when item names changed mid-borrow.
     item_name = models.CharField(max_length=200)
 
     requested_by = models.ForeignKey(

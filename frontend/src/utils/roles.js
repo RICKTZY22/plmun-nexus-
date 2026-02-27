@@ -1,9 +1,11 @@
 /**
- * Role hierarchy:
- * STUDENT (1) - Basic, can request items
- * FACULTY (2) - Can view inventory and dashboard
- * STAFF (3)   - Can approve/reject requests, edit inventory
- * ADMIN (4)   - Full access, including user management
+ * Role hierarchy — mirrors the ROLE_HIERARCHY dict on the Django User model.
+ * We keep a frontend copy so RoleGuard and the sidebar can do instant
+ * client-side checks without waiting for an API round trip.
+ * 
+ * If you add a new role, update BOTH this file and authentication/models.py.
+ * Yes it's duplicated — we tried fetching roles from the API but it added
+ * a loading state to every protected component. Wasn't worth it.
  */
 
 export const ROLES = {
@@ -20,6 +22,9 @@ export const ROLE_HIERARCHY = {
     [ROLES.ADMIN]: 4
 };
 
+// Default to 999 (not 0) for unknown required roles so that
+// a typo like hasMinRole(role, 'SUPERADMIN') fails closed
+// rather than granting access.
 export const hasMinRole = (userRole, requiredRole) => {
     const userLevel = ROLE_HIERARCHY[userRole] || 0;
     const requiredLevel = ROLE_HIERARCHY[requiredRole] || 999;
@@ -53,7 +58,11 @@ export const getRoleBadgeColor = (role) => {
     return colors[role] || 'bg-gray-100 text-gray-700';
 };
 
-// What each role is allowed to do
+// Permissions matrix — we define all of these upfront rather than
+// scattering them across components because it makes it easy to
+// answer "what can a FACULTY user do?" in one glance.
+// The trade-off is that adding new features means touching this file,
+// but that's actually a feature: it forces you to think about access.
 export const PERMISSIONS = {
     // Profile
     VIEW_PROFILE: [ROLES.STUDENT, ROLES.FACULTY, ROLES.STAFF, ROLES.ADMIN],

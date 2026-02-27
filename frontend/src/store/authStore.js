@@ -5,7 +5,9 @@ import authService from '../services/authService';
 import { formatApiError } from '../utils/errorUtils';
 import useUIStore from './uiStore';
 
-// Idle timeout — log the user out after 30 min of inactivity
+// We went with 30 min idle timeout because the university's IT policy
+// requires auto-logout for shared lab computers. Shorter than most apps
+// but necessary for a campus environment where students walk away mid-session.
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 let idleTimer = null;
 
@@ -35,7 +37,10 @@ const detachIdleListeners = (handler) => {
     if (handler) IDLE_EVENTS.forEach(evt => window.removeEventListener(evt, handler));
 };
 
-// Maps the API user payload to the shape we keep in the store
+// Normalize the user shape coming from the API.
+// The backend serializer uses camelCase (fullName, isActive) but some older
+// endpoints still return snake_case — this mapping handles both gracefully
+// so the rest of the frontend never has to worry about it.
 const mapUserResponse = (user) => ({
     id: user.id,
     email: user.email,
@@ -50,6 +55,10 @@ const mapUserResponse = (user) => ({
     createdAt: user.date_joined,
 });
 
+// Chose Zustand over Redux because the team is small (2 devs) and
+// the boilerplate reduction matters more than Redux DevTools here.
+// Also avoids the Provider wrapper which caused issues with our
+// lazy-loaded routes during initial setup.
 const useAuthStore = create(
     persist(
         (set, get) => ({

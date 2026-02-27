@@ -9,7 +9,10 @@ const api = axios.create({
     },
 });
 
-// Pull tokens straight from localStorage (avoids circular imports)
+// Read tokens directly from localStorage instead of importing the store.
+// We tried importing useAuthStore here but it caused a circular dependency
+// (authStore -> authService -> api -> authStore). Reading from localStorage
+// directly breaks the cycle. The store syncs it back on refresh anyway.
 const getTokens = () => {
     const authData = localStorage.getItem('auth-storage');
     if (authData) {
@@ -45,6 +48,10 @@ api.interceptors.request.use(
 let isRefreshing = false;
 let failedQueue = [];
 
+// Mutex queue for concurrent 401s. Without this, if 3 API calls fail
+// simultaneously, we'd fire 3 refresh requests and 2 would fail because
+// the token was already rotated. This pattern queues the failed requests
+// and replays them once the single refresh completes.
 const processQueue = (error, token = null) => {
     failedQueue.forEach(prom => {
         if (error) {

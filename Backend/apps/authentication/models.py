@@ -23,7 +23,10 @@ class User(AbstractUser):
     is_flagged = models.BooleanField(default=False, help_text='Flagged for overdue returns')
     overdue_count = models.PositiveIntegerField(default=0, help_text='Number of overdue incidents')
 
-    # Role hierarchy: STUDENT(0) < FACULTY(1) < STAFF(2) < ADMIN(3)
+    # Numbering starts at 0 because we compare with >= in has_min_role().
+    # Considered using Django's built-in groups/permissions but the role
+    # hierarchy is simple enough that a manual approach keeps the codebase
+    # smaller and avoids the overhead of Group/Permission M2M tables.
     ROLE_HIERARCHY = {
         'STUDENT': 0,
         'FACULTY': 1,

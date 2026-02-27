@@ -30,7 +30,10 @@ const useInventory = () => {
             const items = Array.isArray(data) ? data : data.results || [];
             setInventory(items);
 
-            // Compute stats from fetched items so stats cards stay in sync
+            // We recompute stats client-side from the fetched items rather than
+            // using the separate /stats/ endpoint because it guarantees the
+            // stat cards always match what the user sees in the grid below.
+            // The /stats/ endpoint exists for the dashboard's overview cards.
             const categories = new Set(items.map(i => i.category));
             setStats({
                 total: items.length,
@@ -158,6 +161,9 @@ const useInventory = () => {
     const getAccessibleItems = useCallback((userRole, searchQuery = '') => {
         const userLevel = ROLE_HIERARCHY[userRole] || 1;
 
+        // Client-side filtering — the backend already filters by role in
+        // get_queryset(), but this extra check handles the edge case where
+        // items were cached before a role change took effect.
         let accessible = inventory.filter(item => {
             const itemLevel = ROLE_HIERARCHY[item.accessLevel] || 1;
             return userLevel >= itemLevel && item.status === 'AVAILABLE' && item.quantity > 0;

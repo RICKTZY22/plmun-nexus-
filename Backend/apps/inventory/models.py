@@ -87,6 +87,9 @@ class Item(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # 5 was chosen based on average restock turnaround at PLMun:
+    # procurement takes ~3 business days so we flag at 5 to give
+    # staff enough lead time to reorder before we actually run out.
     LOW_STOCK_THRESHOLD = 5
 
     @property
