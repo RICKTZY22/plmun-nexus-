@@ -20,7 +20,8 @@ import {
     Plus,
     Trash2,
     AlertTriangle,
-    ArrowLeft
+    ArrowLeft,
+    LogOut
 } from 'lucide-react';
 import { Button, Input, Card, Modal } from '../components/ui';
 import { AdminOnly, StaffOnly, FacultyOnly } from '../components/auth';
@@ -58,12 +59,23 @@ const settingsTabs = [
 ];
 
 const Settings = () => {
-    const { user, updateProfile, updateAvatar, changePassword, isLoading, hasMinRole } = useAuthStore();
+    const { user, updateProfile, updateAvatar, changePassword, isLoading, hasMinRole, logout } = useAuthStore();
     const { theme, setTheme, backgroundEffect, setBackgroundEffect, viewMode, setViewMode, itemsPerPage, setItemsPerPage, showImages, setShowImages } = useUIStore();
     const { users, loading: usersLoading, fetchUsers, updateUserRole, toggleUserStatus, deleteUser: deleteUserAPI, unflagUser } = useUsers();
     const isMobile = useIsMobile();
     // On mobile: null = show menu, string = show tab detail
     const [activeTab, setActiveTab] = useState(isMobile ? null : 'profile');
+
+    // Sync activeTab when screen size changes
+    useEffect(() => {
+        if (isMobile && activeTab === 'profile') {
+            // Reset to menu on mobile so user sees all options
+            setActiveTab(null);
+        } else if (!isMobile && activeTab === null) {
+            // On desktop, always show a tab
+            setActiveTab('profile');
+        }
+    }, [isMobile]);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -669,6 +681,17 @@ const Settings = () => {
                         </button>
                     ))}
                 </div>
+
+                {/* Logout — only visible on mobile */}
+                <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-3.5 px-4 py-3.5 mt-4 bg-white dark:bg-gray-800 rounded-2xl border border-red-200 dark:border-red-900/50 text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors active:bg-red-100"
+                >
+                    <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                        <LogOut size={18} className="text-red-500" />
+                    </div>
+                    <span className="flex-1 font-medium text-sm text-red-600 dark:text-red-400">Log Out</span>
+                </button>
 
                 {/* Modals */}
                 {renderModals()}
