@@ -44,6 +44,7 @@ const Modal = ({
                 relative bg-white dark:bg-gray-800 w-full ${sizes[size]}
                 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700
                 animate-scale-in overflow-hidden
+                max-h-[calc(100vh-2rem)] overflow-y-auto
             `}>
                 {/* Header */}
                 {(title || showClose) && (

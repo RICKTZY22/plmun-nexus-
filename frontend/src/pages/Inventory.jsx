@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, Package, Download, Printer, FileText, MapPin, ChevronDown, ChevronRight, TrendingDown, CheckCircle, XCircle, Wrench, RefreshCw, Power, RotateCcw, Edit, Trash2, QrCode, AlertTriangle, Star, Eye, ArrowRight, Calendar } from 'lucide-react';
 import { Button, Input, Card, Modal, Table, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
+import { useIsMobile } from '../hooks';
 import { FacultyOnly, StaffOnly } from '../components/auth';
 import { InventoryItemCard, InventoryFormModal, InventoryDetailModal } from '../components/inventory';
 import { exportCSV, exportPDF } from '../utils/exportUtils';
@@ -25,8 +26,11 @@ const categoryIcons = {
 
 const Inventory = () => {
     const { inventory, loading, stats, fetchInventory, addItem, updateItem, deleteItem, changeItemStatus } = useInventory();
-    const { viewMode, itemsPerPage, showImages } = useUIStore();
+    const { viewMode: storedViewMode, itemsPerPage, showImages } = useUIStore();
     const { user } = useAuthStore();
+    const isMobile = useIsMobile();
+    // Force card view on mobile — table is unusable on narrow screens
+    const viewMode = isMobile ? 'card' : storedViewMode;
 
     // Load saved staff defaults from Settings → Inventory Settings tab
     const staffDefaults = useMemo(() => {
@@ -506,7 +510,7 @@ const Inventory = () => {
                                         viewMode === 'card' ? (
                                             /* ===== CARD VIEW ===== */
                                             <div className="p-4">
-                                                <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                                     {groupItems.map(item => (
                                                         <InventoryItemCard
                                                             key={item.id}

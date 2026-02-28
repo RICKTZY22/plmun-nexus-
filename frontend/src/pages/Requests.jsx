@@ -3,6 +3,7 @@ import { Plus, Search, Check, X, Clock, CheckCircle, Package, Lock, Eye, FileTex
 import { Button, Input, Card, Modal, Table, CommentBox } from '../components/ui';
 import { StaffOnly } from '../components/auth';
 import { useRequests, useInventory } from '../hooks';
+import { useIsMobile } from '../hooks';
 import useAuthStore from '../store/authStore';
 import { hasMinRole, ROLES } from '../utils/roles';
 import { useLocation } from 'react-router-dom';
@@ -25,7 +26,118 @@ const statusIcons = {
     CANCELLED: X,
 };
 
+// Responsive group body — cards on mobile, table on desktop
+const RequestGroupBody = ({ groupRequests, user, isStaffPlus, handleApprove, handleRejectClick, handleCancelClick, returnRequest, setDetailRequest, setDetailModalOpen, getComments, setDetailComments }) => {
+    const isMobile = useIsMobile();
+    const priorityColor = { HIGH: 'text-red-600 bg-red-50 dark:bg-red-900/20', LOW: 'text-gray-500 bg-gray-50 dark:bg-gray-700', NORMAL: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' };
+
+    if (isMobile) {
+        return (
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {groupRequests.map(request => {
+                    const isOwnRequest = request.requestedById === user?.id;
+                    const prio = (request.priority || 'NORMAL').toUpperCase();
+                    return (
+                        <div key={request.id} className="p-3 space-y-2">
+                            {/* Row 1: Item name + priority */}
+                            <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{request.itemName}</p>
+                                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${priorityColor[prio] || priorityColor.NORMAL}`}>{prio}</span>
+                            </div>
+                            {/* Row 2: Meta info */}
+                            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                <span className="flex items-center gap-1"><User size={12} />{request.requestedBy}</span>
+                                <span className="flex items-center gap-1"><Calendar size={12} />{request.requestDate}</span>
+                                <span>×{request.quantity}</span>
+                            </div>
+                            {/* Row 3: Purpose */}
+                            {request.purpose && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{request.purpose}</p>}
+                            {/* Row 4: Actions */}
+                            <div className="flex gap-1 pt-1">
+                                <Button variant="ghost" size="sm" onClick={async () => { setDetailRequest(request); setDetailModalOpen(true); const cmts = await getComments(request.id); setDetailComments(cmts); }} className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View"><Eye size={14} /><span className="text-xs ml-1">View</span></Button>
+                                {request.status === 'PENDING' && isOwnRequest && (
+                                    <Button variant="ghost" size="sm" onClick={() => handleCancelClick(request.id)} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Cancel"><Ban size={14} /></Button>
+                                )}
+                                {request.status === 'PENDING' && isStaffPlus && !isOwnRequest && (
+                                    <>
+                                        <Button variant="ghost" size="sm" onClick={() => handleApprove(request.id)} className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Approve"><Check size={14} /><span className="text-xs ml-1">Approve</span></Button>
+                                        <Button variant="ghost" size="sm" onClick={() => handleRejectClick(request.id)} className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Reject"><X size={14} /></Button>
+                                    </>
+                                )}
+                                {(request.status === 'APPROVED' || request.status === 'COMPLETED') && request.isReturnable && isStaffPlus && (
+                                    <Button variant="ghost" size="sm" onClick={() => returnRequest(request.id)} className="text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20" title="Return"><RotateCcw size={14} /></Button>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    }
+
+    // Desktop table view
+    return (
+        <Table>
+            <Table.Header>
+                <Table.Row>
+                    <Table.Head>Item</Table.Head>
+                    <Table.Head>Requested By</Table.Head>
+                    <Table.Head>Qty</Table.Head>
+                    <Table.Head>Purpose</Table.Head>
+                    <Table.Head>Date</Table.Head>
+                    <Table.Head>Priority</Table.Head>
+                    <Table.Head className="text-right">Actions</Table.Head>
+                </Table.Row>
+            </Table.Header>
+            <Table.Body>
+                {groupRequests.map(request => {
+                    const isOwnRequest = request.requestedById === user?.id;
+                    const prio = (request.priority || 'NORMAL').toUpperCase();
+                    return (
+                        <Table.Row key={request.id}>
+                            <Table.Cell className="font-medium">{request.itemName}</Table.Cell>
+                            <Table.Cell>{request.requestedBy}</Table.Cell>
+                            <Table.Cell>{request.quantity}</Table.Cell>
+                            <Table.Cell className="max-w-[180px] truncate">{request.purpose}</Table.Cell>
+                            <Table.Cell className="text-xs">{request.requestDate}</Table.Cell>
+                            <Table.Cell>
+                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor[prio] || priorityColor.NORMAL}`}>
+                                    {prio}
+                                </span>
+                            </Table.Cell>
+                            <Table.Cell>
+                                <div className="flex justify-end gap-1">
+                                    <Button variant="ghost" size="sm" onClick={async () => { setDetailRequest(request); setDetailModalOpen(true); const cmts = await getComments(request.id); setDetailComments(cmts); }} className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details"><Eye size={16} /></Button>
+                                    {request.status === 'PENDING' && isOwnRequest && (
+                                        <Button variant="ghost" size="sm" onClick={() => handleCancelClick(request.id)} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Cancel Request"><Ban size={16} /></Button>
+                                    )}
+                                    {request.status === 'PENDING' && (
+                                        <StaffOnly>
+                                            {!isOwnRequest && (
+                                                <>
+                                                    <Button variant="ghost" size="sm" onClick={() => handleApprove(request.id)} className="text-emerald-600 hover:bg-emerald-50" title="Approve"><Check size={16} /></Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => handleRejectClick(request.id)} className="text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></Button>
+                                                </>
+                                            )}
+                                        </StaffOnly>
+                                    )}
+                                    {(request.status === 'APPROVED' || request.status === 'COMPLETED') && request.isReturnable && (
+                                        <StaffOnly>
+                                            <Button variant="ghost" size="sm" onClick={() => returnRequest(request.id)} className="text-purple-600 hover:bg-purple-50" title="Return Item"><RotateCcw size={16} /></Button>
+                                        </StaffOnly>
+                                    )}
+                                </div>
+                            </Table.Cell>
+                        </Table.Row>
+                    );
+                })}
+            </Table.Body>
+        </Table>
+    );
+};
+
 const Requests = () => {
+    const isMobile = useIsMobile();
     const {
         requests,
         loading,
@@ -262,7 +374,7 @@ const Requests = () => {
             </div>
 
             {/* Stats — uses displayedStats to reflect current tab */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
                 <Card className="text-center py-4">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{displayedStats.total}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
@@ -369,65 +481,21 @@ const Requests = () => {
                                 {isCollapsed ? <ChevronRight size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                             </button>
 
-                            {/* Group body — table rows */}
+                            {/* Group body */}
                             {!isCollapsed && (
-                                <Table>
-                                    <Table.Header>
-                                        <Table.Row>
-                                            <Table.Head>Item</Table.Head>
-                                            <Table.Head>Requested By</Table.Head>
-                                            <Table.Head>Qty</Table.Head>
-                                            <Table.Head>Purpose</Table.Head>
-                                            <Table.Head>Date</Table.Head>
-                                            <Table.Head>Priority</Table.Head>
-                                            <Table.Head className="text-right">Actions</Table.Head>
-                                        </Table.Row>
-                                    </Table.Header>
-                                    <Table.Body>
-                                        {groupRequests.map(request => {
-                                            const isOwnRequest = request.requestedById === user?.id;
-                                            const priorityColor = { HIGH: 'text-red-600 bg-red-50', LOW: 'text-gray-500 bg-gray-50', NORMAL: 'text-blue-600 bg-blue-50' };
-                                            const prio = (request.priority || 'NORMAL').toUpperCase();
-                                            return (
-                                                <Table.Row key={request.id}>
-                                                    <Table.Cell className="font-medium">{request.itemName}</Table.Cell>
-                                                    <Table.Cell>{request.requestedBy}</Table.Cell>
-                                                    <Table.Cell>{request.quantity}</Table.Cell>
-                                                    <Table.Cell className="max-w-[180px] truncate">{request.purpose}</Table.Cell>
-                                                    <Table.Cell className="text-xs">{request.requestDate}</Table.Cell>
-                                                    <Table.Cell>
-                                                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor[prio] || priorityColor.NORMAL}`}>
-                                                            {prio}
-                                                        </span>
-                                                    </Table.Cell>
-                                                    <Table.Cell>
-                                                        <div className="flex justify-end gap-1">
-                                                            <Button variant="ghost" size="sm" onClick={async () => { setDetailRequest(request); setDetailModalOpen(true); const cmts = await getComments(request.id); setDetailComments(cmts); }} className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details"><Eye size={16} /></Button>
-                                                            {request.status === 'PENDING' && isOwnRequest && (
-                                                                <Button variant="ghost" size="sm" onClick={() => handleCancelClick(request.id)} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Cancel Request"><Ban size={16} /></Button>
-                                                            )}
-                                                            {request.status === 'PENDING' && (
-                                                                <StaffOnly>
-                                                                    {!isOwnRequest && (
-                                                                        <>
-                                                                            <Button variant="ghost" size="sm" onClick={() => handleApprove(request.id)} className="text-emerald-600 hover:bg-emerald-50" title="Approve"><Check size={16} /></Button>
-                                                                            <Button variant="ghost" size="sm" onClick={() => handleRejectClick(request.id)} className="text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></Button>
-                                                                        </>
-                                                                    )}
-                                                                </StaffOnly>
-                                                            )}
-                                                            {(request.status === 'APPROVED' || request.status === 'COMPLETED') && request.isReturnable && (
-                                                                <StaffOnly>
-                                                                    <Button variant="ghost" size="sm" onClick={() => returnRequest(request.id)} className="text-purple-600 hover:bg-purple-50" title="Return Item"><RotateCcw size={16} /></Button>
-                                                                </StaffOnly>
-                                                            )}
-                                                        </div>
-                                                    </Table.Cell>
-                                                </Table.Row>
-                                            );
-                                        })}
-                                    </Table.Body>
-                                </Table>
+                                <RequestGroupBody
+                                    groupRequests={groupRequests}
+                                    user={user}
+                                    isStaffPlus={isStaffPlus}
+                                    handleApprove={handleApprove}
+                                    handleRejectClick={handleRejectClick}
+                                    handleCancelClick={handleCancelClick}
+                                    returnRequest={returnRequest}
+                                    setDetailRequest={setDetailRequest}
+                                    setDetailModalOpen={setDetailModalOpen}
+                                    getComments={getComments}
+                                    setDetailComments={setDetailComments}
+                                />
                             )}
                         </div>
                     );
