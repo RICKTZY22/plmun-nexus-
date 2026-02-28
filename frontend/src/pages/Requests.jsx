@@ -177,6 +177,26 @@ const Requests = () => {
     const [detailComments, setDetailComments] = useState([]);
     const [commentLoading, setCommentLoading] = useState(false);
 
+    // RT-01: Poll comments every 5s while detail modal is open
+    useEffect(() => {
+        if (!detailModalOpen || !detailRequest?.id) return;
+        const pollInterval = setInterval(async () => {
+            try {
+                const cmts = await getComments(detailRequest.id);
+                setDetailComments(prev => {
+                    // Only update if comment count changed to avoid flicker
+                    if (prev.length !== cmts.length) return cmts;
+                    // Check if latest comment differs
+                    const lastPrev = prev[prev.length - 1];
+                    const lastNew = cmts[cmts.length - 1];
+                    if (lastPrev?.id !== lastNew?.id) return cmts;
+                    return prev;
+                });
+            } catch { /* silent */ }
+        }, 5000);
+        return () => clearInterval(pollInterval);
+    }, [detailModalOpen, detailRequest?.id, getComments]);
+
     // Collapsed status sections
     const [collapsedSections, setCollapsedSections] = useState({});
 
