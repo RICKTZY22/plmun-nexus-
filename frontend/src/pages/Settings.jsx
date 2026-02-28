@@ -19,13 +19,15 @@ import {
     Building,
     Plus,
     Trash2,
-    AlertTriangle
+    AlertTriangle,
+    ArrowLeft
 } from 'lucide-react';
 import { Button, Input, Card, Modal } from '../components/ui';
 import { AdminOnly, StaffOnly, FacultyOnly } from '../components/auth';
 import useAuthStore from '../store/authStore';
 import useUIStore from '../store/uiStore';
 import { useUsers } from '../hooks';
+import { useIsMobile } from '../hooks';
 import { ROLES, getRoleLabel, getRoleBadgeColor, hasMinRole } from '../utils/roles';
 import { formatApiError } from '../utils/errorUtils';
 import api from '../services/api';
@@ -59,7 +61,9 @@ const Settings = () => {
     const { user, updateProfile, updateAvatar, changePassword, isLoading, hasMinRole } = useAuthStore();
     const { theme, setTheme, backgroundEffect, setBackgroundEffect, viewMode, setViewMode, itemsPerPage, setItemsPerPage, showImages, setShowImages } = useUIStore();
     const { users, loading: usersLoading, fetchUsers, updateUserRole, toggleUserStatus, deleteUser: deleteUserAPI, unflagUser } = useUsers();
-    const [activeTab, setActiveTab] = useState('profile');
+    const isMobile = useIsMobile();
+    // On mobile: null = show menu, string = show tab detail
+    const [activeTab, setActiveTab] = useState(isMobile ? null : 'profile');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [showCreateUserModal, setShowCreateUserModal] = useState(false);
@@ -392,7 +396,7 @@ const Settings = () => {
     };
 
     const renderTabContent = () => {
-        switch (activeTab) {
+        switch (activeTab || 'profile') {
             case 'profile':
                 return (
                     <ProfileTab
@@ -539,45 +543,8 @@ const Settings = () => {
         }
     };
 
-    return (
-        <div className="animate-fade-in">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                    <SettingsIcon className="text-primary" />
-                    Settings
-                </h1>
-                <p className="text-gray-500 mt-1">Manage your account and system preferences</p>
-            </div>
-
-            <div className="flex flex-col lg:flex-row gap-6">
-                {/* Sidebar Navigation */}
-                <div className="lg:w-64 flex-shrink-0">
-                    <Card className="p-2">
-                        {visibleTabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${activeTab === tab.id
-                                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                    : 'text-gray-600 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <tab.icon size={20} />
-                                <span className="font-medium">{tab.label}</span>
-                                <ChevronRight size={16} className={`ml-auto transition-transform ${activeTab === tab.id ? 'rotate-90' : ''}`} />
-                            </button>
-                        ))}
-                    </Card>
-                </div>
-
-                {/* Content Area */}
-                <div className="flex-1">
-                    <Card className="p-6">
-                        {renderTabContent()}
-                    </Card>
-                </div>
-            </div>
-
+    const renderModals = () => (
+        <>
             {/* Create User Modal */}
             <Modal
                 isOpen={showCreateUserModal}
@@ -586,45 +553,16 @@ const Settings = () => {
             >
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Full Name"
-                            icon={User}
-                            placeholder="Juan Dela Cruz"
-                            value={createUserForm.fullName}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, fullName: e.target.value })}
-                        />
-                        <Input
-                            label="Email"
-                            icon={Mail}
-                            type="email"
-                            placeholder="juan@plm.edu.ph"
-                            value={createUserForm.email}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })}
-                        />
+                        <Input label="Full Name" icon={User} placeholder="Juan Dela Cruz" value={createUserForm.fullName} onChange={(e) => setCreateUserForm({ ...createUserForm, fullName: e.target.value })} />
+                        <Input label="Email" icon={Mail} type="email" placeholder="juan@plm.edu.ph" value={createUserForm.email} onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })} />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Username"
-                            icon={User}
-                            placeholder="juandelacruz"
-                            value={createUserForm.username}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, username: e.target.value })}
-                        />
-                        <Input
-                            label="Department"
-                            icon={Building}
-                            placeholder="e.g., CIT"
-                            value={createUserForm.department}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, department: e.target.value })}
-                        />
+                        <Input label="Username" icon={User} placeholder="juandelacruz" value={createUserForm.username} onChange={(e) => setCreateUserForm({ ...createUserForm, username: e.target.value })} />
+                        <Input label="Department" icon={Building} placeholder="e.g., CIT" value={createUserForm.department} onChange={(e) => setCreateUserForm({ ...createUserForm, department: e.target.value })} />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-                        <select
-                            value={createUserForm.role}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, role: e.target.value })}
-                            className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary"
-                        >
+                        <select value={createUserForm.role} onChange={(e) => setCreateUserForm({ ...createUserForm, role: e.target.value })} className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary">
                             <option value="STUDENT">Student</option>
                             <option value="FACULTY">Faculty</option>
                             <option value="STAFF">Staff</option>
@@ -632,33 +570,13 @@ const Settings = () => {
                         </select>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input
-                            label="Password"
-                            icon={Lock}
-                            type="password"
-                            placeholder="Min 6 characters"
-                            value={createUserForm.password}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })}
-                        />
-                        <Input
-                            label="Confirm Password"
-                            icon={Lock}
-                            type="password"
-                            placeholder="Re-enter password"
-                            value={createUserForm.password2}
-                            onChange={(e) => setCreateUserForm({ ...createUserForm, password2: e.target.value })}
-                        />
+                        <Input label="Password" icon={Lock} type="password" placeholder="Min 6 characters" value={createUserForm.password} onChange={(e) => setCreateUserForm({ ...createUserForm, password: e.target.value })} />
+                        <Input label="Confirm Password" icon={Lock} type="password" placeholder="Re-enter password" value={createUserForm.password2} onChange={(e) => setCreateUserForm({ ...createUserForm, password2: e.target.value })} />
                     </div>
-                    {createUserError && (
-                        <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 px-3 py-2 rounded-lg">{createUserError}</p>
-                    )}
+                    {createUserError && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 px-3 py-2 rounded-lg">{createUserError}</p>}
                     <div className="flex gap-3 justify-end pt-2">
-                        <Button variant="ghost" onClick={() => { setShowCreateUserModal(false); setCreateUserError(''); }}>
-                            Cancel
-                        </Button>
-                        <Button icon={Plus} onClick={handleCreateUser} loading={createUserLoading}>
-                            Create Account
-                        </Button>
+                        <Button variant="ghost" onClick={() => { setShowCreateUserModal(false); setCreateUserError(''); }}>Cancel</Button>
+                        <Button icon={Plus} onClick={handleCreateUser} loading={createUserLoading}>Create Account</Button>
                     </div>
                 </div>
             </Modal>
@@ -675,29 +593,131 @@ const Settings = () => {
                             <AlertTriangle className="w-6 h-6 text-red-500" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-gray-800">Are you sure?</h3>
-                            <p className="text-sm text-gray-500">This action cannot be undone.</p>
+                            <h3 className="font-semibold text-gray-800 dark:text-white">Are you sure?</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone.</p>
                         </div>
                     </div>
-
                     {selectedUser && (
-                        <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                            <p className="text-sm text-gray-600">
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                                 You are about to delete the account for <span className="font-semibold">{selectedUser.fullName}</span> ({selectedUser.email}).
                             </p>
                         </div>
                     )}
-
                     <div className="flex gap-3 justify-end">
-                        <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setSelectedUser(null); }}>
-                            Cancel
-                        </Button>
-                        <Button variant="danger" icon={Trash2} onClick={() => handleDeleteUser(selectedUser?.id)}>
-                            Delete Account
-                        </Button>
+                        <Button variant="ghost" onClick={() => { setShowDeleteModal(false); setSelectedUser(null); }}>Cancel</Button>
+                        <Button variant="danger" icon={Trash2} onClick={() => handleDeleteUser(selectedUser?.id)}>Delete Account</Button>
                     </div>
                 </div>
             </Modal>
+        </>
+    );
+
+    // Mobile: show menu OR detail, never both
+    if (isMobile) {
+        // Detail view
+        if (activeTab) {
+            const currentTab = visibleTabs.find(t => t.id === activeTab);
+            const TabIcon = currentTab?.icon || SettingsIcon;
+            return (
+                <div className="animate-fade-in">
+                    {/* Back header */}
+                    <button
+                        onClick={() => setActiveTab(null)}
+                        className="flex items-center gap-2 mb-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    >
+                        <ArrowLeft size={20} />
+                        <span className="text-sm font-medium">Settings</span>
+                    </button>
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
+                            <TabIcon size={20} className="text-primary" />
+                        </div>
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{currentTab?.label}</h1>
+                    </div>
+                    {renderTabContent()}
+
+                    {/* Modals */}
+                    {renderModals()}
+                </div>
+            );
+        }
+
+        // Menu view
+        return (
+            <div className="animate-fade-in">
+                <div className="mb-5">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                        <SettingsIcon className="text-primary" size={24} />
+                        Settings
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account and preferences</p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {visibleTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className="w-full flex items-center gap-3.5 px-4 py-3.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors active:bg-gray-100 dark:active:bg-gray-700"
+                        >
+                            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                <tab.icon size={18} className="text-gray-600 dark:text-gray-300" />
+                            </div>
+                            <span className="flex-1 font-medium text-sm text-gray-900 dark:text-gray-100">{tab.label}</span>
+                            <ChevronRight size={16} className="text-gray-400" />
+                        </button>
+                    ))}
+                </div>
+
+                {/* Modals */}
+                {renderModals()}
+            </div>
+        );
+    }
+
+    // Desktop layout (unchanged)
+    return (
+        <div className="animate-fade-in">
+            <div className="mb-8">
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+                    <SettingsIcon className="text-primary" />
+                    Settings
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your account and system preferences</p>
+            </div>
+
+            <div className="flex gap-6">
+                {/* Sidebar Navigation */}
+                <div className="w-64 flex-shrink-0">
+                    <Card className="p-2">
+                        {visibleTabs.map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${(activeTab || 'profile') === tab.id
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                    }`}
+                            >
+                                <tab.icon size={20} />
+                                <span className="font-medium">{tab.label}</span>
+                                <ChevronRight size={16} className={`ml-auto transition-transform ${(activeTab || 'profile') === tab.id ? 'rotate-90' : ''}`} />
+                            </button>
+                        ))}
+                    </Card>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1">
+                    <Card className="p-6">
+                        {renderTabContent()}
+                    </Card>
+                </div>
+            </div>
+
+            {/* Modals */}
+            {renderModals()}
         </div>
     );
 };

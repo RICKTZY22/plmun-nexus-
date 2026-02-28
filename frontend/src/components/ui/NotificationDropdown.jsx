@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Bell,
     Check,
@@ -29,6 +30,7 @@ const notificationIcons = {
 const NotificationDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
 
     const {
         notifications,
@@ -58,11 +60,31 @@ const NotificationDropdown = () => {
         if (willOpen) fetchNotifications();
     };
 
+    const getNotificationRoute = (type) => {
+        switch (type) {
+            case 'REQUEST_PENDING':
+            case 'REQUEST_APPROVED':
+            case 'REQUEST_REJECTED':
+            case 'STATUS_CHANGE':
+            case 'COMMENT':
+            case 'OVERDUE':
+            case 'REMINDER':
+                return '/requests';
+            case 'LOW_STOCK':
+            case 'INVENTORY_UPDATE':
+                return '/inventory';
+            default:
+                return null;
+        }
+    };
+
     const handleNotificationClick = (notification) => {
         if (!notification.isRead) {
             markAsRead(notification.id);
         }
         setIsOpen(false);
+        const route = getNotificationRoute(notification.type);
+        if (route) navigate(route);
     };
 
     const getTimeAgo = (dateStr) => {
