@@ -330,19 +330,19 @@ const Requests = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Requests</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">Manage borrowing and reservation requests</p>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Requests</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-sm">Manage borrowing and reservation requests</p>
                 </div>
                 <div className="flex gap-2">
                     <StaffOnly>
                         <Button variant="outline" icon={Trash2} onClick={() => clearCompleted()} className="text-gray-600">
-                            Clear Completed
+                            <span className="hidden md:inline">Clear Completed</span>
                         </Button>
                     </StaffOnly>
                     <Button icon={Plus} onClick={() => setIsModalOpen(true)}>
-                        New Request
+                        <span className="hidden sm:inline">New </span>Request
                     </Button>
                 </div>
             </div>
@@ -373,31 +373,31 @@ const Requests = () => {
                 )}
             </div>
 
-            {/* Stats — uses displayedStats to reflect current tab */}
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{displayedStats.total}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+            {/* Stats */}
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">{displayedStats.total}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Total</p>
                 </Card>
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-amber-600">{displayedStats.pending}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-amber-600">{displayedStats.pending}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Pending</p>
                 </Card>
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-emerald-600">{displayedStats.approved}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Approved</p>
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-emerald-600">{displayedStats.approved}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Approved</p>
                 </Card>
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-blue-600">{displayedStats.completed}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-blue-600">{displayedStats.completed}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Completed</p>
                 </Card>
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-red-600">{displayedStats.rejected}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Rejected</p>
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-red-600">{displayedStats.rejected}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Rejected</p>
                 </Card>
-                <Card className="text-center py-4">
-                    <p className="text-2xl font-bold text-orange-600">{displayedStats.overdue}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                <Card className="text-center py-2.5 md:py-4">
+                    <p className="text-lg md:text-2xl font-bold text-orange-600">{displayedStats.overdue}</p>
+                    <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400">Overdue</p>
                 </Card>
             </div>
 

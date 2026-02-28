@@ -352,34 +352,37 @@ const Inventory = () => {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your inventory items</p>
+                        <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
+                        <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-sm">Manage your inventory items</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <StaffOnly>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleExportCSV(); }}
-                                className="px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                className="p-2 md:px-3 md:py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                title="Export CSV"
                             >
                                 <Download size={16} />
-                                CSV
+                                <span className="hidden md:inline">CSV</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handleExportPDF(); }}
-                                className="px-3 py-2 text-sm font-medium bg-primary/10 text-primary rounded-xl hover:bg-primary/20 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                className="p-2 md:px-3 md:py-2 text-sm font-medium bg-primary/10 text-primary rounded-xl hover:bg-primary/20 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                title="Export PDF"
                             >
                                 <FileText size={16} />
-                                PDF
+                                <span className="hidden md:inline">PDF</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); handlePrint(); }}
-                                className="px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                className="p-2 md:px-3 md:py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer flex items-center gap-1.5 transition-colors"
+                                title="Print"
                             >
                                 <Printer size={16} />
-                                Print
+                                <span className="hidden md:inline">Print</span>
                             </button>
                         </StaffOnly>
                         <FacultyOnly>
@@ -391,46 +394,46 @@ const Inventory = () => {
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    <Card className="relative overflow-hidden py-5 px-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
+                    <Card className="relative overflow-hidden py-3 md:py-5 px-3 md:px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 dark:bg-primary/10 rounded-bl-full" />
-                        <Package size={20} className="text-primary mb-2" />
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+                        <Package size={18} className="text-primary mb-1.5" />
+                        <p className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Total Items</p>
                     </Card>
-                    <Card className="relative overflow-hidden py-5 px-4">
+                    <Card className="relative overflow-hidden py-3 md:py-5 px-3 md:px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-bl-full" />
-                        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-1.5">
+                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500" />
                         </div>
-                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.available}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Available</p>
+                        <p className="text-lg md:text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.available}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Available</p>
                     </Card>
-                    <Card className="relative overflow-hidden py-5 px-4">
+                    <Card className="relative overflow-hidden py-3 md:py-5 px-3 md:px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 dark:bg-blue-500/10 rounded-bl-full" />
-                        <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <div className="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-1.5">
+                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-blue-500" />
                         </div>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inUse}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">In Use</p>
+                        <p className="text-lg md:text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.inUse}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">In Use</p>
                     </Card>
-                    <Card className="relative overflow-hidden py-5 px-4">
+                    <Card className="relative overflow-hidden py-3 md:py-5 px-3 md:px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 dark:bg-amber-500/10 rounded-bl-full" />
-                        <TrendingDown size={20} className="text-amber-500 mb-2" />
-                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{filteredItems.filter(i => i.quantity > 0 && i.quantity <= LOW_STOCK_THRESHOLD).length}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
+                        <TrendingDown size={18} className="text-amber-500 mb-1.5" />
+                        <p className="text-lg md:text-2xl font-bold text-amber-600 dark:text-amber-400">{filteredItems.filter(i => i.quantity > 0 && i.quantity <= LOW_STOCK_THRESHOLD).length}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
                     </Card>
-                    <Card className="relative overflow-hidden py-5 px-4">
+                    <Card className="relative overflow-hidden py-3 md:py-5 px-3 md:px-4">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 dark:bg-red-500/10 rounded-bl-full" />
-                        <XCircle size={20} className="text-red-500 mb-2" />
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">{filteredItems.filter(i => i.quantity === 0).length}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
+                        <XCircle size={18} className="text-red-500 mb-1.5" />
+                        <p className="text-lg md:text-2xl font-bold text-red-600 dark:text-red-400">{filteredItems.filter(i => i.quantity === 0).length}</p>
+                        <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">Out of Stock</p>
                     </Card>
                 </div>
 
                 {/* Filters */}
                 <Card>
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col md:flex-row gap-2 md:gap-4">
                         <div className="flex-1">
                             <Input
                                 icon={Search}
@@ -439,29 +442,31 @@ const Inventory = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
-                        <select
-                            className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none transition-colors"
-                            value={filterCategory}
-                            onChange={(e) => setFilterCategory(e.target.value)}
-                        >
-                            <option value="">All Categories</option>
-                            <option value="ELECTRONICS">Electronics</option>
-                            <option value="FURNITURE">Furniture</option>
-                            <option value="EQUIPMENT">Equipment</option>
-                            <option value="SUPPLIES">Supplies</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                        <select
-                            className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none transition-colors"
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                        >
-                            <option value="">All Status</option>
-                            <option value="AVAILABLE">Available</option>
-                            <option value="IN_USE">In Use</option>
-                            <option value="MAINTENANCE">Maintenance</option>
-                            <option value="RETIRED">Retired</option>
-                        </select>
+                        <div className="flex gap-2">
+                            <select
+                                className="flex-1 md:flex-none px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none transition-colors"
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                            >
+                                <option value="">All Categories</option>
+                                <option value="ELECTRONICS">Electronics</option>
+                                <option value="FURNITURE">Furniture</option>
+                                <option value="EQUIPMENT">Equipment</option>
+                                <option value="SUPPLIES">Supplies</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                            <select
+                                className="flex-1 md:flex-none px-3 py-2.5 md:px-4 md:py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none transition-colors"
+                                value={filterStatus}
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                            >
+                                <option value="">All Status</option>
+                                <option value="AVAILABLE">Available</option>
+                                <option value="IN_USE">In Use</option>
+                                <option value="MAINTENANCE">Maintenance</option>
+                                <option value="RETIRED">Retired</option>
+                            </select>
+                        </div>
                     </div>
                 </Card>
 
