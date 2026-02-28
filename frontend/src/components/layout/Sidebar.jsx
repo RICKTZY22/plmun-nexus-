@@ -220,8 +220,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                     ))}
                 </nav>
 
-                {/* User Section */}
-                <div className="p-2 border-t border-gray-100 dark:border-gray-800">
+                {/* User Section — pinned at bottom */}
+                <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
                     <div className={`flex items-center gap-2 p-2 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
                         {user?.avatar ? (
                             <img
@@ -245,14 +245,15 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
                         onClick={handleLogout}
                         className={`
                             w-full mt-1 flex items-center gap-2
-                            px-3 py-2 rounded-lg
-                            text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10
+                            px-3 py-2.5 rounded-lg
+                            text-red-500 bg-red-50 dark:bg-red-500/10
+                            hover:bg-red-100 dark:hover:bg-red-500/20
                             transition-all duration-150
                             ${collapsed ? 'justify-center' : ''}
                         `}
                     >
-                        <LogOut size={16} />
-                        {!collapsed && <span className="text-xs font-medium">Logout</span>}
+                        <LogOut size={18} />
+                        {!collapsed && <span className="text-sm font-semibold">Log Out</span>}
                     </button>
                 </div>
             </aside>
