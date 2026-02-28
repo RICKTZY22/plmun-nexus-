@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils.html import strip_tags
+from typing import Optional
 from .models import Item
 
 
@@ -32,13 +33,13 @@ class ItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'dateAdded', 'isLowStock', 'isOutOfStock']
 
-    def get_isLowStock(self, obj):
+    def get_isLowStock(self, obj) -> bool:
         return obj.is_low_stock
 
-    def get_isOutOfStock(self, obj):
+    def get_isOutOfStock(self, obj) -> bool:
         return obj.is_out_of_stock
 
-    def get_statusChangedByName(self, obj):
+    def get_statusChangedByName(self, obj) -> Optional[str]:
         if obj.status_changed_by:
             full = obj.status_changed_by.get_full_name()
             return full if full.strip() else obj.status_changed_by.email

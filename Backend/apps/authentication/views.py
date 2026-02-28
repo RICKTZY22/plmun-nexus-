@@ -1,6 +1,6 @@
 import os
 
-from rest_framework import status, generics, permissions
+from rest_framework import status, generics, permissions, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
@@ -154,6 +154,7 @@ class ProfileView(APIView):
 class ChangePasswordView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChangePasswordSerializer
 
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
@@ -167,6 +168,11 @@ class ChangePasswordView(APIView):
 class ProfilePictureView(APIView):
 
     permission_classes = [permissions.IsAuthenticated]
+
+    # Schema hint for DRF docs
+    class ProfilePictureSerializer(serializers.Serializer):
+        avatar = serializers.ImageField()
+    serializer_class = ProfilePictureSerializer
 
     ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/webp'}
     ALLOWED_EXT = {'.jpg', '.jpeg', '.png', '.webp'}

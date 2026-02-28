@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from django.utils.html import strip_tags
+from typing import Optional
 from .models import Request, Comment, Notification
 from apps.authentication.serializers import UserSerializer
 
@@ -16,7 +17,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ['id', 'author', 'authorName', 'text', 'timestamp']
         read_only_fields = ['id', 'author', 'authorName', 'timestamp']
 
-    def get_authorName(self, obj):
+    def get_authorName(self, obj) -> str:
         return obj.author.get_full_name() or obj.author.username
 
 
@@ -68,34 +69,34 @@ class RequestSerializer(serializers.ModelSerializer):
             'borrowDuration', 'borrowDurationUnit', 'createdAt', 'comments', 'itemName',
         ]
 
-    def get_requestedBy(self, obj):
+    def get_requestedBy(self, obj) -> str:
         return obj.requested_by.get_full_name() or obj.requested_by.username
 
-    def get_approvedBy(self, obj):
+    def get_approvedBy(self, obj) -> Optional[str]:
         if obj.approved_by:
             return obj.approved_by.get_full_name() or obj.approved_by.username
         return None
 
-    def get_isReturnable(self, obj):
+    def get_isReturnable(self, obj) -> bool:
         try:
             return obj.item.is_returnable
         except (AttributeError, obj.item.DoesNotExist):
             return False
 
-    def get_isOverdue(self, obj):
+    def get_isOverdue(self, obj) -> bool:
         if obj.status not in ('APPROVED', 'COMPLETED'):
             return False
         if not obj.expected_return:
             return False
         return obj.expected_return < timezone.now()
 
-    def get_borrowDuration(self, obj):
+    def get_borrowDuration(self, obj) -> Optional[int]:
         try:
             return obj.item.borrow_duration
         except (AttributeError, obj.item.DoesNotExist):
             return None
 
-    def get_borrowDurationUnit(self, obj):
+    def get_borrowDurationUnit(self, obj) -> Optional[str]:
         try:
             return obj.item.borrow_duration_unit
         except (AttributeError, obj.item.DoesNotExist):
@@ -141,12 +142,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'type', 'message', 'isRead', 'senderName', 'itemName', 'requestId', 'createdAt']
 
-    def get_senderName(self, obj):
+    def get_senderName(self, obj) -> Optional[str]:
         if obj.sender:
             return obj.sender.get_full_name() or obj.sender.username
         return None
 
-    def get_itemName(self, obj):
+    def get_itemName(self, obj) -> Optional[str]:
         if obj.request:
             return obj.request.item_name
         return None
