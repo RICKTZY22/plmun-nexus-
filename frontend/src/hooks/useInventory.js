@@ -71,6 +71,11 @@ const useInventory = () => {
                     delete cleanData.imageUrl;
                 }
             }
+            // Django's PositiveIntegerField chokes on empty strings —
+            // send null instead so the field is properly cleared
+            if (!cleanData.borrowDuration && cleanData.borrowDuration !== 0) {
+                cleanData.borrowDuration = null;
+            }
             const newItem = await inventoryService.create(cleanData);
             setInventory(prev => [...prev, newItem]);
             return { success: true, item: newItem, message: 'Item added successfully' };
@@ -97,6 +102,12 @@ const useInventory = () => {
             });
             // Always include quantity even if 0
             if (data.quantity !== undefined) cleanData.quantity = data.quantity;
+            // Always include isReturnable — false is a legit value
+            if (data.isReturnable !== undefined) cleanData.isReturnable = data.isReturnable;
+            // same empty string → null fix for borrowDuration
+            if (!data.borrowDuration && data.borrowDuration !== 0) {
+                cleanData.borrowDuration = null;
+            }
             const updatedItem = await inventoryService.update(id, cleanData);
             setInventory(prev => prev.map(item =>
                 item.id === id ? updatedItem : item
