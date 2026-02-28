@@ -153,15 +153,20 @@ class RequestViewSet(viewsets.ModelViewSet):
             item.status = 'IN_USE'
             item.save(update_fields=['status'])
 
-        req.status = 'APPROVED'
         req.approved_by = request.user
         req.approved_at = timezone.now()
 
-        # Auto-calculate expected return from item's borrow duration
-        if item.is_returnable and item.borrow_duration:
-            delta = item.get_return_timedelta()
-            if delta:
-                req.expected_return = timezone.now() + delta
+        # Non-returnable items (consumables) auto-complete on approval
+        # since there's nothing to return — they're just "taken"
+        if not item.is_returnable:
+            req.status = 'COMPLETED'
+        else:
+            req.status = 'APPROVED'
+            # Auto-calculate expected return from item's borrow duration
+            if item.borrow_duration:
+                delta = item.get_return_timedelta()
+                if delta:
+                    req.expected_return = timezone.now() + delta
 
         req.save()
 

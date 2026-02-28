@@ -145,7 +145,7 @@ const Dashboard = () => {
         overdue: myRequests.filter(r => r.isOverdue).length,
     }), [myRequests]);
     const myRecent = useMemo(() => myRequests.slice(0, 5), [myRequests]);
-    const activeBorrows = useMemo(() => myRequests.filter(r => r.status === 'APPROVED' && r.expectedReturn), [myRequests]);
+    const activeBorrows = useMemo(() => myRequests.filter(r => r.status === 'APPROVED' && r.isReturnable && r.expectedReturn), [myRequests]);
 
     // F-09: Favorites (must be top-level hooks)
     const [favorites, setFavorites] = useState([]);
