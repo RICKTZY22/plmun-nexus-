@@ -12,6 +12,10 @@ import { AnimatedInput } from '../components/ui';
 
 import universityBuilding from '../assets/images/university-building.jpg';
 import plmunLogo from '../assets/images/logo.png';
+import plmunCommunity from '../assets/images/plmun-community.png';
+import plmunBuildingFacade from '../assets/images/plmun-building-facade.png';
+import plmunCampusEvent from '../assets/images/plmun-campus-event.png';
+import plmunGraduation from '../assets/images/plmun-graduation.png';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_TIERS = [30_000, 60_000, 300_000, 1_800_000, 3_600_000];
@@ -77,6 +81,10 @@ const ACCREDITATIONS = [
 ];
 
 
+/* ─── Background carousel images ─── */
+const BG_CAROUSEL_IMAGES = [universityBuilding, plmunBuildingFacade, plmunCommunity, plmunCampusEvent, plmunGraduation];
+const BG_CAROUSEL_INTERVAL = 5000; // 5 seconds
+
 // login page
 const Login = () => {
     const navigate = useNavigate();
@@ -90,6 +98,15 @@ const Login = () => {
     const [lockedUntil, setLockedUntil] = useState(() => readGuard().lockedUntil || null);
     const [offenses, setOffenses] = useState(() => readGuard().offenses || 0);
     const [countdown, setCountdown] = useState(0);
+
+    /* ── Background carousel state ── */
+    const [bgIndex, setBgIndex] = useState(0);
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setBgIndex((prev) => (prev + 1) % BG_CAROUSEL_IMAGES.length);
+        }, BG_CAROUSEL_INTERVAL);
+        return () => clearInterval(timer);
+    }, []);
 
     const [deactivatedNotice, setDeactivatedNotice] = useState(() => {
         const flag = localStorage.getItem('plmun-deactivated');
@@ -379,240 +396,277 @@ const Login = () => {
             </section>
 
 
-            {/* ═══════════ SECTION 2: ABOUT THE INVENTORY ═══════════ */}
-            <section
-                id="about-section"
-                ref={addSectionRef(0)}
-                data-section="about"
-                className={`py-20 md:py-28 px-6 bg-white dark:bg-gray-800 transition-all duration-700 ${visibleSections.has('about') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-            >
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-14">
-                        <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-widest mb-4">
-                            About the System
-                        </span>
-                        <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-                            PLMun Inventory <span className="text-accent">Nexus</span>
-                        </h2>
-                        <p className="mt-4 text-gray-500 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                            A modern, web-based inventory management system built specifically for
-                            Pamantasan ng Lungsod ng Muntinlupa. Designed to streamline equipment tracking,
-                            borrowing workflows, and resource management across all university departments.
-                        </p>
-                    </div>
+            {/* ═══════════ SECTIONS 2-4 WRAPPER WITH CAROUSEL BACKGROUND ═══════════ */}
+            <div className="relative overflow-hidden">
+                {/* Carousel background images */}
+                {BG_CAROUSEL_IMAGES.map((img, i) => (
+                    <div
+                        key={i}
+                        className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1500ms] ease-in-out"
+                        style={{
+                            backgroundImage: `url(${img})`,
+                            opacity: bgIndex === i ? 1 : 0,
+                            zIndex: 0,
+                        }}
+                    />
+                ))}
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-gray-900/80 dark:bg-gray-900/90 z-[1]" />
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {FEATURES.map((f, i) => (
-                            <div
-                                key={f.title}
-                                className="group p-6 rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 hover:border-accent/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-                                style={{ transitionDelay: `${i * 80}ms` }}
-                            >
-                                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 group-hover:scale-110 transition-all duration-300">
-                                    <f.icon size={22} className="text-accent" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 dark:text-white mb-2">{f.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{f.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {[
-                            { label: 'User Roles', value: '4', sub: 'Student · Faculty · Staff · Admin' },
-                            { label: 'Security', value: 'JWT', sub: 'Token-based authentication' },
-                            { label: 'Frameworks', value: '2', sub: 'React + Django REST' },
-                            { label: 'Database', value: 'PostgreSQL', sub: 'Production-grade RDBMS' },
-                        ].map((s) => (
-                            <div key={s.label} className="text-center p-5 rounded-2xl bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-600">
-                                <p className="text-2xl font-black text-accent">{s.value}</p>
-                                <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">{s.label}</p>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{s.sub}</p>
-                            </div>
-                        ))}
-                    </div>
+                {/* Carousel dots indicator */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[3] flex items-center gap-2">
+                    {BG_CAROUSEL_IMAGES.map((_, i) => (
+                        <button
+                            key={i}
+                            onClick={() => setBgIndex(i)}
+                            className={`w-2 h-2 rounded-full transition-all duration-300 ${bgIndex === i
+                                ? 'bg-accent w-6 shadow-lg'
+                                : 'bg-white/40 hover:bg-white/60'
+                                }`}
+                            aria-label={`Background image ${i + 1}`}
+                        />
+                    ))}
                 </div>
-            </section>
 
-
-            {/* ═══════════ SECTION 3: EDUCATIONAL PHILOSOPHY ═══════════ */}
-            <section
-                ref={addSectionRef(1)}
-                data-section="philosophy"
-                className={`relative py-20 md:py-28 px-6 overflow-hidden transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                style={{ background: 'linear-gradient(135deg, #d4a017 0%, #c8960f 35%, #b8860b 65%, #a67c00 100%)' }}
-            >
-                {/* Subtle pattern overlay */}
-                <div className="absolute inset-0 opacity-[0.06]"
-                    style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-
-                <div className="relative max-w-6xl mx-auto">
-                    <div className="text-center mb-14">
-                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-widest mb-4 border border-white/30">
-                            <BookOpen size={14} />
-                            Educational Philosophy
-                        </div>
-                        <h2 className="text-3xl md:text-4xl font-black text-white">
-                            Mission · Vision · Values
-                        </h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {/* Mission */}
-                        <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <Target size={24} className="text-white" />
-                            </div>
-                            <h3 className="text-xl font-black text-white mb-3">Mission</h3>
-                            <p className="text-white/85 text-sm leading-relaxed">
-                                To provide quality, affordable and relevant education responsive to the changing needs of
-                                the local and global communities through effective and efficient integration of instruction,
-                                research and extension; to develop productive and God-loving individuals in society.
-                            </p>
-                        </div>
-
-                        {/* Vision */}
-                        <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <Lightbulb size={24} className="text-white" />
-                            </div>
-                            <h3 className="text-xl font-black text-white mb-3">Vision</h3>
-                            <p className="text-white/85 text-sm leading-relaxed">
-                                A dynamic and highly competitive Higher Education Institution (HEI) committed to people
-                                empowerment towards building a humane society.
-                            </p>
-                        </div>
-
-                        {/* Quality Policy */}
-                        <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <Award size={24} className="text-white" />
-                            </div>
-                            <h3 className="text-xl font-black text-white mb-3">Quality Policy</h3>
-                            <p className="text-white/85 text-sm leading-relaxed">
-                                "We, in the Pamantasan ng Lungsod ng Muntinlupa, commit to meet and even exceed our clients'
-                                needs and expectations by adhering to good governance, productivity and continually improving
-                                the effectiveness of our Quality Management System in compliance to ethical standards and
-                                applicable statutory and regulatory requirements."
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Motto */}
-                    <div className="mt-10 text-center">
-                        <p className="text-white/60 text-xs uppercase tracking-widest mb-2">University Motto</p>
-                        <p className="text-2xl font-black text-white italic">"Lakas, Talino, at Buhay"</p>
-                        <p className="text-white/70 text-sm mt-1">Strength, Wisdom, and Life</p>
-                    </div>
-                </div>
-            </section>
-
-
-            {/* ═══════════ SECTION 4: ABOUT PLMUN + ACCREDITATION ═══════════ */}
-            <section
-                ref={addSectionRef(2)}
-                data-section="school"
-                className={`py-20 md:py-28 px-6 bg-gray-50 dark:bg-gray-900 transition-all duration-700 ${visibleSections.has('school') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-            >
-                <div className="max-w-6xl mx-auto">
-                    <div className="grid lg:grid-cols-2 gap-12 items-center">
-
-                        {/* Image + overlay */}
-                        <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
-                            <img
-                                src={universityBuilding}
-                                alt="PLMun Campus"
-                                className="w-full h-[360px] object-cover group-hover:scale-105 transition-transform duration-700"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
-                            <div className="absolute bottom-0 left-0 right-0 p-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
-                                        <img src={plmunLogo} alt="PLMun" className="w-full h-full object-contain" />
-                                    </div>
-                                    <div>
-                                        <p className="text-white font-bold text-sm">Pamantasan ng Lungsod ng Muntinlupa</p>
-                                        <p className="text-white/60 text-xs">Public university · Muntinlupa City</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Info */}
-                        <div className="space-y-6">
-                            <div>
-                                <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-widest mb-4">
-                                    Our University
-                                </span>
-                                <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white leading-tight">
-                                    Pamantasan ng Lungsod ng <span className="text-accent">Muntinlupa</span>
-                                </h2>
-                            </div>
-                            <p className="text-gray-500 dark:text-gray-400 leading-relaxed">
-                                PLMun is a public university in Muntinlupa City, Philippines, committed to providing
-                                quality and accessible education. The university empowers students with knowledge and skills
-                                to contribute meaningfully to the community through effective integration of instruction,
-                                research, and extension.
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                {[
-                                    { icon: GraduationCap, label: 'Quality Education', desc: 'CHED-recognized programs' },
-                                    { icon: Building2, label: 'Modern Facilities', desc: 'Updated campus resources' },
-                                    { icon: Heart, label: 'Free Tuition', desc: 'UniFAST recipient' },
-                                    { icon: Users, label: 'Community-Centered', desc: 'Service & outreach' },
-                                ].map((item) => (
-                                    <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-                                        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center flex-shrink-0">
-                                            <item.icon size={17} className="text-accent" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-gray-900 dark:text-white">{item.label}</p>
-                                            <p className="text-xs text-gray-400">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ── Accreditation ── */}
-                    <div className="mt-16">
-                        <div className="text-center mb-10">
-                            <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-widest mb-3">
-                                Accreditation
+                {/* ═══════════ SECTION 2: ABOUT THE INVENTORY ═══════════ */}
+                <section
+                    id="about-section"
+                    ref={addSectionRef(0)}
+                    data-section="about"
+                    className={`relative z-[2] py-20 md:py-28 px-6 transition-all duration-700 ${visibleSections.has('about') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                >
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-14">
+                            <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-4 border border-accent/30">
+                                About the System
                             </span>
-                            <h3 className="text-2xl font-black text-gray-900 dark:text-white">
-                                Recognized & <span className="text-accent">Accredited</span>
-                            </h3>
+                            <h2 className="text-3xl md:text-4xl font-black text-white">
+                                PLMun Inventory <span className="text-accent-light">Nexus</span>
+                            </h2>
+                            <p className="mt-4 text-white/70 max-w-2xl mx-auto leading-relaxed">
+                                A modern, web-based inventory management system built specifically for
+                                Pamantasan ng Lungsod ng Muntinlupa. Designed to streamline equipment tracking,
+                                borrowing workflows, and resource management across all university departments.
+                            </p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {FEATURES.map((f, i) => (
+                                <div
+                                    key={f.title}
+                                    className="group p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:border-accent/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                                    style={{ transitionDelay: `${i * 80}ms` }}
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center mb-4 group-hover:bg-accent/30 group-hover:scale-110 transition-all duration-300">
+                                        <f.icon size={22} className="text-accent-light" />
+                                    </div>
+                                    <h3 className="font-bold text-white mb-2">{f.title}</h3>
+                                    <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6">
+                            {[
+                                { label: 'User Roles', value: '4', sub: 'Student · Faculty · Staff · Admin' },
+                                { label: 'Security', value: 'JWT', sub: 'Token-based authentication' },
+                                { label: 'Frameworks', value: '2', sub: 'React + Django REST' },
+                                { label: 'Database', value: 'PostgreSQL', sub: 'Production-grade RDBMS' },
+                            ].map((s) => (
+                                <div key={s.label} className="text-center p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
+                                    <p className="text-2xl font-black text-accent-light">{s.value}</p>
+                                    <p className="text-sm font-semibold text-white mt-1">{s.label}</p>
+                                    <p className="text-xs text-white/50 mt-0.5">{s.sub}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+
+                {/* ═══════════ SECTION 3: EDUCATIONAL PHILOSOPHY ═══════════ */}
+                <section
+                    ref={addSectionRef(1)}
+                    data-section="philosophy"
+                    className={`relative z-[2] py-20 md:py-28 px-6 overflow-hidden transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                >
+                    {/* Gold tint overlay for this section */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/60 via-yellow-800/50 to-amber-900/60 z-0" />
+                    {/* Subtle pattern overlay */}
+                    <div className="absolute inset-0 opacity-[0.06] z-0"
+                        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
+
+                    <div className="relative z-[1] max-w-6xl mx-auto">
+                        <div className="text-center mb-14">
+                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-widest mb-4 border border-white/30">
+                                <BookOpen size={14} />
+                                Educational Philosophy
+                            </div>
+                            <h2 className="text-3xl md:text-4xl font-black text-white">
+                                Mission · Vision · Values
+                            </h2>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-6">
-                            {ACCREDITATIONS.map((a, i) => {
-                                const colorMap = {
-                                    blue: { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', icon: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' },
-                                    green: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800', icon: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400' },
-                                    red: { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', icon: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' },
-                                };
-                                const c = colorMap[a.color];
-                                return (
-                                    <div
-                                        key={a.title}
-                                        className={`${c.bg} ${c.border} border rounded-2xl p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300`}
-                                        style={{ transitionDelay: `${i * 100}ms` }}
-                                    >
-                                        <div className={`w-11 h-11 rounded-xl ${c.icon} flex items-center justify-center mb-4`}>
-                                            <Award size={20} />
-                                        </div>
-                                        <h4 className="font-bold text-gray-900 dark:text-white text-sm mb-2">{a.title}</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{a.desc}</p>
-                                    </div>
-                                );
-                            })}
+                            {/* Mission */}
+                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Target size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-3">Mission</h3>
+                                <p className="text-white/85 text-sm leading-relaxed">
+                                    To provide quality, affordable and relevant education responsive to the changing needs of
+                                    the local and global communities through effective and efficient integration of instruction,
+                                    research and extension; to develop productive and God-loving individuals in society.
+                                </p>
+                            </div>
+
+                            {/* Vision */}
+                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Lightbulb size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-3">Vision</h3>
+                                <p className="text-white/85 text-sm leading-relaxed">
+                                    A dynamic and highly competitive Higher Education Institution (HEI) committed to people
+                                    empowerment towards building a humane society.
+                                </p>
+                            </div>
+
+                            {/* Quality Policy */}
+                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Award size={24} className="text-white" />
+                                </div>
+                                <h3 className="text-xl font-black text-white mb-3">Quality Policy</h3>
+                                <p className="text-white/85 text-sm leading-relaxed">
+                                    "We, in the Pamantasan ng Lungsod ng Muntinlupa, commit to meet and even exceed our clients'
+                                    needs and expectations by adhering to good governance, productivity and continually improving
+                                    the effectiveness of our Quality Management System in compliance to ethical standards and
+                                    applicable statutory and regulatory requirements."
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Motto */}
+                        <div className="mt-10 text-center">
+                            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">University Motto</p>
+                            <p className="text-2xl font-black text-white italic">"Lakas, Talino, at Buhay"</p>
+                            <p className="text-white/70 text-sm mt-1">Strength, Wisdom, and Life</p>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+
+
+                {/* ═══════════ SECTION 4: ABOUT PLMUN + ACCREDITATION ═══════════ */}
+                <section
+                    ref={addSectionRef(2)}
+                    data-section="school"
+                    className={`relative z-[2] py-20 md:py-28 px-6 transition-all duration-700 ${visibleSections.has('school') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                >
+                    {/* Section divider */}
+                    <div className="absolute inset-0 bg-black/20 z-0" />
+                    <div className="relative z-[1] max-w-6xl mx-auto">
+                        <div className="grid lg:grid-cols-2 gap-12 items-center">
+
+                            {/* Campus image — shows current carousel image */}
+                            <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
+                                <img
+                                    src={BG_CAROUSEL_IMAGES[bgIndex]}
+                                    alt="PLMun Campus"
+                                    className="w-full h-[360px] object-cover group-hover:scale-105 transition-all duration-700"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 p-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                                            <img src={plmunLogo} alt="PLMun" className="w-full h-full object-contain" />
+                                        </div>
+                                        <div>
+                                            <p className="text-white font-bold text-sm">Pamantasan ng Lungsod ng Muntinlupa</p>
+                                            <p className="text-white/60 text-xs">Public university · Muntinlupa City</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info */}
+                            <div className="space-y-6">
+                                <div>
+                                    <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-4 border border-accent/30">
+                                        Our University
+                                    </span>
+                                    <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                                        Pamantasan ng Lungsod ng <span className="text-accent-light">Muntinlupa</span>
+                                    </h2>
+                                </div>
+                                <p className="text-white/70 leading-relaxed">
+                                    PLMun is a public university in Muntinlupa City, Philippines, committed to providing
+                                    quality and accessible education. The university empowers students with knowledge and skills
+                                    to contribute meaningfully to the community through effective integration of instruction,
+                                    research, and extension.
+                                </p>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    {[
+                                        { icon: GraduationCap, label: 'Quality Education', desc: 'CHED-recognized programs' },
+                                        { icon: Building2, label: 'Modern Facilities', desc: 'Updated campus resources' },
+                                        { icon: Heart, label: 'Free Tuition', desc: 'UniFAST recipient' },
+                                        { icon: Users, label: 'Community-Centered', desc: 'Service & outreach' },
+                                    ].map((item) => (
+                                        <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                                            <div className="w-9 h-9 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                                                <item.icon size={17} className="text-accent-light" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white">{item.label}</p>
+                                                <p className="text-xs text-white/50">{item.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Accreditation ── */}
+                        <div className="mt-16">
+                            <div className="text-center mb-10">
+                                <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-3 border border-accent/30">
+                                    Accreditation
+                                </span>
+                                <h3 className="text-2xl font-black text-white">
+                                    Recognized & <span className="text-accent-light">Accredited</span>
+                                </h3>
+                            </div>
+
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {ACCREDITATIONS.map((a, i) => {
+                                    const colorMap = {
+                                        blue: { bg: 'bg-blue-500/15', border: 'border-blue-400/30', icon: 'bg-blue-500/20 text-blue-300' },
+                                        green: { bg: 'bg-emerald-500/15', border: 'border-emerald-400/30', icon: 'bg-emerald-500/20 text-emerald-300' },
+                                        red: { bg: 'bg-red-500/15', border: 'border-red-400/30', icon: 'bg-red-500/20 text-red-300' },
+                                    };
+                                    const c = colorMap[a.color];
+                                    return (
+                                        <div
+                                            key={a.title}
+                                            className={`${c.bg} ${c.border} backdrop-blur-sm border rounded-2xl p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300`}
+                                            style={{ transitionDelay: `${i * 100}ms` }}
+                                        >
+                                            <div className={`w-11 h-11 rounded-xl ${c.icon} flex items-center justify-center mb-4`}>
+                                                <Award size={20} />
+                                            </div>
+                                            <h4 className="font-bold text-white text-sm mb-2">{a.title}</h4>
+                                            <p className="text-xs text-white/60 leading-relaxed">{a.desc}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>{/* end carousel wrapper */}
 
 
             {/* ═══════════ SECTION 5: CREATORS / TEAM ═══════════ */}
