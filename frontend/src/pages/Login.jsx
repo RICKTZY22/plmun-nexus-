@@ -336,7 +336,7 @@ const Login = () => {
                 </div>
 
                 {/* ── RIGHT PANEL — form ── */}
-                <div className="flex-1 flex items-center justify-center relative bg-gray-50 dark:bg-gray-900 px-6 py-12">
+                <div className="flex-1 flex items-center justify-center relative bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 py-8 sm:py-12">
                     <div className="absolute inset-0 bg-cover bg-center lg:hidden" style={{ backgroundImage: `url(${universityBuilding})` }} />
                     <div className="absolute inset-0 bg-gray-900/80 lg:hidden" />
 
@@ -347,7 +347,7 @@ const Login = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-8 border border-gray-200 dark:border-gray-700">
                             <div className="mb-7">
                                 <h2 className="text-2xl font-black text-gray-900 dark:text-white">Welcome back</h2>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Sign in to your PLMun Nexus account</p>
@@ -511,50 +511,51 @@ const Login = () => {
                     id="about-section"
                     ref={addSectionRef(0)}
                     data-section="about"
-                    className={`relative z-[2] py-20 md:py-28 px-6 transition-all duration-700 ${visibleSections.has('about') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`relative z-[2] py-12 md:py-20 px-4 sm:px-6 transition-all duration-700 ${visibleSections.has('about') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                 >
                     <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-14">
-                            <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-4 border border-accent/30">
+                        <div className="text-center mb-8 md:mb-14">
+                            <span className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-accent/20 text-accent-light text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4 border border-accent/30">
                                 About the System
                             </span>
-                            <h2 className="text-3xl md:text-4xl font-black text-white">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
                                 PLMun Inventory <span className="text-accent-light">Nexus</span>
                             </h2>
-                            <p className="mt-4 text-white/70 max-w-2xl mx-auto leading-relaxed">
+                            <p className="mt-3 sm:mt-4 text-white/70 max-w-2xl mx-auto leading-relaxed text-sm sm:text-base">
                                 A modern, web-based inventory management system built specifically for
                                 Pamantasan ng Lungsod ng Muntinlupa. Designed to streamline equipment tracking,
                                 borrowing workflows, and resource management across all university departments.
                             </p>
                         </div>
 
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                             {FEATURES.map((f, i) => (
                                 <div
                                     key={f.title}
-                                    className="group p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:border-accent/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                                    className="group p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 hover:border-accent/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                                     style={{ transitionDelay: `${i * 80}ms` }}
                                 >
-                                    <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center mb-4 group-hover:bg-accent/30 group-hover:scale-110 transition-all duration-300">
-                                        <f.icon size={22} className="text-accent-light" />
+                                    <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-accent/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-accent/30 group-hover:scale-110 transition-all duration-300">
+                                        <f.icon size={18} className="text-accent-light sm:hidden" />
+                                        <f.icon size={22} className="text-accent-light hidden sm:block" />
                                     </div>
-                                    <h3 className="font-bold text-white mb-2">{f.title}</h3>
-                                    <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
+                                    <h3 className="font-bold text-white mb-1 sm:mb-2 text-sm sm:text-base">{f.title}</h3>
+                                    <p className="text-xs sm:text-sm text-white/70 leading-relaxed">{f.desc}</p>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div className="mt-8 sm:mt-14 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                             {[
                                 { label: 'User Roles', value: '4', sub: 'Student · Faculty · Staff · Admin' },
                                 { label: 'Security', value: 'JWT', sub: 'Token-based authentication' },
                                 { label: 'Frameworks', value: '2', sub: 'React + Django REST' },
                                 { label: 'Database', value: 'PostgreSQL', sub: 'Production-grade RDBMS' },
                             ].map((s) => (
-                                <div key={s.label} className="text-center p-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
-                                    <p className="text-2xl font-black text-accent-light">{s.value}</p>
-                                    <p className="text-sm font-semibold text-white mt-1">{s.label}</p>
-                                    <p className="text-xs text-white/50 mt-0.5">{s.sub}</p>
+                                <div key={s.label} className="text-center p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
+                                    <p className="text-lg sm:text-2xl font-black text-accent-light">{s.value}</p>
+                                    <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1">{s.label}</p>
+                                    <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 hidden sm:block">{s.sub}</p>
                                 </div>
                             ))}
                         </div>
@@ -566,7 +567,7 @@ const Login = () => {
                 <section
                     ref={addSectionRef(1)}
                     data-section="philosophy"
-                    className={`relative z-[2] py-20 md:py-28 px-6 overflow-hidden transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`relative z-[2] py-12 md:py-20 px-4 sm:px-6 overflow-hidden transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                 >
                     {/* Gold tint overlay for this section */}
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-900/60 via-yellow-800/50 to-amber-900/60 z-0" />
@@ -575,24 +576,24 @@ const Login = () => {
                         style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
 
                     <div className="relative z-[1] max-w-6xl mx-auto">
-                        <div className="text-center mb-14">
-                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-widest mb-4 border border-white/30">
+                        <div className="text-center mb-8 md:mb-14">
+                            <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4 border border-white/30">
                                 <BookOpen size={14} />
                                 Educational Philosophy
                             </div>
-                            <h2 className="text-3xl md:text-4xl font-black text-white">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
                                 Mission · Vision · Values
                             </h2>
                         </div>
 
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
                             {/* Mission */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Target size={24} className="text-white" />
+                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Target size={20} className="text-white" />
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-3">Mission</h3>
-                                <p className="text-white/85 text-sm leading-relaxed">
+                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Mission</h3>
+                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
                                     To provide quality, affordable and relevant education responsive to the changing needs of
                                     the local and global communities through effective and efficient integration of instruction,
                                     research and extension; to develop productive and God-loving individuals in society.
@@ -600,24 +601,24 @@ const Login = () => {
                             </div>
 
                             {/* Vision */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Lightbulb size={24} className="text-white" />
+                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Lightbulb size={20} className="text-white" />
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-3">Vision</h3>
-                                <p className="text-white/85 text-sm leading-relaxed">
+                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Vision</h3>
+                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
                                     A dynamic and highly competitive Higher Education Institution (HEI) committed to people
                                     empowerment towards building a humane society.
                                 </p>
                             </div>
 
                             {/* Quality Policy */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-2xl p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Award size={24} className="text-white" />
+                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:col-span-2 md:col-span-1">
+                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                                    <Award size={20} className="text-white" />
                                 </div>
-                                <h3 className="text-xl font-black text-white mb-3">Quality Policy</h3>
-                                <p className="text-white/85 text-sm leading-relaxed">
+                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Quality Policy</h3>
+                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
                                     "We, in the Pamantasan ng Lungsod ng Muntinlupa, commit to meet and even exceed our clients'
                                     needs and expectations by adhering to good governance, productivity and continually improving
                                     the effectiveness of our Quality Management System in compliance to ethical standards and
@@ -627,10 +628,10 @@ const Login = () => {
                         </div>
 
                         {/* Motto */}
-                        <div className="mt-10 text-center">
-                            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">University Motto</p>
-                            <p className="text-2xl font-black text-white italic">"Lakas, Talino, at Buhay"</p>
-                            <p className="text-white/70 text-sm mt-1">Strength, Wisdom, and Life</p>
+                        <div className="mt-6 sm:mt-10 text-center">
+                            <p className="text-white/60 text-[10px] sm:text-xs uppercase tracking-widest mb-1 sm:mb-2">University Motto</p>
+                            <p className="text-xl sm:text-2xl font-black text-white italic">"Lakas, Talino, at Buhay"</p>
+                            <p className="text-white/70 text-xs sm:text-sm mt-1">Strength, Wisdom, and Life</p>
                         </div>
                     </div>
                 </section>
@@ -640,19 +641,19 @@ const Login = () => {
                 <section
                     ref={addSectionRef(2)}
                     data-section="school"
-                    className={`relative z-[2] py-20 md:py-28 px-6 transition-all duration-700 ${visibleSections.has('school') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`relative z-[2] py-12 md:py-20 px-4 sm:px-6 transition-all duration-700 ${visibleSections.has('school') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                 >
                     {/* Section divider */}
                     <div className="absolute inset-0 bg-black/20 z-0" />
                     <div className="relative z-[1] max-w-6xl mx-auto">
-                        <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        <div className="grid lg:grid-cols-2 gap-6 sm:gap-12 items-center">
 
                             {/* Campus image — shows current carousel image */}
                             <div className="relative rounded-2xl overflow-hidden shadow-2xl group">
                                 <img
                                     src={BG_CAROUSEL_IMAGES[bgIndex]}
                                     alt="PLMun Campus"
-                                    className="w-full h-[360px] object-cover group-hover:scale-105 transition-all duration-700"
+                                    className="w-full h-[200px] sm:h-[280px] md:h-[360px] object-cover group-hover:scale-105 transition-all duration-700"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
                                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -674,31 +675,31 @@ const Login = () => {
                                     <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-4 border border-accent/30">
                                         Our University
                                     </span>
-                                    <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
                                         Pamantasan ng Lungsod ng <span className="text-accent-light">Muntinlupa</span>
                                     </h2>
                                 </div>
-                                <p className="text-white/70 leading-relaxed">
+                                <p className="text-white/70 leading-relaxed text-sm sm:text-base">
                                     PLMun is a public university in Muntinlupa City, Philippines, committed to providing
                                     quality and accessible education. The university empowers students with knowledge and skills
                                     to contribute meaningfully to the community through effective integration of instruction,
                                     research, and extension.
                                 </p>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-4">
                                     {[
                                         { icon: GraduationCap, label: 'Quality Education', desc: 'CHED-recognized programs' },
                                         { icon: Building2, label: 'Modern Facilities', desc: 'Updated campus resources' },
                                         { icon: Heart, label: 'Free Tuition', desc: 'UniFAST recipient' },
                                         { icon: Users, label: 'Community-Centered', desc: 'Service & outreach' },
                                     ].map((item) => (
-                                        <div key={item.label} className="flex items-start gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
+                                        <div key={item.label} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
                                             <div className="w-9 h-9 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
                                                 <item.icon size={17} className="text-accent-light" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold text-white">{item.label}</p>
-                                                <p className="text-xs text-white/50">{item.desc}</p>
+                                                <p className="text-xs sm:text-sm font-bold text-white">{item.label}</p>
+                                                <p className="text-[10px] sm:text-xs text-white/50">{item.desc}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -707,17 +708,17 @@ const Login = () => {
                         </div>
 
                         {/* ── Accreditation ── */}
-                        <div className="mt-16">
+                        <div className="mt-10 sm:mt-16">
                             <div className="text-center mb-10">
                                 <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-3 border border-accent/30">
                                     Accreditation
                                 </span>
-                                <h3 className="text-2xl font-black text-white">
+                                <h3 className="text-xl sm:text-2xl font-black text-white">
                                     Recognized & <span className="text-accent-light">Accredited</span>
                                 </h3>
                             </div>
 
-                            <div className="grid md:grid-cols-3 gap-6">
+                            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
                                 {ACCREDITATIONS.map((a, i) => {
                                     const colorMap = {
                                         blue: { bg: 'bg-blue-500/15', border: 'border-blue-400/30', icon: 'bg-blue-500/20 text-blue-300' },
@@ -728,7 +729,7 @@ const Login = () => {
                                     return (
                                         <div
                                             key={a.title}
-                                            className={`${c.bg} ${c.border} backdrop-blur-sm border rounded-2xl p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300`}
+                                            className={`${c.bg} ${c.border} backdrop-blur-sm border rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300`}
                                             style={{ transitionDelay: `${i * 100}ms` }}
                                         >
                                             <div className={`w-11 h-11 rounded-xl ${c.icon} flex items-center justify-center mb-4`}>
@@ -751,7 +752,7 @@ const Login = () => {
             <section
                 ref={addSectionRef(3)}
                 data-section="team"
-                className="relative py-24 md:py-32 px-6 overflow-hidden"
+                className="relative py-14 md:py-24 px-4 sm:px-6 overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 70%, #1a1a2e 100%)' }}
             >
                 {/* Ambient floating orbs */}
@@ -769,18 +770,18 @@ const Login = () => {
 
                 <div className="relative z-10 max-w-5xl mx-auto">
                     {/* Header with scroll animation */}
-                    <div className={`text-center mb-16 transition-all duration-700 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 backdrop-blur-sm text-accent-light text-xs font-bold uppercase tracking-[0.2em] mb-5 border border-white/10">
+                    <div className={`text-center mb-10 sm:mb-16 transition-all duration-700 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                        <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white/5 backdrop-blur-sm text-accent-light text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-4 sm:mb-5 border border-white/10">
                             <Code2 size={13} />
                             The Team Behind The System
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-black text-white mb-5 leading-tight">
+                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white mb-3 sm:mb-5 leading-tight">
                             Meet the{' '}
                             <span className="bg-gradient-to-r from-accent-light via-purple-400 to-accent-light bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent">
                                 Creators
                             </span>
                         </h2>
-                        <p className="text-white/50 max-w-lg mx-auto leading-relaxed text-sm">
+                        <p className="text-white/50 max-w-lg mx-auto leading-relaxed text-xs sm:text-sm">
                             Built with passion by PLMun students as part of their academic project —
                             turning classroom knowledge into a real-world application.
                             <span className="block mt-2 text-accent-light/60 text-xs">Click on a member to see their contributions</span>
@@ -788,12 +789,12 @@ const Login = () => {
                     </div>
 
                     {/* Team cards with staggered scroll-reveal */}
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5" style={{ perspective: '1000px' }}>
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
                         {CREATORS.map((member, i) => (
                             <div
                                 key={member.name}
                                 onClick={() => setSelectedCreator(member)}
-                                className={`team-card-glow group relative p-6 rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/10 
+                                className={`team-card-glow group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/10 
                                     hover:bg-white/[0.12] hover:-translate-y-2 hover:shadow-2xl hover:shadow-accent/10 
                                     transition-all duration-500 cursor-pointer
                                     ${visibleSections.has('team') ? 'animate-card-rise animate-fill-both' : 'opacity-0'}`}
@@ -803,9 +804,9 @@ const Login = () => {
                                 <div className={`absolute top-4 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-br ${member.color} rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`} />
 
                                 {/* Avatar */}
-                                <div className="relative mx-auto mb-4">
-                                    <div className={`w-18 h-18 mx-auto rounded-full bg-gradient-to-br ${member.color} p-[2px] group-hover:animate-avatar-glow transition-all duration-300 group-hover:scale-110`}>
-                                        <div className="w-full h-full rounded-full bg-gray-900/90 flex items-center justify-center text-3xl">
+                                <div className="relative mx-auto mb-3 sm:mb-4">
+                                    <div className={`w-14 h-14 sm:w-18 sm:h-18 mx-auto rounded-full bg-gradient-to-br ${member.color} p-[2px] group-hover:animate-avatar-glow transition-all duration-300 group-hover:scale-110`}>
+                                        <div className="w-full h-full rounded-full bg-gray-900/90 flex items-center justify-center text-2xl sm:text-3xl">
                                             {member.avatar}
                                         </div>
                                     </div>
@@ -814,15 +815,15 @@ const Login = () => {
                                 </div>
 
                                 {/* Name & Role */}
-                                <h3 className="font-bold text-white text-sm text-center group-hover:text-accent-light transition-colors duration-300">
+                                <h3 className="font-bold text-white text-xs sm:text-sm text-center group-hover:text-accent-light transition-colors duration-300">
                                     {member.name}
                                 </h3>
-                                <p className="text-[11px] text-white/40 mt-1 text-center font-medium uppercase tracking-wider">
+                                <p className="text-[9px] sm:text-[11px] text-white/40 mt-0.5 sm:mt-1 text-center font-medium uppercase tracking-wider">
                                     {member.role}
                                 </p>
 
                                 {/* Click hint */}
-                                <div className="mt-3 flex justify-center">
+                                <div className="mt-2 sm:mt-3 flex justify-center">
                                     <span className="text-[10px] text-white/20 group-hover:text-accent-light/60 transition-colors duration-300 flex items-center gap-1">
                                         <Sparkles size={10} /> View details
                                     </span>
@@ -835,11 +836,11 @@ const Login = () => {
                     </div>
 
                     {/* Tech stack — animated reveal */}
-                    <div className={`mt-16 transition-all duration-700 delay-500 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-                        <p className="text-center text-white/30 text-xs font-medium uppercase tracking-[0.15em] mb-5">
+                    <div className={`mt-10 sm:mt-16 transition-all duration-700 delay-500 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                        <p className="text-center text-white/30 text-[10px] sm:text-xs font-medium uppercase tracking-[0.15em] mb-3 sm:mb-5">
                             Built With
                         </p>
-                        <div className="flex flex-wrap justify-center gap-3">
+                        <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                             {[
                                 { icon: Code2, label: 'React 18', color: 'text-cyan-400' },
                                 { icon: ExternalLink, label: 'Django REST', color: 'text-emerald-400' },
@@ -848,8 +849,8 @@ const Login = () => {
                             ].map((tech, i) => (
                                 <span
                                     key={tech.label}
-                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
-                                        bg-white/[0.05] backdrop-blur-sm text-white/70 text-xs font-medium
+                                    className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl
+                                        bg-white/[0.05] backdrop-blur-sm text-white/70 text-[10px] sm:text-xs font-medium
                                         border border-white/10 hover:border-white/25 hover:bg-white/[0.1]
                                         hover:text-white hover:-translate-y-0.5
                                         transition-all duration-300
@@ -864,7 +865,7 @@ const Login = () => {
                     </div>
 
                     {/* Bottom decorative line */}
-                    <div className={`mt-16 flex justify-center transition-all duration-1000 delay-700 ${visibleSections.has('team') ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`}>
+                    <div className={`mt-10 sm:mt-16 flex justify-center transition-all duration-1000 delay-700 ${visibleSections.has('team') ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`}>
                         <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
                     </div>
                 </div>
@@ -880,7 +881,7 @@ const Login = () => {
 
                         {/* Modal */}
                         <div
-                            className="relative w-full max-w-lg bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl animate-scale-in overflow-hidden"
+                            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl animate-scale-in"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Top gradient bar */}
@@ -894,11 +895,11 @@ const Login = () => {
                                 <X size={16} />
                             </button>
 
-                            <div className="p-8">
+                            <div className="p-5 sm:p-8">
                                 {/* Header */}
-                                <div className="flex items-center gap-5 mb-6">
-                                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${selectedCreator.color} p-[2px] flex-shrink-0`}>
-                                        <div className="w-full h-full rounded-2xl bg-gray-900 flex items-center justify-center text-4xl">
+                                <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6">
+                                    <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br ${selectedCreator.color} p-[2px] flex-shrink-0`}>
+                                        <div className="w-full h-full rounded-xl sm:rounded-2xl bg-gray-900 flex items-center justify-center text-3xl sm:text-4xl">
                                             {selectedCreator.avatar}
                                         </div>
                                     </div>
@@ -981,9 +982,9 @@ const Login = () => {
                 />
 
                 {/* Main footer */}
-                <div className="bg-[#00553A] text-white px-6 py-12">
+                <div className="bg-[#00553A] text-white px-4 sm:px-6 py-8 sm:py-12">
                     <div className="max-w-6xl mx-auto">
-                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10">
 
                             {/* Logo + Contact */}
                             <div className="space-y-4 lg:col-span-1">
