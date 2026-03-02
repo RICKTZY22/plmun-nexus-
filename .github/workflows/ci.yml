@@ -45,7 +45,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ci_password
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
           POSTGRES_DB: plmundb_test
         ports: ['5432:5432']
         options: >-
@@ -55,8 +55,8 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://postgres:ci_password@localhost:5432/plmundb_test
-      SECRET_KEY: ci-secret-key-not-for-production
+      DATABASE_URL: postgres://postgres:${{ secrets.CI_DB_PASSWORD }}@localhost:5432/plmundb_test
+      SECRET_KEY: ${{ secrets.CI_SECRET_KEY }}
       DEBUG: 'False'
       ALLOWED_HOSTS: '*'
 

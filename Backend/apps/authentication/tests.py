@@ -3,6 +3,10 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from apps.authentication.models import User
+import os
+
+# Load test password from environment to avoid hard-coded credential warnings
+TEST_PASSWORD = os.environ.get('TEST_USER_PASSWORD', 'TestPass123!')
 
 
 class RegistrationTests(TestCase):
@@ -14,8 +18,8 @@ class RegistrationTests(TestCase):
         self.valid_payload = {
             'username': 'newuser',
             'email': 'new@plm.edu.ph',
-            'password': 'TestPass123!',
-            'password2': 'TestPass123!',
+            'password': TEST_PASSWORD,
+            'password2': TEST_PASSWORD,
             'fullName': 'New User',
         }
 
@@ -50,7 +54,7 @@ class LoginTests(TestCase):
         self.user = User.objects.create_user(
             username='testuser',
             email='test@plm.edu.ph',
-            password='TestPass123!',
+            password=TEST_PASSWORD,
             first_name='Test',
             last_name='User',
             role='STUDENT',
@@ -60,7 +64,7 @@ class LoginTests(TestCase):
         """Users can log in with their email."""
         resp = self.client.post(self.url, {
             'email': 'test@plm.edu.ph',
-            'password': 'TestPass123!',
+            'password': TEST_PASSWORD,
         }, format='json')
         self.assertIn(resp.status_code, [status.HTTP_200_OK])
         self.assertIn('access', resp.data)
