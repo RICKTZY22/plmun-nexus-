@@ -10,6 +10,15 @@ import sys
 BASE = "http://localhost:8000/api"
 RESULTS = []
 
+# Constants for duplicated test-name literals
+TEST_PASSWORD = "TestPass123!"
+CONTENT_TYPE_JSON = "application/json"
+TEST_REG_ROLE_ESC = "Registration role escalation"
+TEST_PROFILE_ROLE_ESC = "Profile role escalation"
+TEST_XSS_ITEM = "XSS in item name"
+TEST_XSS_REG = "XSS in registration fields"
+TEST_LOGIN_LEAK = "Login error info leak"
+
 def log(test_name, status, detail=""):
     icon = "[PASS]" if status == "pass" else "[FAIL]" if status == "fail" else "[WARN]"
     RESULTS.append({"test": test_name, "status": status, "detail": detail})
@@ -24,7 +33,7 @@ def get_tokens(email, password):
         if r.status_code == 200:
             data = r.json()
             return data.get("access"), data.get("refresh"), data.get("user")
-    except:
+    except Exception:
         pass
     return None, None, None
 
@@ -86,8 +95,8 @@ if admin_token:
 r = requests.post(f"{BASE}/auth/register/", json={
     "username": f"hacktest_{int(time.time())}",
     "email": f"hacktest_{int(time.time())}@test.com",
-    "password": "TestPass123!",
-    "password2": "TestPass123!",
+    "password": TEST_PASSWORD,
+    "password2": TEST_PASSWORD,
     "first_name": "Hack",
     "last_name": "Test",
     "role": "ADMIN"
@@ -96,13 +105,13 @@ if r.status_code in [200, 201]:
     data = r.json()
     user_role = data.get("user", {}).get("role", "unknown")
     if user_role == "ADMIN":
-        log("Registration role escalation", "fail", "User registered as ADMIN!")
+        log(TEST_REG_ROLE_ESC, "fail", "User registered as ADMIN!")
     else:
-        log("Registration role escalation", "pass", f"Role forced to: {user_role}")
+        log(TEST_REG_ROLE_ESC, "pass", f"Role forced to: {user_role}")
 elif r.status_code == 429:
-    log("Registration role escalation", "pass", "Rate limited (can't register too fast)")
+    log(TEST_REG_ROLE_ESC, "pass", "Rate limited (can't register too fast)")
 else:
-    log("Registration role escalation", "pass", f"Registration returned {r.status_code}")
+    log(TEST_REG_ROLE_ESC, "pass", f"Registration returned {r.status_code}")
 
 # Test 5: Brute force rate limiting
 print("\n  [*] Testing rate limiting (sending 12 rapid login attempts)...")
@@ -173,16 +182,16 @@ if student_token:
 # Test 10: Role escalation via profile update
 if student_token:
     r = requests.put(f"{BASE}/auth/profile/", 
-        headers={**auth_header(student_token), "Content-Type": "application/json"},
+        headers={**auth_header(student_token), "Content-Type": CONTENT_TYPE_JSON},
         json={"role": "ADMIN", "first_name": "HackedAdmin"})
     if r.status_code == 200:
         data = r.json()
         if data.get("role") == "ADMIN":
-            log("Profile role escalation", "fail", "Changed role to ADMIN via profile update!")
+            log(TEST_PROFILE_ROLE_ESC, "fail", "Changed role to ADMIN via profile update!")
         else:
-            log("Profile role escalation", "pass", f"Role still: {data.get('role')}")
+            log(TEST_PROFILE_ROLE_ESC, "pass", f"Role still: {data.get('role')}")
     else:
-        log("Profile role escalation", "pass", f"Update rejected: {r.status_code}")
+        log(TEST_PROFILE_ROLE_ESC, "pass", f"Update rejected: {r.status_code}")
 
 # ============================================================
 print("\n" + "-"*60)
@@ -201,23 +210,23 @@ if test_token:
         if r.status_code in [200, 201]:
             item_name = r.json().get("name", "")
             if "<script>" in item_name:
-                log("XSS in item name", "fail", f"Script tags preserved: {item_name}")
+                log(TEST_XSS_ITEM, "fail", f"Script tags preserved: {item_name}")
             else:
-                log("XSS in item name", "pass", f"Sanitized to: {item_name}")
+                log(TEST_XSS_ITEM, "pass", f"Sanitized to: {item_name}")
             # cleanup
             item_id = r.json().get("id")
             if item_id:
                 requests.delete(f"{BASE}/items/{item_id}/", headers=auth_header(admin_token))
         else:
-            log("XSS in item name", "pass", f"Creation rejected: {r.status_code}")
+            log(TEST_XSS_ITEM, "pass", f"Creation rejected: {r.status_code}")
 
     # Test 12: XSS in registration fields
     ts = int(time.time())
     r = requests.post(f"{BASE}/auth/register/", json={
         "username": f"xsstest{ts}",
         "email": f"xss{ts}@test.com",
-        "password": "TestPass123!",
-        "password2": "TestPass123!",
+        "password": TEST_PASSWORD,
+        "password2": TEST_PASSWORD,
         "first_name": '<img src=x onerror=alert("XSS")>',
         "last_name": "<b>bold</b>",
     })
@@ -226,13 +235,13 @@ if test_token:
         fn = user_data.get("first_name", "")
         ln = user_data.get("last_name", "")
         if "<" in fn or "<" in ln:
-            log("XSS in registration fields", "fail", f"HTML preserved: fn={fn}, ln={ln}")
+            log(TEST_XSS_REG, "fail", f"HTML preserved: fn={fn}, ln={ln}")
         else:
-            log("XSS in registration fields", "pass", f"Sanitized: fn={fn}, ln={ln}")
+            log(TEST_XSS_REG, "pass", f"Sanitized: fn={fn}, ln={ln}")
     elif r.status_code == 429:
-        log("XSS in registration fields", "partial", "Rate limited, can't test")
+        log(TEST_XSS_REG, "partial", "Rate limited, can't test")
     else:
-        log("XSS in registration fields", "pass", f"Registration rejected: {r.status_code}")
+        log(TEST_XSS_REG, "pass", f"Registration rejected: {r.status_code}")
 
     # Test 13: SQL injection in search
     sqli_payloads = ["' OR 1=1 --", "'; DROP TABLE users; --", "\" OR \"1\"=\"1"]
@@ -333,11 +342,11 @@ r = requests.post(f"{BASE}/auth/login/", json={"email": "nonexistent@test.com", 
 body = r.text.lower()
 if "no active account" in body or "invalid credentials" in body or "no account" in body:
     # Generic error message is good - doesn't reveal if email exists
-    log("Login error info leak", "pass", "Generic error message used")
+    log(TEST_LOGIN_LEAK, "pass", "Generic error message used")
 elif "password" in body and "incorrect" in body:
-    log("Login error info leak", "fail", "Reveals that email exists but password is wrong")
+    log(TEST_LOGIN_LEAK, "fail", "Reveals that email exists but password is wrong")
 else:
-    log("Login error info leak", "pass", f"Error: {r.text[:80]}")
+    log(TEST_LOGIN_LEAK, "pass", f"Error: {r.text[:80]}")
 
 # ============================================================
 # SUMMARY

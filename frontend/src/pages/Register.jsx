@@ -70,20 +70,26 @@ const Register = () => {
         setFormData(prev => ({ ...prev, [field]: e.target.value }));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setValidationError('');
+    const validateForm = () => {
         if (formData.password !== formData.confirmPassword) {
-            setValidationError('Passwords do not match');
-            return;
+            return 'Passwords do not match';
         }
         if (formData.password.length < 8) {
-            setValidationError('Password must be at least 8 characters');
-            return;
+            return 'Password must be at least 8 characters';
         }
         const strength = getPasswordStrength(formData.password);
         if (strength.score < 2) {
-            setValidationError('Password is too weak. Add uppercase letters, numbers, or symbols.');
+            return 'Password is too weak. Add uppercase letters, numbers, or symbols.';
+        }
+        return null;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setValidationError('');
+        const error = validateForm();
+        if (error) {
+            setValidationError(error);
             return;
         }
         const result = await register({

@@ -80,27 +80,26 @@ const Dashboard = () => {
             });
         }
 
+        // Helper: find which bucket a timestamp belongs to
+        const findBucket = (ts) => buckets.find(b => ts >= b.start && ts < b.end);
+
         // Single pass over inventory — O(N)
         for (const item of inventory) {
             const ts = new Date(item.dateAdded || item.created_at).getTime();
             const cat = item.category || 'OTHER';
-            for (const b of buckets) {
-                if (ts >= b.start && ts < b.end) {
-                    b.total++;
-                    b.catCounts.set(cat, (b.catCounts.get(cat) || 0) + 1);
-                    break;
-                }
+            const b = findBucket(ts);
+            if (b) {
+                b.total++;
+                b.catCounts.set(cat, (b.catCounts.get(cat) || 0) + 1);
             }
         }
 
         // Single pass over requests — O(R)
         for (const r of requests) {
             const ts = new Date(r.createdAt || r.created_at || r.requestDate).getTime();
-            for (const b of buckets) {
-                if (ts >= b.start && ts < b.end) {
-                    b.requests++;
-                    break;
-                }
+            const b = findBucket(ts);
+            if (b) {
+                b.requests++;
             }
         }
 

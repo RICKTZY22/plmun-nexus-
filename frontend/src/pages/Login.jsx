@@ -168,17 +168,16 @@ const Login = () => {
     const sectionRefs = useRef([]);
     const [visibleSections, setVisibleSections] = useState(new Set());
 
+    const handleIntersect = (entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                setVisibleSections((prev) => new Set([...prev, entry.target.dataset.section]));
+            }
+        });
+    };
+
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        setVisibleSections((prev) => new Set([...prev, entry.target.dataset.section]));
-                    }
-                });
-            },
-            { threshold: 0.12 }
-        );
+        const observer = new IntersectionObserver(handleIntersect, { threshold: 0.12 });
         sectionRefs.current.forEach((el) => el && observer.observe(el));
         return () => observer.disconnect();
     }, []);

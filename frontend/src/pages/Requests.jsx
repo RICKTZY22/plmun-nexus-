@@ -477,13 +477,14 @@ const Requests = () => {
                     if (groupRequests.length === 0) return null;
                     const isCollapsed = collapsedSections[group.key];
                     const GroupIcon = group.icon;
+                    const toggleSection = () => setCollapsedSections(prev => ({ ...prev, [group.key]: !prev[group.key] }));
 
                     return (
                         <div key={group.key} className={`rounded-xl border ${group.borderColor} overflow-hidden`}>
                             {/* Group header — clickable to collapse */}
                             <button
                                 type="button"
-                                onClick={() => setCollapsedSections(prev => ({ ...prev, [group.key]: !prev[group.key] }))}
+                                onClick={toggleSection}
                                 className={`w-full flex items-center justify-between px-4 py-3 ${group.bgLight} cursor-pointer hover:opacity-90 transition-opacity`}
                             >
                                 <div className="flex items-center gap-2">
