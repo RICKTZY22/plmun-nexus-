@@ -673,48 +673,121 @@ const Login = () => {
             <section
                 ref={addSectionRef(3)}
                 data-section="team"
-                className={`py-20 md:py-28 px-6 bg-white dark:bg-gray-800 transition-all duration-700 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                className="relative py-24 md:py-32 px-6 overflow-hidden"
+                style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 70%, #1a1a2e 100%)' }}
             >
-                <div className="max-w-4xl mx-auto text-center">
-                    <span className="inline-block px-4 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold uppercase tracking-widest mb-4">
-                        The Team
-                    </span>
-                    <h2 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-4">
-                        Meet the <span className="text-accent">Creators</span>
-                    </h2>
-                    <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto mb-12 leading-relaxed">
-                        Built with passion by PLMun students as part of their academic project — turning ideas into a real-world application.
-                    </p>
+                {/* Ambient floating orbs */}
+                <div className="absolute top-20 left-[10%] w-72 h-72 bg-accent/10 rounded-full blur-[100px] animate-float" />
+                <div className="absolute bottom-20 right-[10%] w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] animate-float-reverse" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-accent/5 rounded-full blur-3xl animate-float-slow" />
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5">
-                        {CREATORS.map((member, i) => (
-                            <div
-                                key={member.name}
-                                className="group p-5 rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 hover:border-accent/40 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
-                                style={{ transitionDelay: `${i * 60}ms` }}
-                            >
-                                <div className="w-16 h-16 mx-auto rounded-full bg-accent/10 flex items-center justify-center text-3xl mb-3 group-hover:scale-110 group-hover:bg-accent/20 transition-all duration-300">
-                                    {member.avatar}
-                                </div>
-                                <h3 className="font-bold text-gray-900 dark:text-white text-sm">{member.name}</h3>
-                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{member.role}</p>
-                            </div>
-                        ))}
+                {/* Subtle grid pattern */}
+                <div className="absolute inset-0 opacity-[0.03]"
+                    style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+
+                {/* Orbital decorative ring */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full border border-white/[0.04] pointer-events-none" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-white/[0.02] pointer-events-none" />
+
+                <div className="relative z-10 max-w-5xl mx-auto">
+                    {/* Header with scroll animation */}
+                    <div className={`text-center mb-16 transition-all duration-700 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/5 backdrop-blur-sm text-accent-light text-xs font-bold uppercase tracking-[0.2em] mb-5 border border-white/10">
+                            <Code2 size={13} />
+                            The Team Behind The System
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black text-white mb-5 leading-tight">
+                            Meet the{' '}
+                            <span className="bg-gradient-to-r from-accent-light via-purple-400 to-accent-light bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent">
+                                Creators
+                            </span>
+                        </h2>
+                        <p className="text-white/50 max-w-lg mx-auto leading-relaxed text-sm">
+                            Built with passion by PLMun students as part of their academic project —
+                            turning classroom knowledge into a real-world application.
+                        </p>
                     </div>
 
-                    {/* Tech stack badges */}
-                    <div className="mt-14 flex flex-wrap justify-center gap-3">
-                        {[
-                            { icon: Code2, label: 'React 18' },
-                            { icon: ExternalLink, label: 'Django REST' },
-                            { icon: Shield, label: 'JWT Auth' },
-                            { icon: Package, label: 'PostgreSQL' },
-                        ].map((tech) => (
-                            <span key={tech.label} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium border border-gray-200 dark:border-gray-600 hover:border-accent/40 transition-colors">
-                                <tech.icon size={14} className="text-accent" />
-                                {tech.label}
-                            </span>
-                        ))}
+                    {/* Team cards with staggered scroll-reveal */}
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5" style={{ perspective: '1000px' }}>
+                        {CREATORS.map((member, i) => {
+                            const roleColors = [
+                                'from-accent to-blue-500',         // Lead Dev
+                                'from-emerald-400 to-cyan-500',    // Backend
+                                'from-purple-400 to-pink-500',     // Frontend
+                                'from-amber-400 to-orange-500',    // UI/UX
+                                'from-rose-400 to-red-500',        // QA
+                            ];
+                            return (
+                                <div
+                                    key={member.name}
+                                    className={`team-card-glow group relative p-6 rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/10 
+                                        hover:bg-white/[0.12] hover:-translate-y-2 hover:shadow-2xl hover:shadow-accent/10 
+                                        transition-all duration-500 cursor-default
+                                        ${visibleSections.has('team') ? 'animate-card-rise animate-fill-both' : 'opacity-0'}`}
+                                    style={{ animationDelay: `${300 + i * 150}ms` }}
+                                >
+                                    {/* Gradient glow behind avatar */}
+                                    <div className={`absolute top-4 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-br ${roleColors[i]} rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`} />
+
+                                    {/* Avatar */}
+                                    <div className="relative mx-auto mb-4">
+                                        <div className={`w-18 h-18 mx-auto rounded-full bg-gradient-to-br ${roleColors[i]} p-[2px] group-hover:animate-avatar-glow transition-all duration-300 group-hover:scale-110`}>
+                                            <div className="w-full h-full rounded-full bg-gray-900/90 flex items-center justify-center text-3xl">
+                                                {member.avatar}
+                                            </div>
+                                        </div>
+                                        {/* Status dot */}
+                                        <div className={`absolute -bottom-0.5 right-1/2 translate-x-4 w-3 h-3 rounded-full bg-gradient-to-br ${roleColors[i]} ring-2 ring-gray-900 group-hover:scale-125 transition-transform duration-300`} />
+                                    </div>
+
+                                    {/* Name & Role */}
+                                    <h3 className="font-bold text-white text-sm text-center group-hover:text-accent-light transition-colors duration-300">
+                                        {member.name}
+                                    </h3>
+                                    <p className="text-[11px] text-white/40 mt-1 text-center font-medium uppercase tracking-wider">
+                                        {member.role}
+                                    </p>
+
+                                    {/* Hover shine line */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Tech stack — animated reveal */}
+                    <div className={`mt-16 transition-all duration-700 delay-500 ${visibleSections.has('team') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                        <p className="text-center text-white/30 text-xs font-medium uppercase tracking-[0.15em] mb-5">
+                            Built With
+                        </p>
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {[
+                                { icon: Code2, label: 'React 18', color: 'text-cyan-400' },
+                                { icon: ExternalLink, label: 'Django REST', color: 'text-emerald-400' },
+                                { icon: Shield, label: 'JWT Auth', color: 'text-amber-400' },
+                                { icon: Package, label: 'PostgreSQL', color: 'text-blue-400' },
+                            ].map((tech, i) => (
+                                <span
+                                    key={tech.label}
+                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+                                        bg-white/[0.05] backdrop-blur-sm text-white/70 text-xs font-medium
+                                        border border-white/10 hover:border-white/25 hover:bg-white/[0.1]
+                                        hover:text-white hover:-translate-y-0.5
+                                        transition-all duration-300
+                                        ${visibleSections.has('team') ? 'animate-card-rise animate-fill-both' : 'opacity-0'}`}
+                                    style={{ animationDelay: `${800 + i * 100}ms` }}
+                                >
+                                    <tech.icon size={14} className={tech.color} />
+                                    {tech.label}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Bottom decorative line */}
+                    <div className={`mt-16 flex justify-center transition-all duration-1000 delay-700 ${visibleSections.has('team') ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0'}`}>
+                        <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
                     </div>
                 </div>
             </section>
