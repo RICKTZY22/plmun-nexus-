@@ -735,9 +735,9 @@ const Login = () => {
                                 <h4 className="font-bold text-sm text-white mb-4 uppercase tracking-wider">Other Links</h4>
                                 <ul className="space-y-2 text-sm text-white/70">
                                     {[
-                                        { label: 'Muntinlupa City', href: 'http://www.muntinlupacity.gov.ph' },
-                                        { label: 'CHED', href: 'http://www.ched.gov.ph' },
-                                        { label: 'TESDA', href: 'http://www.tesda.gov.ph' },
+                                        { label: 'Muntinlupa City', href: 'https://www.muntinlupacity.gov.ph' },
+                                        { label: 'CHED', href: 'https://www.ched.gov.ph' },
+                                        { label: 'TESDA', href: 'https://www.tesda.gov.ph' },
                                     ].map((link) => (
                                         <li key={link.label}>
                                             <a href={link.href} target="_blank" rel="noopener noreferrer"

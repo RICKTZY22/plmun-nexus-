@@ -10,13 +10,14 @@ from apps.inventory.models import Item
 from django.utils import timezone
 from datetime import timedelta
 import random
+import secrets
 
 # Spread items across the last 6 months for realistic graph data
 now = timezone.now()
 
 def months_ago(m, day=None):
     """Return a datetime `m` months ago, with optional day offset."""
-    dt = now - timedelta(days=m * 30 + (day or random.randint(0, 28)))
+    dt = now - timedelta(days=m * 30 + (day or secrets.randbelow(29)))
     return dt
 
 # ── Location constants (avoids duplicated string literals) ──
