@@ -1,0 +1,352 @@
+# PLMun Nexus — Capstone Defense Documentation
+
+> **System:** University Inventory Management System  
+> **Stack:** Django 6 REST API + React (Vite) + PostgreSQL  
+> **Deployment:** Render (Backend) + Vercel/Netlify (Frontend)
+
+---
+
+## 1. System Architecture
+
+```mermaid
+graph TB
+    subgraph Frontend["Frontend (React + Vite)"]
+        Pages["Pages<br/>Dashboard, Inventory, Requests,<br/>Settings, Users, Login, Register"]
+        Components["Reusable UI Components<br/>Button, Card, Modal, Table, Input"]
+        Hooks["Custom Hooks<br/>useRequests, useUsers, useInventory"]
+        Store["Zustand Stores<br/>authStore, uiStore"]
+        Services["API Services<br/>api.js, authService, requestService,<br/>inventoryService, userService, notificationService"]
+    end
+
+    subgraph Backend["Backend (Django REST Framework)"]
+        Auth["Authentication App<br/>Login, Register, Profile, JWT"]
+        Inv["Inventory App<br/>CRUD, Categories, Access Levels"]
+        Req["Requests App<br/>Borrow/Return Workflow"]
+        Users["Users App<br/>Admin User Management"]
+        Perms["Shared Permissions<br/>IsAdmin, IsStaffOrAbove, IsFacultyOrAbove"]
+    end
+
+    subgraph DB["PostgreSQL Database"]
+        UsersTable["users"]
+        ItemsTable["inventory_items"]
+        RequestsTable["requests"]
+        CommentsTable["request_comments"]
+        NotifsTable["notifications"]
+        AuditTable["audit_logs"]
+    end
+
+    Pages --> Hooks --> Services --> Backend
+    Pages --> Store
+    Auth --> UsersTable
+    Auth --> AuditTable
+    Inv --> ItemsTable
+    Req --> RequestsTable
+    Req --> CommentsTable
+    Req --> NotifsTable
+```
+
+---
+
+## 2. Database Models (6 Tables)
+
+### `users` — Custom User Model
+| Field | Type | Purpose |
+|-------|------|---------|
+| [role](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/users/views.py#44-60) | CharField (STUDENT/FACULTY/STAFF/ADMIN) | 4-tier role hierarchy |
+| `department` | CharField | Organizational grouping |
+| `student_id` | CharField | Student ID number |
+| [avatar](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/authentication/serializers.py#29-36) | ImageField | Profile picture |
+| `is_flagged` | BooleanField | Flagged for overdue returns |
+| `overdue_count` | PositiveIntegerField | Number of overdue incidents |
+
+**Key Method:** [has_min_role(min_role)](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/authentication/models.py#37-40) — compares role hierarchy numerically (STUDENT=0, FACULTY=1, STAFF=2, ADMIN=3)
+
+### `inventory_items` — Item Model
+| Field | Type | Purpose |
+|-------|------|---------|
+| `name`, `category`, `description` | Text fields | Item identity |
+| `quantity` | PositiveIntegerField | Current stock level |
+| [status](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/inventory/views.py#109-147) | CharField (AVAILABLE/IN_USE/MAINTENANCE/RETIRED) | Item availability |
+| `access_level` | CharField (STUDENT/FACULTY/STAFF/ADMIN) | Minimum role required to borrow |
+| `is_returnable` | BooleanField | Consumable vs. returnable |
+| `borrow_duration` + `borrow_duration_unit` | Integer + CharField | How long users can borrow |
+| `image` | ImageField | Item photo |
+| `status_note`, `status_changed_at`, `maintenance_eta` | Various | Status tracking metadata |
+
+**Key Properties:** [is_low_stock](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/inventory/models.py#95-98) (≤ 5 units), [is_out_of_stock](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/inventory/models.py#99-102) (= 0 units), [get_return_timedelta()](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/inventory/models.py#73-86) converts duration to Python timedelta
+
+### [requests](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#432-440) — Request Model
+| Field | Type | Purpose |
+|-------|------|---------|
+| [item](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#284-339) | ForeignKey → Item | Which item is requested |
+| `item_name` | CharField | **Denormalized** snapshot (preserves name if item is renamed later) |
+| `requested_by` | ForeignKey → User | Who submitted |
+| `quantity`, `purpose`, `priority` | Various | Request details |
+| [status](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/inventory/views.py#109-147) | CharField (6 states) | Workflow state |
+| `approved_by`, `approved_at`, `rejection_reason` | Various | Approval metadata |
+| `expected_return`, `returned_at` | DateTimeField | Borrow tracking |
+
+### `request_comments` — Comment Model
+| Field | Type | Purpose |
+|-------|------|---------|
+| [request](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#432-440) | ForeignKey → Request | Which request |
+| `author` | ForeignKey → User | Who commented |
+| `text` | TextField | Comment content |
+
+### `notifications` — Notification Model
+| Field | Type | Purpose |
+|-------|------|---------|
+| `recipient`, `sender` | ForeignKey → User | Who receives/sends |
+| [request](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#432-440) | ForeignKey → Request | Related request (optional) |
+| `type` | CharField (COMMENT/STATUS_CHANGE/REMINDER/OVERDUE) | Notification category |
+| `is_read` | BooleanField | Read status |
+
+### `audit_logs` — Audit Trail
+| Field | Type | Purpose |
+|-------|------|---------|
+| [action](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/authentication/models.py#124-137) | CharField (17 action types) | What happened |
+| `user` | ForeignKey → User | Who did it |
+| `username` | CharField | Snapshot (preserved if user deleted) |
+| `ip_address` | GenericIPAddressField | Client IP |
+| `details` | TextField | Human-readable description |
+
+---
+
+## 3. Role-Based Access Control (RBAC)
+
+```mermaid
+graph LR
+    S["🎓 STUDENT (0)"] --> F["👨‍🏫 FACULTY (1)"] --> ST["👷 STAFF (2)"] --> A["👑 ADMIN (3)"]
+```
+
+| Permission | Student | Faculty | Staff | Admin |
+|-----------|---------|---------|-------|-------|
+| Browse items | ✅ (access_level ≤ STUDENT) | ✅ (≤ FACULTY) | ✅ (all) | ✅ (all) |
+| Submit requests | ✅ | ✅ | ✅ | ✅ |
+| Cancel own requests | ✅ | ✅ | ✅ | ✅ |
+| Approve/reject requests | ❌ | ❌ | ✅ | ✅ |
+| Manage inventory | ❌ | ❌ | ✅ | ✅ |
+| View all requests | ❌ | ❌ | ✅ | ✅ |
+| User management | ❌ | ❌ | ❌ | ✅ |
+| Audit logs & backup | ❌ | ❌ | ❌ | ✅ |
+| System settings | ❌ | ❌ | ❌ | ✅ |
+
+**Backend enforcement:** 3 DRF permission classes in [apps/permissions.py](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py):
+- [IsAdmin](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#25-30) — `user.is_admin`
+- [IsStaffOrAbove](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#18-23) — `user.has_min_role('STAFF')`
+- [IsFacultyOrAbove](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#11-16) — `user.has_min_role('FACULTY')`
+
+**Frontend enforcement:** `<AdminOnly>`, `<StaffOnly>`, `<FacultyOnly>` wrapper components + [hasMinRole()](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/store/authStore.js#74-75) utility
+
+**Registration security:** All new accounts are forced to `STUDENT` role regardless of what the client sends. Only admins can promote users.
+
+---
+
+## 4. Request Workflow (State Machine)
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Student submits request
+    PENDING --> APPROVED: Staff/Admin approves
+    PENDING --> REJECTED: Staff/Admin rejects
+    PENDING --> CANCELLED: Requester cancels
+    APPROVED --> COMPLETED: Item received / auto-complete for consumables
+    APPROVED --> RETURNED: Borrower returns item
+    COMPLETED --> RETURNED: Borrower returns item
+    APPROVED --> OVERDUE: Expected return date passed
+```
+
+**Key business rules:**
+1. **Self-approval prevention** — Users cannot approve their own requests
+2. **Atomic stock deduction** — Uses Django's [F()](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/components/ui/Card.jsx#47-52) expression to prevent race conditions when multiple approvals happen simultaneously
+3. **Auto-complete for consumables** — Non-returnable items skip APPROVED and go straight to COMPLETED
+4. **Auto-calculate return date** — Based on item's `borrow_duration` + `borrow_duration_unit`
+5. **Stock restoration on return** — Atomically adds quantity back using [F()](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/components/ui/Card.jsx#47-52) expression
+
+---
+
+## 5. Authentication & Security
+
+### JWT Token Flow
+```mermaid
+sequenceDiagram
+    participant C as Client (React)
+    participant A as API (Django)
+
+    C->>A: POST /auth/login/ {email, password}
+    A->>C: {access, refresh, user}
+    Note over C: Store tokens in Zustand + localStorage
+
+    C->>A: GET /api/items/ [Bearer access_token]
+    A->>C: 200 OK {items}
+
+    Note over C: Access token expires (1 hour)
+    C->>A: GET /api/items/ [Bearer expired_token]
+    A->>C: 401 Unauthorized
+
+    C->>A: POST /auth/token/refresh/ {refresh}
+    A->>C: {access: new_token}
+    C->>A: GET /api/items/ [Bearer new_token] (retry)
+    A->>C: 200 OK {items}
+```
+
+### Security Mechanisms
+| Mechanism | Implementation | Purpose |
+|-----------|---------------|---------|
+| **JWT Access Token** | 1-hour lifetime | Short-lived authentication |
+| **JWT Refresh Token** | 1-day lifetime, rotated + blacklisted after use | Token renewal without re-login |
+| **Rate Limiting** | 10 login/min, 5 register/hour per IP | Brute force prevention |
+| **Idle Session Timeout** | 30 min, resets on user activity | Shared computer protection |
+| **CORS Whitelist** | Only allowed origins, no wildcard | Cross-origin protection |
+| **Atomic DB Operations** | [F('quantity')](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/components/ui/Card.jsx#47-52) for stock changes | Race condition prevention |
+| **File Upload Validation** | MIME type + extension + 5MB size limit | Avatar upload security |
+| **HTTPS + HSTS** | Enforced in production | Transport security |
+| **XSS Headers** | `X-Content-Type-Options`, `X-Frame-Options`, XSS filter | Defense-in-depth |
+| **Audit Logging** | 17 action types, IP tracking | Accountability & forensics |
+
+### Token Refresh Mutex
+When multiple API calls fail with 401 simultaneously, only **one** refresh request is sent. Others are queued and replayed with the new token. This prevents token rotation conflicts.
+
+---
+
+## 6. Notification System
+
+**Trigger points:**
+- New request submitted → notify all Staff/Admin
+- Request approved/rejected/completed → notify requester
+- Comment posted → notify request owner + all previous commenters + Staff/Admin
+- Overdue detected → notify borrower + summary digest to Staff/Admin
+
+**Deduplication:** [_create_notif_if_new()](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#24-41) checks for identical notifications in the last 5 minutes. Prevents spam from double-clicks, network retries, or rapid re-submissions.
+
+**Overdue scanning:** [check_overdue](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#441-536) endpoint:
+1. Finds all requests past `expected_return` date
+2. Sends one notification per borrower per day (not per scan)
+3. Flags the user account (`is_flagged = True`)
+4. Increments `overdue_count` only for users not already flagged
+5. Sends **one summary digest** to staff instead of N individual notifications
+
+---
+
+## 7. Frontend Architecture
+
+### State Management
+- **Zustand `authStore`** — User session, JWT tokens, idle timer, role helpers
+- **Zustand `uiStore`** — Theme, background effects, view preferences (per-user via localStorage)
+- **Custom Hooks** — [useRequests](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/hooks/useRequests.js#20-169), [useUsers](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/hooks/useUsers.js#6-177), `useInventory` encapsulate API calls + local state
+
+### API Layer
+- **[api.js](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/services/api.js)** — Axios instance with interceptors for auth headers and 401 auto-refresh
+- **Service modules** — `authService`, `requestService`, `inventoryService`, `userService`, `notificationService`
+
+### Key UI Features
+| Feature | Component | Detail |
+|---------|-----------|--------|
+| Responsive layout | [Sidebar.jsx](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/components/layout/Sidebar.jsx) + `useIsMobile` | Collapsible sidebar, card view on mobile |
+| Dark mode | `uiStore` + CSS variables | System-wide theme toggle |
+| Real-time comments | `CommentBox` + polling (5s) | Comments refresh while modal is open |
+| Data export | `exportUtils.js` | CSV and PDF export for reports and audit logs |
+| Favorites system | `useInventory` | Users can bookmark frequently requested items |
+
+---
+
+## 8. Technology Stack
+
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| **Backend Framework** | Django | 6.0 | Web framework |
+| **REST API** | Django REST Framework | 3.16 | API serialization/routing |
+| **Authentication** | SimpleJWT | 5.5 | JWT token management |
+| **Database** | PostgreSQL | 16+ | Primary datastore |
+| **Rate Limiting** | django-ratelimit | 4.1 | Login/register throttling |
+| **API Docs** | drf-spectacular | 0.29 | OpenAPI/Swagger auto-documentation |
+| **Static Files** | WhiteNoise | 6.11 | Serve static files in production |
+| **Frontend** | React | 19 | UI library |
+| **Build Tool** | Vite | 6 | Fast HMR development server |
+| **Styling** | Tailwind CSS | 4 | Utility-first CSS |
+| **State Management** | Zustand | 5 | Lightweight store (vs Redux) |
+| **Routing** | React Router | 7 | Client-side navigation |
+| **Icons** | Lucide React | — | Icon library |
+| **HTTP Client** | Axios | — | API requests with interceptors |
+
+---
+
+## 9. Anticipated Panelist Questions & Answers
+
+### Architecture & Design
+
+**Q: Bakit Django at React, hindi na lang pure Django with templates?**
+> Separate Backend at Frontend para may clean separation of concerns. Yung Django nag-serve lang ng REST API (JSON), at yung React ang nag-hahandle ng UI. Mas flexible ito kasi pwede namin palitan yung frontend (mobile app, etc.) without touching the backend. Plus, mas maganda yung UX sa React kasi single-page application siya — walang page reload.
+
+**Q: Bakit Zustand at hindi Redux?**
+> Mas simple ang Zustand — less boilerplate, walang Provider wrapper needed, at direct function calls lang for state updates. Para sa scale ng project namin, overkill ang Redux. Plus, may mga known issues ang Redux Provider with lazy-loaded routes which Zustand avoids.
+
+**Q: Paano nyo ni-handle yung state management?**
+> Two Zustand stores: `authStore` for authentication state (user, tokens, session timeout) at `uiStore` for UI preferences (theme, view mode). Both naka-persist sa localStorage via Zustand middleware. Custom hooks ([useRequests](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/hooks/useRequests.js#20-169), [useUsers](file:///c:/Users/Erick/Documents/Plmun%20nexus/frontend/src/hooks/useUsers.js#6-177), `useInventory`) ang nag-eencapsulate ng API calls at local state para sa specific pages.
+
+---
+
+### Security
+
+**Q: Paano nyo sine-secure yung authentication?**
+> JWT-based authentication with access token (1 hour expiry) at refresh token (1 day, rotated at blacklisted after use). Rate limited yung login (10 attempts/min) at registration (5/hour) per IP. May idle session timeout na 30 minutes na nagmo-monitor ng user activity (clicks, keystrokes, mouse movement). Pag walang activity, auto-logout at redirect sa login page.
+
+**Q: Paano kung na-expire yung token habang nag-gagamit yung user?**
+> May automatic token refresh mechanism. Pag nag-401 yung API call, yung Axios interceptor nag-aattempt mag-refresh using the refresh token. Kung may sabay-sabay na mga API calls na nag-fail, isang refresh request lang ang pinapadala — yung iba naka-queue at ire-replay once may bagong token na. Kung yung refresh token mismo expired na, automatic logout at redirect sa login.
+
+**Q: Safe ba yung paglalagay ng token sa localStorage?**
+> It's a trade-off. Cookies are vulnerable to CSRF; localStorage is vulnerable to XSS. Since wala kaming `dangerouslySetInnerHTML` at `eval()` calls sa buong frontend — effectively zero XSS attack surface — localStorage is acceptable. Plus, nag-add pa kami ng defense-in-depth headers: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, at XSS filter.
+
+**Q: Paano nyo prinoprotektahan yung API endpoints?**
+> Three permission classes: [IsAdmin](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#25-30), [IsStaffOrAbove](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#18-23), [IsFacultyOrAbove](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#11-16). Naka-attach ito sa bawat view. For example, approve/reject endpoints require [IsStaffOrAbove](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#18-23), user management requires [IsAdmin](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/permissions.py#25-30). Plus, sa registration endpoint, kahit mag-send ang user ng `role: "ADMIN"` sa request body, ino-override namin to `STUDENT` on the backend — admin lang pwede mag-promote.
+
+---
+
+### Database & Data Integrity
+
+**Q: Paano nyo hina-handle yung race condition sa inventory stock?**
+> Ginamit namin yung Django F() expressions para sa atomic database operations. Instead of loading `item.quantity`, subtracting in Python, then saving — which is vulnerable to race conditions — we do `Item.objects.filter(pk=item.pk, quantity__gte=req.quantity).update(quantity=F('quantity') - req.quantity)`. The database handles the subtraction atomically. Kung kulang ang stock, `updated` returns 0 at reject namin ang approval.
+
+**Q: Bakit may `item_name` field sa Request model kung may ForeignKey na sa Item?**
+> Denormalization. Ine-snapshot namin yung item name at the time of request creation. Kung ni-rename yung item later (e.g., "Projector" → "HD Projector v2"), yung existing requests still show the original name. Nakakaconfuse kasi sa staff pag nagbabago yung name sa request history.
+
+**Q: Paano nyo hina-handle yung overdue returns?**
+> May [check_overdue](file:///c:/Users/Erick/Documents/Plmun%20nexus/Backend/apps/requests/views.py#441-536) endpoint na triggered periodically. It scans all requests na past `expected_return` date, nag-flag ng user, at nag-increment ng `overdue_count` — pero only for users not already flagged, para di mag-inflate yung count every scan. Staff receives a single summary notification (e.g., "3 overdue items: Laptop by John (2 days), Projector by Jane (1 hour)") instead of being spammed with individual notifications.
+
+---
+
+### Features
+
+**Q: Paano gumagana yung notification system?**
+> Event-driven. Pag may new request, approval, rejection, comment, or overdue — automatic notification creation. May deduplication: checked namin kung may identical notification sa last 5 minutes para di mag-spam from double-clicks or network retries. Recipients include: request owner, all previous commenters, and Staff/Admin. Capped at 100 na pinaka-recent para di bumigat yung response.
+
+**Q: Paano yung audit trail?**
+> 17 action types tracked: login, failed login, registration, profile update, password change, item CRUD, request approval/rejection/return, user management, backup export. Each entry records: action, username (snapshot in case user is deleted), IP address, timestamp, at detailed description. Admin-only access with filtering at search support.
+
+**Q: May dark mode ba?**
+> Yes. Naka-store per user sa localStorage via `uiStore`. Three options: light, dark, at system (follows OS preference). Implemented via CSS variables at Tailwind's `dark:` variant.
+
+---
+
+### Deployment & Operations
+
+**Q: Paano yung deployment?**
+> Backend sa Render (free tier) with PostgreSQL. Frontend sa Vercel or Netlify. Static files served via WhiteNoise middleware. Environment variables para sa secrets (SECRET_KEY, DATABASE_URL, CORS_ORIGINS). HTTPS enforced in production via HSTS headers.
+
+**Q: Paano pag nag-down yung system?**
+> May maintenance mode feature na pwedeng i-enable ng admin from Settings. May countdown timer na nakikita ng users, at naka-block sila habang maintenance. Auto-disable pag nag-expire yung timer.
+
+**Q: May backup system ba?**
+> Admin can export a full JSON backup containing all users, inventory items, and requests. May timestamp at exporter info sa backup file. Audit logs are also exportable as CSV or PDF.
+
+---
+
+### Testing
+
+**Q: May automated tests ba?**
+> Yes. Django TestCase-based tests for:
+> - Registration (forces STUDENT role, rejects admin role injection, validates password match)
+> - Login (email-based login, wrong password handling)
+> - Role hierarchy (has_min_role, is_admin, is_staff_or_above)
+>
+> Run with: `python manage.py test apps.authentication`

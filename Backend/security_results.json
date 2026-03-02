@@ -1,0 +1,90 @@
+{
+  "results": [
+    {
+      "test": "No-token access blocked",
+      "status": "fail",
+      "detail": "Status: 404 - returned data!"
+    },
+    {
+      "test": "Fake token rejected",
+      "status": "fail",
+      "detail": "Status: 404"
+    },
+    {
+      "test": "Tampered JWT rejected",
+      "status": "fail",
+      "detail": "Status: 404"
+    },
+    {
+      "test": "Registration role escalation",
+      "status": "pass",
+      "detail": "Rate limited (can't register too fast)"
+    },
+    {
+      "test": "Login rate limiting",
+      "status": "pass",
+      "detail": "Blocked after 9 attempts"
+    },
+    {
+      "test": "Student blocked from Audit logs",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "test": "Student blocked from Backup export",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "test": "Student blocked from User management",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "test": "Student create item blocked",
+      "status": "fail",
+      "detail": "Status: 404"
+    },
+    {
+      "test": "Profile role escalation",
+      "status": "pass",
+      "detail": "Role still: STUDENT"
+    },
+    {
+      "test": "XSS in item name",
+      "status": "pass",
+      "detail": "Creation rejected: 404"
+    },
+    {
+      "test": "XSS in registration fields",
+      "status": "partial",
+      "detail": "Rate limited, can't test"
+    },
+    {
+      "test": "Header: X-Content-Type-Options",
+      "status": "pass",
+      "detail": "Value: nosniff"
+    },
+    {
+      "test": "Header: X-Frame-Options",
+      "status": "pass",
+      "detail": "Value: DENY"
+    },
+    {
+      "test": "Debug mode leak",
+      "status": "fail",
+      "detail": "Debug info exposed in 404!"
+    },
+    {
+      "test": "Login error info leak",
+      "status": "pass",
+      "detail": "Generic error message used"
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "passed": 10,
+    "failed": 5,
+    "partial": 1
+  }
+}

@@ -17,13 +17,21 @@ from apps.authentication.models import User, AuditLog, log_action
 from apps.permissions import IsStaffOrAbove
 
 
-# helper: skip creating a notification if an identical one (same type, request,
-# recipient) was already created in the last 5 minutes. Prevents the annoying
-# duplicate spam from double-clicks, network retries, etc.
+# helper para di mag-spam ng duplicate notifications
+# pag nag-double click or may network retry, iche-check muna kung meron na
 from datetime import timedelta
 
+def _format_overdue_duration(overdue_delta):
+    """Convert a timedelta into a human-readable overdue string."""
+    total_minutes = int(overdue_delta.total_seconds() / 60)
+    if total_minutes < 60:
+        return f'{total_minutes} minute(s)'
+    if total_minutes < 1440:
+        return f'{total_minutes // 60} hour(s)'
+    return f'{overdue_delta.days} day(s)'
+
 def _create_notif_if_new(recipient, request_obj, notif_type, message, sender=None):
-    """Create notification only if no duplicate exists in the last 5 min."""
+    """Gawa ng notification kung wala pa sa last 5 min na pareho."""
     recent_cutoff = timezone.now() - timedelta(minutes=5)
     already_exists = Notification.objects.filter(
         recipient=recipient,
@@ -41,8 +49,8 @@ def _create_notif_if_new(recipient, request_obj, notif_type, message, sender=Non
         )
 
 
-# TODO(erick): the approve/reject/release actions share a lot of common
-# validation logic, might be worth extracting into a mixin at some point
+# TODO(erick): yung approve/reject/release pareho-pareho yung validation logic
+# pwede siguro gawing mixin para mas malinis
 class RequestViewSet(viewsets.ModelViewSet):
 
     queryset = Request.objects.all()
@@ -115,7 +123,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
-        """Approve a pending request, deduct stock, and notify the requester."""
+        """I-approve yung pending request, bawasan stock, at i-notify yung nag-request."""
         req = self.get_object()
 
         if req.status != 'PENDING':
@@ -131,7 +139,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Atomically check and deduct stock to prevent race conditions
+        # atomically check at bawasan yung stock para walang race condition
         item = req.item
         from apps.inventory.models import Item
         updated = Item.objects.filter(
@@ -156,8 +164,8 @@ class RequestViewSet(viewsets.ModelViewSet):
         req.approved_by = request.user
         req.approved_at = timezone.now()
 
-        # Non-returnable items (consumables) auto-complete on approval
-        # since there's nothing to return — they're just "taken"
+        # pag consumable (di returnable), auto-complete na agad
+        # kasi wala namang ibabalik eh
         if not item.is_returnable:
             req.status = 'COMPLETED'
         else:
@@ -228,7 +236,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     def complete(self, request, pk=None):
         req = self.get_object()
 
-        # SEC-05: only requester or staff/admin can complete
+        # yung nag-request lang or staff/admin pwede mag-complete
         if req.requested_by != request.user and not request.user.has_min_role('STAFF'):
             return Response(
                 {'error': 'You can only complete your own requests'},
@@ -284,7 +292,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def return_item(self, request, pk=None):
-        """Handle returning a borrowed item — restores stock and updates status."""
+        """I-handle yung pag-return ng borrowed item at ibalik yung stock."""
         req = self.get_object()
 
         # Only the requester or staff/admin can return an item
@@ -308,7 +316,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Restore stock atomically to prevent race conditions
+        # i-restore yung stock, atomic para safe
         from apps.inventory.models import Item
         Item.objects.filter(pk=item.pk).update(quantity=F('quantity') + req.quantity)
         item.refresh_from_db()
@@ -340,7 +348,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['delete'])
     def clear_completed(self, request):
-        # SEC-05: only staff/admin can bulk-clear
+        # staff/admin lang pwede mag-bulk clear
         if not request.user.has_min_role('STAFF'):
             return Response(
                 {'error': 'Staff access required to clear requests'},
@@ -441,13 +449,11 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def check_overdue(self, request):
-        """Scans for overdue borrows, flags the user, and sends notifications.
-        Only fires one notification per request per day to avoid spam.
-        BUG-01 fix: uses select_related + batch operations to avoid N+1 queries.
-        AUDIT-01 fix: uses unscoped queryset so any user can trigger a full scan.
-        AUDIT-02 fix: only increments overdue_count for users not already flagged."""
+        """Scan ng overdue borrows, i-flag yung user, at mag-send ng notification.
+        Isang notification lang per request per day para hindi mag-spam.
+        Naka-select_related na para iwas N+1 queries."""
         now = timezone.now()
-        # Use unscoped queryset — any authenticated user should trigger a system-wide scan
+        # unscoped queryset - kahit sino pwede mag-trigger ng scan
         overdue = (
             Request.objects.filter(status__in=['APPROVED', 'COMPLETED'], expected_return__lt=now)
             .select_related('requested_by')
@@ -476,13 +482,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
             # Calculate overdue duration
             overdue_delta = now - req.expected_return
-            total_minutes = int(overdue_delta.total_seconds() / 60)
-            if total_minutes < 60:
-                overdue_text = f'{total_minutes} minute(s)'
-            elif total_minutes < 1440:
-                overdue_text = f'{total_minutes // 60} hour(s)'
-            else:
-                overdue_text = f'{overdue_delta.days} day(s)'
+            overdue_text = _format_overdue_duration(overdue_delta)
 
             borrower = req.requested_by
             flagged_user_ids.add(borrower.pk)
@@ -521,8 +521,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     message=summary_msg,
                 )
 
-        # AUDIT-02: Only flag+increment users who aren't already flagged
-        # This prevents overdue_count from inflating by +1 every day
+        # i-flag lang yung mga hindi pa flagged para di mag-inflate yung overdue_count
         if flagged_user_ids:
             User.objects.filter(
                 pk__in=flagged_user_ids,
@@ -540,15 +539,15 @@ class RequestViewSet(viewsets.ModelViewSet):
 
 
 class NotificationViewSet(viewsets.ModelViewSet):
-    """User notifications — scoped to the authenticated user."""
+    """Notifications ng user - scoped sa authenticated user lang."""
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_queryset(self):
-        # BUG FIX: previously this had [:100] slicing which broke clear_all
-        # and read_all — Django doesn't let you filter or delete a sliced QS.
-        # Learned that the hard way. Limit is now applied only in list().
+        # dati may [:100] slicing dito na sumisira sa clear_all at read_all
+        # kasi hindi mo pwede i-filter or i-delete yung sliced queryset sa Django
+        # pinagod ako ng bug na 'to nang ilang oras haha
         return (
             Notification.objects
             .filter(recipient=self.request.user)

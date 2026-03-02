@@ -5,9 +5,8 @@ import authService from '../services/authService';
 import { formatApiError } from '../utils/errorUtils';
 import useUIStore from './uiStore';
 
-// We went with 30 min idle timeout because the university's IT policy
-// requires auto-logout for shared lab computers. Shorter than most apps
-// but necessary for a campus environment where students walk away mid-session.
+// 30 min idle timeout - requirement ng IT admin ng school
+// para sa mga shared computers sa lab na nakakalimutan mag-logout ng mga students
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 let idleTimer = null;
 
@@ -37,10 +36,8 @@ const detachIdleListeners = (handler) => {
     if (handler) IDLE_EVENTS.forEach(evt => window.removeEventListener(evt, handler));
 };
 
-// Normalize the user shape coming from the API.
-// The backend serializer uses camelCase (fullName, isActive) but some older
-// endpoints still return snake_case — this mapping handles both gracefully
-// so the rest of the frontend never has to worry about it.
+// normalize yung user data galing sa API
+// kasi minsan camelCase minsan snake_case yung backend, depende sa endpoint
 const mapUserResponse = (user) => ({
     id: user.id,
     email: user.email,
@@ -55,10 +52,7 @@ const mapUserResponse = (user) => ({
     createdAt: user.date_joined,
 });
 
-// Chose Zustand over Redux because the team is small (2 devs) and
-// the boilerplate reduction matters more than Redux DevTools here.
-// Also avoids the Provider wrapper which caused issues with our
-// lazy-loaded routes during initial setup.
+// zustand store - mas simple kesa Redux, less boilerplate
 const useAuthStore = create(
     persist(
         (set, get) => ({
@@ -222,9 +216,8 @@ const useAuthStore = create(
 
             _idleHandler: null,
 
-            // background profile refresh — picks up flag/active changes
-            // without forcing the user to log out and back in.
-            // called every 30s from DashboardLayout
+            // background profile refresh para makita agad pag na-flag or na-deactivate
+            // tine-trigger 'to every 30s from DashboardLayout
             refreshProfile: async () => {
                 try {
                     const profile = await authService.getProfile();

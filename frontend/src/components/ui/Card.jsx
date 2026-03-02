@@ -1,5 +1,7 @@
 import React from 'react';
 
+// reusable card component na ginagamit sa buong app
+// TODO: lagyan ng hover animation yung cards sa dashboard
 const Card = ({ children, className = '', padding = true, ...props }) => {
     return (
         <div

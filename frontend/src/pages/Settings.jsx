@@ -44,7 +44,7 @@ import SystemTab from './settings/SystemTab';
 import UsersTab from './settings/UsersTab';
 import AdminTab from './settings/AdminTab';
 
-// Settings navigation tabs - organized by role
+// tabs ng settings - depende sa role kung anong makikita
 const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: User, minRole: null },
     { id: 'preferences', label: 'Preferences', icon: Sliders, minRole: null },
@@ -63,7 +63,7 @@ const Settings = () => {
     const { theme, setTheme, backgroundEffect, setBackgroundEffect, viewMode, setViewMode, itemsPerPage, setItemsPerPage, showImages, setShowImages } = useUIStore();
     const { users, loading: usersLoading, fetchUsers, updateUserRole, toggleUserStatus, deleteUser: deleteUserAPI, unflagUser } = useUsers();
     const isMobile = useIsMobile();
-    // On mobile: null = show menu, string = show tab detail
+    // sa mobile: null = menu list, string = tab content
     const [activeTab, setActiveTab] = useState(isMobile ? null : 'profile');
 
     // Sync activeTab when screen size changes
@@ -86,14 +86,14 @@ const Settings = () => {
     const [createUserError, setCreateUserError] = useState('');
     const [createUserLoading, setCreateUserLoading] = useState(false);
 
-    // Fetch users when admin tab is accessed
+    // fetch users pag binuksan yung admin tab
     useEffect(() => {
         if (activeTab === 'users' && hasMinRole(ROLES.ADMIN)) {
             fetchUsers();
         }
     }, [activeTab, fetchUsers, hasMinRole]);
 
-    // Filter tabs based on user role
+    // i-filter yung tabs based sa role
     const visibleTabs = settingsTabs.filter(tab => {
         if (tab.exactRole) return user?.role === tab.exactRole;
         if (!tab.minRole) return true;
@@ -192,7 +192,8 @@ const Settings = () => {
         retentionDays: 30,
     });
 
-    // Flash message helper — eliminates setSaveMessage+setTimeout duplication
+    // flash message helper - para di na kailangan mag setSaveMessage+setTimeout sa bawat save
+    // FIXME: nag-ooverlap minsan yung messages pag mabilis mag-click
     const [saveMessage, setSaveMessage] = useState('');
     const flashTimerRef = React.useRef(null);
     const flashMessage = React.useCallback((msg, ms = 3000) => {
@@ -247,7 +248,8 @@ const Settings = () => {
         }
     };
 
-    // Audit logs — fetch from backend (admin only)
+    // audit logs - admin only
+    // TODO: lagyan ng search/filter yung audit logs kasi ang hirap maghanap pag madami na
     const [auditLogs, setAuditLogs] = useState([]);
     const [auditLogsLoading, setAuditLogsLoading] = useState(false);
     const [clearLogsConfirm, setClearLogsConfirm] = useState(false);
@@ -268,7 +270,7 @@ const Settings = () => {
         if (activeTab === 'admin') fetchAuditLogs();
     }, [activeTab]);
 
-    // Daily auto-export: when admin opens admin tab, if 24h have passed, auto-export PDF
+    // daily auto-export ng audit logs sa PDF kapag binuksan ng admin
     useEffect(() => {
         if (activeTab !== 'admin' || auditLogs.length === 0) return;
         const lastExportKey = 'audit-last-auto-export';

@@ -1,7 +1,9 @@
 """
-Shared permission classes for PLMun Nexus.
+Shared permission classes para sa buong system.
+Dati kasi naka-copy paste per app yung permission logic,
+kaya nag-create na lang ng isang file na import-an ng lahat.
 
-Import these instead of redefining them in each app's views.py:
+Usage:
     from apps.permissions import IsStaffOrAbove, IsAdmin, IsFacultyOrAbove
 """
 

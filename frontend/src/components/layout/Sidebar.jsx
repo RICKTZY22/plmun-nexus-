@@ -17,7 +17,7 @@ import plmunLogo from '../../assets/images/logo.png';
 import { ROLES, hasMinRole } from '../../utils/roles';
 import { requestService } from '../../services';
 
-// Grouped navigation with section labels
+// navigation groups depende sa role ng user
 const getNavGroups = (userRole) => {
     const groups = [
         {
@@ -62,7 +62,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
         setMobileOpen?.(false);
     }, [location.pathname, setMobileOpen]);
 
-    // F-05: Fetch pending count for badge
+    // pending count para sa badge ng Requests link
+    // TODO: ang daming api call nito every minute, gawing shared state na lang
     const fetchPendingCount = useCallback(async () => {
         try {
             const data = await requestService.getAll();

@@ -6,6 +6,8 @@ from .models import Request, Comment, Notification
 from apps.authentication.serializers import UserSerializer
 
 
+# HACK: naka-nest yung CommentSerializer sa loob ng RequestSerializer
+# medyo mabigat pero kailangan para makita agad yung comments sa request detail
 class CommentSerializer(serializers.ModelSerializer):
 
     author = UserSerializer(read_only=True)
@@ -78,6 +80,7 @@ class RequestSerializer(serializers.ModelSerializer):
         return None
 
     def get_isReturnable(self, obj) -> bool:
+        # minsan nawawala yung item (deleted na), kaya may try-except
         try:
             return obj.item.is_returnable
         except (AttributeError, obj.item.DoesNotExist):
@@ -103,6 +106,7 @@ class RequestSerializer(serializers.ModelSerializer):
             return None
 
 
+# TODO: mag-add ng max quantity validation base sa item.quantity
 class RequestCreateSerializer(serializers.ModelSerializer):
 
     itemName = serializers.CharField(source='item_name')

@@ -11,7 +11,8 @@ from apps.permissions import IsStaffOrAbove, IsAdmin
 
 
 class ItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for inventory items."""
+    """ViewSet para sa inventory items."""
+    # TODO: lagyan ng pagination 'to, mabagal kapag maraming items
 
     queryset = Item.objects.all()
 
@@ -67,11 +68,11 @@ class ItemViewSet(viewsets.ModelViewSet):
         return response
 
     def get_queryset(self):
-        """Filter items based on user role and query params."""
+        """I-filter yung items base sa role ng user at query params."""
         queryset = Item.objects.select_related('status_changed_by').all()
         user = self.request.user
 
-        # Role-based access filtering
+        # i-check yung role hierarchy para malaman kung anong items yung allowed tignan ng user
         role_hierarchy = User.ROLE_HIERARCHY
         user_level = role_hierarchy.get(user.role, 0)
 
@@ -81,7 +82,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         ]
         queryset = queryset.filter(access_level__in=accessible_levels)
 
-        # Hide RETIRED items from students and faculty
+        # huwag ipakita yung retired items sa students at faculty, wala naman silang magagawa dyan
         if user.role in ['STUDENT', 'FACULTY']:
             queryset = queryset.exclude(status='RETIRED')
 
@@ -107,7 +108,7 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def change_status(self, request, pk=None):
-        """Change an item's status with metadata (note, ETA)."""
+        """Palitan yung status ng item (Available, Maintenance, Retired, etc)."""
         item = self.get_object()
         new_status = request.data.get('status')
         note = request.data.get('note', '')
@@ -146,7 +147,8 @@ class ItemViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
-        """Get low stock items."""
+        """Kunin yung mga items na mababa na yung stock."""
+        # FIXME: baka kailangan gawing dynamic yung threshold, hindi laging 5
         items = self.get_queryset().filter(
             quantity__lte=Item.LOW_STOCK_THRESHOLD,
             quantity__gt=0,

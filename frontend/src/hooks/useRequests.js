@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { requestService } from '../services';
 import { formatApiError } from '../utils/errorUtils';
 
-// Shared stats calculation — used after every action that changes request data
+// stats calculator - ino-update 'to every time may action sa request
 const buildStats = (items) => {
     const init = { total: 0, pending: 0, approved: 0, rejected: 0, completed: 0, returned: 0, highPriority: 0 };
     return items.reduce((acc, r) => {
@@ -26,7 +26,7 @@ const useRequests = () => {
 
     const clearError = useCallback(() => setError(null), []);
 
-    // Re-fetch all requests from the server and recalculate stats
+    // i-fetch lahat ng requests at i-recalculate yung stats
     const refreshAll = useCallback(async () => {
         const data = await requestService.getAll();
         const items = Array.isArray(data) ? data : data.results || [];
@@ -83,7 +83,8 @@ const useRequests = () => {
         }
     }, []);
 
-    // Generic action handler: call endpoint, re-fetch, return result
+    // generic action handler para di paulit-ulit yung try/catch sa bawat action
+    // HACK: medyo malabo 'tong pattern na 'to pero gumagana naman
     const handleAction = useCallback(async (action, successMsg, failMsg) => {
         setLoading(true);
         setError(null);

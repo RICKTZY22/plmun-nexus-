@@ -6,7 +6,7 @@ from apps.authentication.models import User
 
 
 class RegistrationTests(TestCase):
-    """SEC-02: Registration always forces STUDENT role."""
+    """Registration laging STUDENT ang role, di pwede mag-register as admin."""
 
     def setUp(self):
         self.client = APIClient()

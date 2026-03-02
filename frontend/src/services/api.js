@@ -9,10 +9,9 @@ const api = axios.create({
     },
 });
 
-// Read tokens directly from localStorage instead of importing the store.
-// We tried importing useAuthStore here but it caused a circular dependency
-// (authStore -> authService -> api -> authStore). Reading from localStorage
-// directly breaks the cycle. The store syncs it back on refresh anyway.
+// kinukuha yung tokens directly from localStorage
+// kasi pag nag-import tayo ng authStore dito, mag-circular dependency
+// (authStore -> authService -> api -> authStore) kaya ganito na lang
 const getTokens = () => {
     const authData = localStorage.getItem('auth-storage');
     if (authData) {
@@ -32,7 +31,7 @@ const getTokens = () => {
 // Lazily import authStore to avoid circular dependency issues at module init time
 const getAuthStore = () => import('../store/authStore').then(m => m.default ?? m);
 
-// Attach the bearer token to every outgoing request
+// lagay ng bearer token sa every request
 api.interceptors.request.use(
     (config) => {
         const { access } = getTokens();
@@ -41,17 +40,15 @@ api.interceptors.request.use(
         }
         return config;
     },
-    (error) => Promise.reject(error)
+    (error) => { throw error; }
 );
 
 // Handle 401s by trying to refresh the access token
 let isRefreshing = false;
 let failedQueue = [];
 
-// Mutex queue for concurrent 401s. Without this, if 3 API calls fail
-// simultaneously, we'd fire 3 refresh requests and 2 would fail because
-// the token was already rotated. This pattern queues the failed requests
-// and replays them once the single refresh completes.
+// mutex queue para sa sabay-sabay na 401 errors
+// kung walang 'to, mag 3 refresh requests na sabay-sabay when simultaneous calls fail
 const processQueue = (error, token = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -75,7 +72,7 @@ api.interceptors.response.use(
                 }).then(token => {
                     originalRequest.headers.Authorization = `Bearer ${token}`;
                     return api(originalRequest);
-                }).catch(err => Promise.reject(err));
+                }).catch(err => { throw err; });
             }
 
             originalRequest._retry = true;
@@ -91,7 +88,7 @@ api.interceptors.response.use(
 
                     const { access } = response.data;
 
-                    // Sync the new token through zustand so in-memory state stays consistent
+                    // i-sync yung bagong token sa zustand
                     const store = await getAuthStore();
                     store.getState().setToken(access);
 
@@ -105,7 +102,7 @@ api.interceptors.response.use(
                     const store = await getAuthStore();
                     store.getState().logout();
                     window.location.href = '/login';
-                    return Promise.reject(refreshError);
+                    throw refreshError;
                 } finally {
                     isRefreshing = false;
                 }
@@ -116,7 +113,7 @@ api.interceptors.response.use(
             }
         }
 
-        return Promise.reject(error);
+        throw error;
     }
 );
 

@@ -5,7 +5,8 @@ from .models import Item
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    """Serializer for Item model."""
+    """Read serializer para sa items. CamelCase kasi gusto ng frontend."""
+    # medyo maraming fields 'to pero kailangan talaga lahat para sa detail view
 
     isLowStock = serializers.SerializerMethodField()
     isOutOfStock = serializers.SerializerMethodField()
@@ -47,7 +48,7 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 class ItemCreateUpdateSerializer(serializers.ModelSerializer):
-    """Serializer for creating/updating items."""
+    """Write serializer - mas kaunti yung fields kasi di naman lahat editable."""
 
     accessLevel = serializers.CharField(source='access_level', required=False)
     imageUrl = serializers.ImageField(source='image', required=False, allow_null=True)
@@ -69,7 +70,7 @@ class ItemCreateUpdateSerializer(serializers.ModelSerializer):
         return value
 
     def validate_name(self, value):
-        """Strip HTML tags to prevent stored XSS."""
+        # strip_tags para di ma-inject ng <script> sa name haha
         return strip_tags(value).strip()
 
     def validate_description(self, value):

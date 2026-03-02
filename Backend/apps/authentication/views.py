@@ -186,7 +186,7 @@ class ProfilePictureView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # SEC-02: Validate file type, extension, and size
+        # i-validate yung file type, extension, at size ng profile pic
         if file.content_type not in self.ALLOWED_MIME:
             return Response(
                 {'error': 'Only JPEG, PNG, and WebP images are allowed.'},
@@ -216,7 +216,7 @@ class ProfilePictureView(APIView):
 class AuditLogView(APIView):
     """Admin-only listing of audit events. Supports ?limit= and ?action= filters."""
 
-    permission_classes = [IsAdmin]  # SEC-03: class-level permission
+    permission_classes = [IsAdmin]  # admin lang pwede dito
 
     def get(self, request):
 
@@ -271,7 +271,7 @@ class BackupView(APIView):
     """Dumps users, inventory, and requests as a downloadable JSON file.
     Admin only."""
 
-    permission_classes = [IsAdmin]  # SEC-03: class-level permission
+    permission_classes = [IsAdmin]  # admin lang din
 
     def get(self, request):
 

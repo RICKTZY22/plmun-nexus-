@@ -6,7 +6,8 @@ import { AnimatedInput } from '../components/ui';
 import universityBuilding from '../assets/images/university-building.jpg';
 import plmunLogo from '../assets/images/logo.png';
 
-// Password strength meter helper
+// password strength checker
+// TODO: baka need pa 'tong i-improve, parang ang dali maka-"Strong" rating
 const getPasswordStrength = (password) => {
     if (!password) return { score: 0, label: '', color: '', textColor: '' };
     let score = 0;
@@ -60,7 +61,7 @@ const Register = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [validationError, setValidationError] = useState('');
 
-    // Entrance animation trigger
+    // entrance animation
     useEffect(() => { setMounted(true); }, []);
 
     const handleChange = (field) => (e) => {

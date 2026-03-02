@@ -1,5 +1,8 @@
 import React from 'react';
 
+// mga variant at sizes ng button
+// HACK: yung gradient variant parang off ang colors sa dark mode, ayusin mamaya
+
 const variants = {
     primary: 'bg-accent text-white hover:bg-accent-dark shadow-sm hover:shadow-md',
     secondary: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600',
@@ -17,6 +20,9 @@ const sizes = {
     xl: 'px-6 py-3 text-base',
 };
 
+// Icon size lookup — avoids nested ternaries (SonarCloud: cognitive complexity)
+const iconSizes = { xs: 12, sm: 14, md: 16, lg: 18, xl: 18 };
+
 const Button = ({
     children,
     variant = 'primary',
@@ -29,6 +35,8 @@ const Button = ({
     fullWidth = false,
     ...props
 }) => {
+    const iconSize = iconSizes[size] || 16;
+
     return (
         <button
             disabled={disabled || loading}
@@ -51,13 +59,13 @@ const Button = ({
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
             ) : Icon && iconPosition === 'left' ? (
-                <Icon size={size === 'xs' ? 12 : size === 'sm' ? 14 : size === 'lg' || size === 'xl' ? 18 : 16} />
+                <Icon size={iconSize} />
             ) : null}
 
             <span>{children}</span>
 
             {!loading && Icon && iconPosition === 'right' && (
-                <Icon size={size === 'xs' ? 12 : size === 'sm' ? 14 : size === 'lg' || size === 'xl' ? 18 : 16} />
+                <Icon size={iconSize} />
             )}
         </button>
     );

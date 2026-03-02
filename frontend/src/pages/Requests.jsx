@@ -26,7 +26,7 @@ const statusIcons = {
     CANCELLED: X,
 };
 
-// Responsive group body — cards on mobile, table on desktop
+// responsive layout - cards pag mobile, table pag desktop
 const RequestGroupBody = ({ groupRequests, user, isStaffPlus, handleApprove, handleRejectClick, handleCancelClick, returnRequest, setDetailRequest, setDetailModalOpen, getComments, setDetailComments }) => {
     const isMobile = useIsMobile();
     const priorityColor = { HIGH: 'text-red-600 bg-red-50 dark:bg-red-900/20', LOW: 'text-gray-500 bg-gray-50 dark:bg-gray-700', NORMAL: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' };
@@ -111,14 +111,10 @@ const RequestGroupBody = ({ groupRequests, user, isStaffPlus, handleApprove, han
                                     {request.status === 'PENDING' && isOwnRequest && (
                                         <Button variant="ghost" size="sm" onClick={() => handleCancelClick(request.id)} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700" title="Cancel Request"><Ban size={16} /></Button>
                                     )}
-                                    {request.status === 'PENDING' && (
+                                    {request.status === 'PENDING' && !isOwnRequest && (
                                         <StaffOnly>
-                                            {!isOwnRequest && (
-                                                <>
-                                                    <Button variant="ghost" size="sm" onClick={() => handleApprove(request.id)} className="text-emerald-600 hover:bg-emerald-50" title="Approve"><Check size={16} /></Button>
-                                                    <Button variant="ghost" size="sm" onClick={() => handleRejectClick(request.id)} className="text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></Button>
-                                                </>
-                                            )}
+                                            <Button variant="ghost" size="sm" onClick={() => handleApprove(request.id)} className="text-emerald-600 hover:bg-emerald-50" title="Approve"><Check size={16} /></Button>
+                                            <Button variant="ghost" size="sm" onClick={() => handleRejectClick(request.id)} className="text-red-600 hover:bg-red-50" title="Reject"><X size={16} /></Button>
                                         </StaffOnly>
                                     )}
                                     {(request.status === 'APPROVED' || request.status === 'COMPLETED') && request.isReturnable && (
@@ -157,7 +153,7 @@ const Requests = () => {
     const { user } = useAuthStore();
     const location = useLocation();
 
-    // F-01: View mode — Students default to "mine", Staff+ to "all"
+    // default view: students = sariling requests lang, staff+ = lahat
     const isStaffPlus = hasMinRole(user?.role, ROLES.STAFF);
     const [viewMode, setViewMode] = useState(isStaffPlus ? 'all' : 'mine');
 
@@ -168,7 +164,7 @@ const Requests = () => {
     const [selectedRequestId, setSelectedRequestId] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
 
-    // F-02: Cancel confirmation modal
+    // cancel modal states
     const [cancelModalOpen, setCancelModalOpen] = useState(false);
     const [cancelRequestId, setCancelRequestId] = useState(null);
 
@@ -177,7 +173,8 @@ const Requests = () => {
     const [detailComments, setDetailComments] = useState([]);
     const [commentLoading, setCommentLoading] = useState(false);
 
-    // RT-01: Poll comments every 5s while detail modal is open
+    // poll ng comments every 5 seconds habang bukas yung modal
+    // TODO: gawing websocket 'to kapag may oras na, ang bagal ng polling eh
     useEffect(() => {
         if (!detailModalOpen || !detailRequest?.id) return;
         const pollInterval = setInterval(async () => {
@@ -197,14 +194,14 @@ const Requests = () => {
         return () => clearInterval(pollInterval);
     }, [detailModalOpen, detailRequest?.id, getComments]);
 
-    // Collapsed status sections
+    // para ma-collapse/expand yung mga status sections
     const [collapsedSections, setCollapsedSections] = useState({});
 
     const [itemSearch, setItemSearch] = useState('');
     const [selectedItem, setSelectedItem] = useState(null);
     const [showDropdown, setShowDropdown] = useState(false);
 
-    // Load saved preferences from Settings → Preferences tab
+    // kukunin yung naka-save na preferences ng user sa localStorage
     const savedPrefsKey = user?.id ? `user-prefs-${user.id}` : null;
     const savedPrefs = useMemo(() => {
         if (!savedPrefsKey) return {};
@@ -225,19 +222,20 @@ const Requests = () => {
 
     useEffect(() => {
         fetchRequests({ search, status: filterStatus });
+        // FIXME: nag-rrefresh ng dalawang beses pag mabilis mag type, need debounce
     }, [search, filterStatus, fetchRequests]);
 
-    // Auto-trigger overdue check on page load (all authenticated users)
+    // check kung may overdue pag nag-load yung page
     useEffect(() => {
         checkOverdue();
     }, [checkOverdue]);
 
-    // Fetch inventory items so the item search dropdown works
+    // kailangan i-fetch yung inventory items para gumana yung dropdown
     useEffect(() => {
         fetchInventory();
     }, [fetchInventory]);
 
-    // F-04: Handle prefilled item from Items page navigation
+    // pag galing sa Inventory page, auto-fill na yung item
     useEffect(() => {
         const prefill = location.state?.prefillItem;
         if (prefill) {
@@ -255,7 +253,7 @@ const Requests = () => {
         return getAccessibleItems(user.role, itemSearch);
     }, [user?.role, itemSearch, getAccessibleItems]);
 
-    // F-01: Filter requests based on view mode, search, and status filter
+    // filter ng requests - view mode, search, at status
     const displayedRequests = useMemo(() => {
         let result = requests;
         if (viewMode === 'mine') {
@@ -275,7 +273,7 @@ const Requests = () => {
         return result;
     }, [requests, viewMode, user?.id, search, filterStatus]);
 
-    // Stats for the current view
+    // bilang ng requests per status para sa cards sa taas
     const displayedStats = useMemo(() => {
         const items = displayedRequests;
         return {
@@ -333,7 +331,6 @@ const Requests = () => {
         setSelectedItem(null);
     };
 
-    // F-02: Cancel handlers
     const handleCancelClick = (id) => {
         setCancelRequestId(id);
         setCancelModalOpen(true);
@@ -687,7 +684,7 @@ const Requests = () => {
                 </div>
             </Modal>
 
-            {/* F-02: Cancel Confirmation Modal */}
+            {/* Cancel confirmation */}
             <Modal
                 isOpen={cancelModalOpen}
                 onClose={() => setCancelModalOpen(false)}

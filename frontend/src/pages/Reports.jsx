@@ -246,99 +246,97 @@ const Reports = () => {
     const chartsRef = useRef(null);
     const [exporting, setExporting] = useState(false);
 
-    const handleExport = async (format) => {
-        if (format === 'csv') {
-            // Decide data scope: filtered or all
-            const exportInventory = dateRange === 'all' ? (inventory || []) : (filteredInventory || []);
-            const exportRequests = dateRange === 'all' ? (requests || []) : (filteredRequests || []);
+    // ── CSV Export ──
+    const exportCSV = () => {
+        const exportInventory = dateRange === 'all' ? (inventory || []) : (filteredInventory || []);
+        const exportRequests = dateRange === 'all' ? (requests || []) : (filteredRequests || []);
 
-            // Comprehensive CSV with summary + inventory + requests
-            const lines = [];
-            lines.push([`PLMun Inventory Nexus — Report (${periodLabel})`]);
-            lines.push(['Generated', new Date().toLocaleString()]);
-            lines.push(['Period', periodLabel]);
-            lines.push([]);
+        const lines = [];
+        lines.push([`PLMun Inventory Nexus — Report (${periodLabel})`]);
+        lines.push(['Generated', new Date().toLocaleString()]);
+        lines.push(['Period', periodLabel]);
+        lines.push([]);
 
-            // Summary
-            const csvAvailable = exportInventory.filter(i => (i.status || '').toUpperCase() === 'AVAILABLE').length;
-            const csvApproved = exportRequests.filter(r => r.status === 'APPROVED').length;
-            lines.push(['=== SUMMARY ===']);
-            lines.push(['Total Items', String(exportInventory.length)]);
-            lines.push(['Available', String(csvAvailable)]);
-            lines.push(['Total Requests', String(exportRequests.length)]);
-            lines.push(['Approval Rate', (exportRequests.length > 0 ? Math.round(csvApproved / exportRequests.length * 100) : 0) + '%']);
-            lines.push(['Overdue Returns', String(overdueRequests.length)]);
-            lines.push([]);
+        // Summary
+        const csvAvailable = exportInventory.filter(i => (i.status || '').toUpperCase() === 'AVAILABLE').length;
+        const csvApproved = exportRequests.filter(r => r.status === 'APPROVED').length;
+        lines.push(['=== SUMMARY ===']);
+        lines.push(['Total Items', String(exportInventory.length)]);
+        lines.push(['Available', String(csvAvailable)]);
+        lines.push(['Total Requests', String(exportRequests.length)]);
+        lines.push(['Approval Rate', (exportRequests.length > 0 ? Math.round(csvApproved / exportRequests.length * 100) : 0) + '%']);
+        lines.push(['Overdue Returns', String(overdueRequests.length)]);
+        lines.push([]);
 
-            // Category Breakdown
-            if (categoryDistribution.length > 0) {
-                lines.push(['=== CATEGORY BREAKDOWN ===']);
-                lines.push(['Category', 'Count', 'Percentage']);
-                const totalInv = inventory.length;
-                categoryDistribution.forEach(c => {
-                    lines.push([c.name, String(c.value), (totalInv > 0 ? Math.round(c.value / totalInv * 100) : 0) + '%']);
-                });
-                lines.push([]);
-            }
-
-            // Inventory
-            lines.push(['=== INVENTORY ===']);
-            lines.push(['#', 'Name', 'Category', 'Quantity', 'Status', 'Location']);
-            exportInventory.forEach((item, idx) => {
-                lines.push([String(idx + 1), item.name, item.category, String(item.quantity), item.status, item.location || '']);
+        // Category Breakdown
+        if (categoryDistribution.length > 0) {
+            lines.push(['=== CATEGORY BREAKDOWN ===']);
+            lines.push(['Category', 'Count', 'Percentage']);
+            const totalInv = inventory.length;
+            categoryDistribution.forEach(c => {
+                lines.push([c.name, String(c.value), (totalInv > 0 ? Math.round(c.value / totalInv * 100) : 0) + '%']);
             });
             lines.push([]);
-
-            // Requests
-            if (exportRequests.length > 0) {
-                lines.push(['=== REQUESTS ===']);
-                lines.push(['#', 'Item', 'Requested By', 'Quantity', 'Priority', 'Status', 'Date']);
-                exportRequests.forEach((r, idx) => {
-                    lines.push([
-                        String(idx + 1),
-                        r.itemName || '', r.requestedBy || r.requested_by || '',
-                        String(r.quantity || 0), r.priority || 'NORMAL', r.status || '',
-                        r.requestDate || r.created_at || '',
-                    ]);
-                });
-                lines.push([]);
-            }
-
-            // Priority Distribution
-            if (priorityDistribution.length > 0) {
-                lines.push(['=== PRIORITY DISTRIBUTION ===']);
-                lines.push(['Priority', 'Count', 'Percentage']);
-                const totalReq = requests.length;
-                priorityDistribution.forEach(p => {
-                    lines.push([p.name, String(p.value), (totalReq > 0 ? Math.round(p.value / totalReq * 100) : 0) + '%']);
-                });
-                lines.push([]);
-            }
-
-            // Overdue
-            if (overdueRequests.length > 0) {
-                lines.push(['=== OVERDUE RETURNS ===']);
-                lines.push(['Item', 'Borrower', 'Quantity', 'Expected Return', 'Days Overdue']);
-                overdueRequests.forEach(r => {
-                    lines.push([r.itemName || '', r.requestedBy || '', String(r.quantity || 0), r.expectedReturn || '', String(r.daysOverdue)]);
-                });
-            }
-
-            // Build CSV string
-            const csvContent = lines.map(row =>
-                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-            ).join('\n');
-            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `PLMun_Report_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            return;
         }
 
-        // --- Full PDF Report ---
+        // Inventory
+        lines.push(['=== INVENTORY ===']);
+        lines.push(['#', 'Name', 'Category', 'Quantity', 'Status', 'Location']);
+        exportInventory.forEach((item, idx) => {
+            lines.push([String(idx + 1), item.name, item.category, String(item.quantity), item.status, item.location || '']);
+        });
+        lines.push([]);
+
+        // Requests
+        if (exportRequests.length > 0) {
+            lines.push(['=== REQUESTS ===']);
+            lines.push(['#', 'Item', 'Requested By', 'Quantity', 'Priority', 'Status', 'Date']);
+            exportRequests.forEach((r, idx) => {
+                lines.push([
+                    String(idx + 1),
+                    r.itemName || '', r.requestedBy || r.requested_by || '',
+                    String(r.quantity || 0), r.priority || 'NORMAL', r.status || '',
+                    r.requestDate || r.created_at || '',
+                ]);
+            });
+            lines.push([]);
+        }
+
+        // Priority Distribution
+        if (priorityDistribution.length > 0) {
+            lines.push(['=== PRIORITY DISTRIBUTION ===']);
+            lines.push(['Priority', 'Count', 'Percentage']);
+            const totalReq = requests.length;
+            priorityDistribution.forEach(p => {
+                lines.push([p.name, String(p.value), (totalReq > 0 ? Math.round(p.value / totalReq * 100) : 0) + '%']);
+            });
+            lines.push([]);
+        }
+
+        // Overdue
+        if (overdueRequests.length > 0) {
+            lines.push(['=== OVERDUE RETURNS ===']);
+            lines.push(['Item', 'Borrower', 'Quantity', 'Expected Return', 'Days Overdue']);
+            overdueRequests.forEach(r => {
+                lines.push([r.itemName || '', r.requestedBy || '', String(r.quantity || 0), r.expectedReturn || '', String(r.daysOverdue)]);
+            });
+        }
+
+        // Build CSV string
+        const csvContent = lines.map(row =>
+            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PLMun_Report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    // ── PDF Export ──
+    const exportPDF = async () => {
         setExporting(true);
         try {
             const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -490,7 +488,7 @@ const Reports = () => {
                 }
             }
 
-            // === Page 2+: Inventory Items ===
+            // Inventory Items page
             doc.addPage();
             addHeader(`Inventory Items — ${periodLabel} (${allItems.length})`);
 
@@ -509,7 +507,7 @@ const Reports = () => {
                 margin: { left: margin, right: margin },
             });
 
-            // === Next: Requests ===
+            // Requests page
             if (allRequests.length > 0) {
                 doc.addPage();
                 addHeader(`Requests — ${periodLabel} (${allRequests.length})`, [99, 102, 241]);
@@ -531,7 +529,7 @@ const Reports = () => {
                 });
             }
 
-            // === Overdue page ===
+            // Overdue page
             if (overdueRequests.length > 0) {
                 doc.addPage();
                 addHeader(`Overdue Returns (${overdueRequests.length})`, [220, 38, 38]);
@@ -571,6 +569,15 @@ const Reports = () => {
             alert('Failed to export PDF: ' + err.message);
         } finally {
             setExporting(false);
+        }
+    };
+
+    // ── Export dispatcher ──
+    const handleExport = (format) => {
+        if (format === 'csv') {
+            exportCSV();
+        } else {
+            exportPDF();
         }
     };
 

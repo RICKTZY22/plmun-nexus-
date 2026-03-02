@@ -2,8 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+# TODO: mag-add ng student_year field para alam kung 1st yr, 2nd yr, etc.
+# pinag-usapan na namin ni sir pero di pa priority
 class User(AbstractUser):
-    """Custom User model with role-based access control."""
+    """Custom user model. Ginamit AbstractUser kasi enough na yung default fields niya."""
 
     class Role(models.TextChoices):
         STUDENT = 'STUDENT', 'Student'
@@ -21,6 +23,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     is_flagged = models.BooleanField(default=False, help_text='Flagged for overdue returns')
+    # FIXME: nag-rereset 'to kapag nag-unflag, baka kailangan i-keep yung history
     overdue_count = models.PositiveIntegerField(default=0, help_text='Number of overdue incidents')
 
     # Numbering starts at 0 because we compare with >= in has_min_role().
@@ -59,9 +62,10 @@ class User(AbstractUser):
 
 
 # --- Audit log ---
+# dati wala 'to, hiningi ng IT head para may paper trail
 
 class AuditLog(models.Model):
-    """System-wide audit trail for tracking security-relevant user actions."""
+    """Audit trail para ma-track kung sino gumawa ng ano."""
 
     class Action(models.TextChoices):
         LOGIN            = 'Login',           'Login'
@@ -108,7 +112,7 @@ class AuditLog(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='audit_logs',
     )
-    username   = models.CharField(max_length=150, blank=True)  # snapshot in case user is deleted
+    username   = models.CharField(max_length=150, blank=True)  # naka-snapshot kasi baka ma-delete yung user
     details    = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp  = models.DateTimeField(auto_now_add=True)

@@ -24,7 +24,8 @@ const Dashboard = () => {
         checkOverdue();
     }, [fetchInventory, fetchInventoryStats, fetchRequests, checkOverdue]);
 
-    // Fetch low stock items (async)
+    // low stock items
+    // TODO: pwede ba 'tong i-cache sa zustand para di na paulit-ulit mag fetch?
     useEffect(() => {
         const fetchLowStock = async () => {
             try {
@@ -50,8 +51,8 @@ const Dashboard = () => {
         return Object.entries(categories).map(([name, value]) => ({ name, value }));
     }, [inventory]);
 
-    // Calculate monthly trend data from real inventory and request data
-    // Also compute per-category counts for the bar chart
+    // monthly data + per-category na chart data
+    // medyo matagal 'tong i-compute pag maraming items kaya naka-memo
     const CATEGORY_COLORS = {
         'ELECTRONICS': '#1e40af',
         'FURNITURE': '#7c3aed',
@@ -113,6 +114,16 @@ const Dashboard = () => {
     }, [requests, inventory]);
 
     // Recent activity from actual requests
+    const activityDotColors = {
+        PENDING: 'bg-amber-500',
+        APPROVED: 'bg-emerald-500',
+        COMPLETED: 'bg-blue-500',
+        RETURNED: 'bg-blue-500',
+        CANCELLED: 'bg-orange-500',
+        OVERDUE: 'bg-orange-500',
+        REJECTED: 'bg-red-500',
+    };
+
     const recentActivity = React.useMemo(() => {
         if (!requests || requests.length === 0) return [];
         const statusLabels = {
@@ -129,14 +140,15 @@ const Dashboard = () => {
             action: statusLabels[req.status] || `Status: ${req.status}`,
             item: req.itemName || req.item_name || 'Unknown Item',
             user: req.requestedBy || req.requester_name || 'Unknown User',
-            time: new Date(req.requestDate || req.created_at).toLocaleDateString()
+            time: new Date(req.requestDate || req.created_at).toLocaleDateString(),
+            dotColor: activityDotColors[req.status] || 'bg-gray-400',
         }));
     }, [requests]);
 
     const isLoading = inventoryLoading || requestsLoading;
     const hasError = inventoryError || requestsError;
 
-    // ── Student helpers (hooks must be outside conditionals) ──
+    // ── bago mag render ng student vs faculty dashboard ──
     const myRequests = useMemo(() => requests.filter(r => r.requestedById === user?.id), [requests, user?.id]);
     const myStats = useMemo(() => ({
         pending: myRequests.filter(r => r.status === 'PENDING').length,
@@ -147,7 +159,7 @@ const Dashboard = () => {
     const myRecent = useMemo(() => myRequests.slice(0, 5), [myRequests]);
     const activeBorrows = useMemo(() => myRequests.filter(r => r.status === 'APPROVED' && r.isReturnable && r.expectedReturn), [myRequests]);
 
-    // F-09: Favorites (must be top-level hooks)
+    // favorites ng user, naka-save sa localStorage
     const [favorites, setFavorites] = useState([]);
     useEffect(() => {
         if (!user?.id) return;
@@ -164,7 +176,7 @@ const Dashboard = () => {
         localStorage.setItem(`favorites-${user.id}`, JSON.stringify(next));
     };
 
-    // F-12: Mini chart — last 3 months
+    // chart data - last 3 months ng borrowing history
     const monthlyBorrows = useMemo(() => {
         const now = new Date();
         const months = [];
@@ -189,7 +201,7 @@ const Dashboard = () => {
         CANCELLED: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
     };
 
-    // ── Student Dashboard ──
+    // ── Student view ──
     if (!isFacultyPlus) {
         return (
             <div className="space-y-6">
@@ -235,7 +247,7 @@ const Dashboard = () => {
                     </Card>
                 </div>
 
-                {/* F-11: Active Borrows with Due Countdown */}
+                {/* Active borrows with countdown */}
                 {activeBorrows.length > 0 && (
                     <Card>
                         <Card.Header><Card.Title className="flex items-center gap-2"><Clock size={18} className="text-amber-500" />Active Borrows — Return Due</Card.Title></Card.Header>
@@ -271,7 +283,7 @@ const Dashboard = () => {
 
                 {/* Two-column: Recent Requests + Mini Chart / Favorites */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Recent Requests with Progress Bars (F-07) */}
+                    {/* recent requests with progress bars */}
                     <Card>
                         <Card.Header>
                             <div className="flex items-center justify-between">
@@ -310,7 +322,7 @@ const Dashboard = () => {
 
                     {/* Right column: Mini Chart + Favorites */}
                     <div className="space-y-6">
-                        {/* F-12: Mini Borrowing Chart — Revamped */}
+                        {/* mini borrowing chart */}
                         <Card>
                             <Card.Header><Card.Title className="flex items-center gap-2">📊 My Borrowing History</Card.Title></Card.Header>
                             <Card.Content>
@@ -362,7 +374,7 @@ const Dashboard = () => {
                             </Card.Content>
                         </Card>
 
-                        {/* F-09: Favorite Items */}
+                        {/* favorites section */}
                         <Card>
                             <Card.Header>
                                 <Card.Title className="flex items-center gap-2">
@@ -417,7 +429,7 @@ const Dashboard = () => {
         );
     }
 
-    // ── Faculty+ Dashboard (existing) ──
+    // ── Faculty/Staff/Admin dashboard (mas maraming data) ──
     return (
         <>
             {/* Loading State */}
@@ -585,15 +597,7 @@ const Dashboard = () => {
                                 ) : (
                                     recentActivity.map((activity) => (
                                         <div key={activity.id} className="flex items-start gap-3">
-                                            <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${(() => {
-                                                const a = activity.action;
-                                                if (a.includes('Approved')) return 'bg-emerald-500';
-                                                if (a.includes('Created')) return 'bg-amber-500';
-                                                if (a.includes('Completed') || a.includes('Returned')) return 'bg-blue-500';
-                                                if (a.includes('Cancelled') || a.includes('Overdue')) return 'bg-orange-500';
-                                                return 'bg-red-500';
-                                            })()
-                                                }`} />
+                                            <div className={`w-2 h-2 mt-2 rounded-full flex-shrink-0 ${activity.dotColor}`} />
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                                     {activity.action}

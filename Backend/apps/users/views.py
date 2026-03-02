@@ -11,14 +11,15 @@ User = get_user_model()
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    """Admin-only ViewSet for user management."""
+    """Admin lang pwede dito — user management."""
+    # TODO: dagdagan ng bulk delete o bulk role change kapag maraming users na
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAdmin]
 
     def get_queryset(self):
-        """Filter and search users."""
+        """I-filter at i-search yung users."""
         queryset = User.objects.all()
 
         search = self.request.query_params.get('search', '')
@@ -42,7 +43,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put', 'patch'])
     def role(self, request, pk=None):
-        """Change user role."""
+        """Palitan yung role ng user."""
         user = self.get_object()
         new_role = request.data.get('role')
 
@@ -59,7 +60,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def toggle_status(self, request, pk=None):
-        """Activate/deactivate user."""
+        """I-activate o i-deactivate yung user account."""
         user = self.get_object()
         user.is_active = not user.is_active
         user.save()
@@ -71,7 +72,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def unflag(self, request, pk=None):
-        """Remove flag from a user account (admin only)."""
+        """Tanggalin yung flag sa user account (admin only)."""
         user = self.get_object()
 
         if not user.is_flagged:

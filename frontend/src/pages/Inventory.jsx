@@ -12,8 +12,8 @@ import { resolveImageUrl } from '../utils/imageUtils';
 import { useNavigate } from 'react-router-dom';
 import { hasMinRole, ROLES } from '../utils/roles';
 
-// Status/category visuals moved to sub-components (InventoryItemCard, InventoryDetailModal).
-// Kept here only for the table view since it's still inline.
+// status colors at category icons na ginagamit sa table view
+// yung sa card view nasa InventoryItemCard na
 const statusColors = {
     AVAILABLE: 'bg-emerald-100 text-emerald-700',
     IN_USE: 'bg-blue-100 text-blue-700',
@@ -68,7 +68,7 @@ const Inventory = () => {
     const [detailItem, setDetailItem] = useState(null);
     const [collapsedSections, setCollapsedSections] = useState({});
 
-    // F-09: Favorites system
+    // favorites system - naka-save sa localStorage per user
     const [favorites, setFavorites] = useState([]);
     useEffect(() => {
         if (!user?.id) return;
@@ -91,7 +91,7 @@ const Inventory = () => {
     const [statusNote, setStatusNote] = useState('');
     const [maintenanceEta, setMaintenanceEta] = useState('');
 
-    // Centralized filtered items — used by both card/table views and pagination
+    // pag-filter ng items na naka-memo para hindi mag re-render nang paulit-ulit
     const filteredItems = useMemo(() => {
         if (!inventory) return [];
         return inventory.filter(item => {
@@ -139,9 +139,10 @@ const Inventory = () => {
     const navigate = useNavigate();
     const isStaffPlus = hasMinRole(user?.role, ROLES.STAFF);
 
-    // F-04: Navigate to Requests with item pre-filled
+    // pag nag-click ng "Request" sa item card, dadalhin sa Requests page
     const handleRequestItem = (item, e) => {
         e?.stopPropagation();
+        console.log('requesting item:', item.name); // debug lang 'to
         navigate('/requests', { state: { prefillItem: item } });
     };
 
@@ -195,7 +196,8 @@ const Inventory = () => {
         setDeleteItemId(null);
     };
 
-    // ── Status change helpers ──
+    // status change helpers
+    // FIXME: medyo magulo 'tong state management, refactor pag may time
     const openStatusModal = (item, targetStatus, e) => {
         e?.stopPropagation();
         setStatusModal({ open: true, item, targetStatus });

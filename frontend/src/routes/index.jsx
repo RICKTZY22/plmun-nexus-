@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
-import { Menu, AlertTriangle, ShieldAlert, Wrench } from 'lucide-react';
+import { Menu, AlertTriangle, ShieldAlert, Wrench, LogOut } from 'lucide-react';
 import { Sidebar, BottomNav } from '../components/layout';
 import { Dashboard, Inventory, Requests, Reports, Login, Register, Settings, Users } from '../pages';
 import { NotificationDropdown, AnimatedBackground } from '../components/ui';
@@ -14,7 +14,7 @@ const DashboardLayout = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [flagDismissed, setFlagDismissed] = useState(false);
-    const { user, refreshProfile } = useAuthStore();
+    const { user, refreshProfile, logout } = useAuthStore();
     const isMobile = useIsMobile();
     const location = useLocation();
 
@@ -249,13 +249,22 @@ const DashboardLayout = () => {
                                         </p>
                                     )}
 
-                                    {/* Dismiss button */}
-                                    <button
-                                        onClick={() => setFlagDismissed(true)}
-                                        className="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                    >
-                                        I Understand
-                                    </button>
+                                    {/* Action buttons */}
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => setFlagDismissed(true)}
+                                            className="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                        >
+                                            I Understand
+                                        </button>
+                                        <button
+                                            onClick={logout}
+                                            className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <LogOut size={16} />
+                                            Log Out
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}

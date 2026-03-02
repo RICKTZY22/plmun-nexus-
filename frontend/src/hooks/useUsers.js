@@ -99,7 +99,7 @@ const useUsers = () => {
             const result = await userService.toggleStatus(userId);
             const isNowActive = result.user?.is_active ?? result.user?.isActive;
 
-            // Use actual server response instead of optimistic flip (BUG-05)
+            // gamitin yung actual server response, hindi optimistic flip
             setUsers(prev => prev.map(u =>
                 u.id === userId ? { ...u, isActive: isNowActive } : u
             ));

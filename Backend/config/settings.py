@@ -1,5 +1,6 @@
 """
-Django settings for PLMun Nexus Backend.
+Django settings for PLMun Nexus.
+na-reference sa official docs: https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
@@ -13,7 +14,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env file from the Backend root directory
 load_dotenv(BASE_DIR / '.env')
 
-# SECURITY: defaults to False — set DEBUG=True in .env for local development
+# SECURITY: defaults to False — sa .env lang natin i-set True for local
+# nag-crash na 'to one time nung na-deploy ko na naka-True pa haha
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # SECURITY: no insecure fallback in production; dev fallback only when DEBUG=True
@@ -127,7 +129,7 @@ REST_FRAMEWORK = {
 # ===== JWT Settings =====
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # SEC-07: tightened from 7d
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),  # binawasan from 7 days
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -135,14 +137,14 @@ SIMPLE_JWT = {
 
 
 # ===== CORS Settings =====
-# SEC-08: whitelist only — add production URLs via CORS_ORIGINS env var (comma-separated)
+# whitelist lang - lagay ng production URLs sa CORS_ORIGINS env var (comma-separated)
 _cors_env = os.environ.get('CORS_ORIGINS', '')
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
 ] + [origin.strip() for origin in _cors_env.split(',') if origin.strip()]
 CORS_ALLOW_CREDENTIALS = True
-# SEC-08: removed CORS_ALLOW_ALL_ORIGINS = DEBUG — use whitelist only
+# tinanggal yung CORS_ALLOW_ALL_ORIGINS = DEBUG, whitelist na lang talaga
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -185,7 +187,7 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Cache (required by django-ratelimit)
-# AUDIT-03: Use Redis in production (set REDIS_URL env var), LocMemCache for dev
+# gamitin Redis sa production (set REDIS_URL env var), LocMemCache for dev lang
 _redis_url = os.environ.get('REDIS_URL')
 if _redis_url:
     CACHES = {

@@ -4,7 +4,10 @@ from datetime import timedelta
 
 
 class Item(models.Model):
-    """Inventory item model."""
+    """Isa-isang item sa inventory.
+    Dati walang access_level, pero hiningi ng registrar kasi may mga
+    gamit na para sa faculty lang talaga (e.g. projectors sa faculty room).
+    """
 
     class Status(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Available'
@@ -46,6 +49,7 @@ class Item(models.Model):
         default=AccessLevel.STUDENT,
     )
     is_returnable = models.BooleanField(default=True)
+    # TODO: mag-add ng 'condition' field para ma-track kung sira na or what
 
     # Status metadata
     status_note = models.TextField(blank=True, default='', help_text='Reason or note for current status')

@@ -3,7 +3,10 @@ from django.conf import settings
 
 
 class Request(models.Model):
-    """Inventory request model with approval workflow."""
+    """Borrow request model.
+    Medyo maraming fields 'to pero kailangan yung bawat isa para
+    sa approval workflow at tracking ng returns.
+    """
 
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -79,7 +82,8 @@ class Request(models.Model):
 
 
 class Comment(models.Model):
-    """Comment on a request."""
+    """Comment sa request — para makapag-usap yung staff at borrower."""
+    # TODO: mag-add ng edit history para alam kung in-edit yung comment
 
     request = models.ForeignKey(
         Request,
@@ -103,7 +107,10 @@ class Comment(models.Model):
 
 
 class Notification(models.Model):
-    """Notification model for comment alerts, status changes, and reminders."""
+    """Notifications.
+    Naka-bulk_create 'to sa views para di mabagal kapag maraming
+    staff na kailangang i-notify.
+    """
 
     class Type(models.TextChoices):
         COMMENT = 'COMMENT', 'Comment'
