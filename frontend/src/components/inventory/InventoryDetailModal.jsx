@@ -3,6 +3,7 @@
    The access level color logic was a nightmare of nested ternaries
    so I refactored it into lookup objects — much easier to read now. */
 import React from 'react';
+import PropTypes from 'prop-types';
 import { MapPin, Package, RotateCcw, Shield, Timer, Clock, Calendar } from 'lucide-react';
 import { Modal } from '../ui';
 import { resolveImageUrl } from '../../utils/imageUtils';
@@ -48,7 +49,12 @@ const InventoryDetailModal = ({
     // TODO: fix this with a proper lookup object like accessColors above
     const qtyLow = item.quantity <= 5 && item.quantity > 0;
     const qtyOut = item.quantity === 0;
-    const qtyColor = qtyOut ? 'red' : qtyLow ? 'amber' : 'emerald';
+    let qtyColor = 'emerald';
+    if (qtyOut) {
+        qtyColor = 'red';
+    } else if (qtyLow) {
+        qtyColor = 'amber';
+    }
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Item Details" size="md">
@@ -237,6 +243,30 @@ const InventoryDetailModal = ({
             </div>
         </Modal>
     );
+};
+
+InventoryDetailModal.propTypes = {
+    item: PropTypes.shape({
+        accessLevel: PropTypes.string,
+        quantity: PropTypes.number,
+        imageUrl: PropTypes.string,
+        name: PropTypes.string,
+        category: PropTypes.string,
+        status: PropTypes.string,
+        location: PropTypes.string,
+        isReturnable: PropTypes.bool,
+        borrowDuration: PropTypes.number,
+        borrowDurationUnit: PropTypes.string,
+        description: PropTypes.string,
+        statusNote: PropTypes.string,
+        statusChangedAt: PropTypes.string,
+        statusChangedByName: PropTypes.string,
+        maintenanceEta: PropTypes.string,
+    }),
+    isOpen: PropTypes.bool,
+    onClose: PropTypes.func,
+    isStaffPlus: PropTypes.bool,
+    getStatusActions: PropTypes.func,
 };
 
 export default InventoryDetailModal;

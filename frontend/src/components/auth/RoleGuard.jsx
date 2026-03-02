@@ -5,6 +5,7 @@
 // HOC version: withRoleGuard() for any component
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Navigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -81,6 +82,16 @@ const RoleGuard = ({
     return fallback;
 };
 
+RoleGuard.propTypes = {
+    children: PropTypes.node,
+    minRole: PropTypes.string,
+    roles: PropTypes.arrayOf(PropTypes.string),
+    permission: PropTypes.string,
+    fallback: PropTypes.node,
+    redirectTo: PropTypes.string,
+    showAccessDenied: PropTypes.bool,
+};
+
 /**
  * AdminOnly - Shortcut for admin-only content
  */
@@ -89,6 +100,7 @@ export const AdminOnly = ({ children, ...props }) => (
         {children}
     </RoleGuard>
 );
+AdminOnly.propTypes = { children: PropTypes.node };
 
 /**
  * StaffOnly - Shortcut for staff+ content
@@ -98,6 +110,7 @@ export const StaffOnly = ({ children, ...props }) => (
         {children}
     </RoleGuard>
 );
+StaffOnly.propTypes = { children: PropTypes.node };
 
 /**
  * FacultyOnly - Shortcut for faculty+ content (Faculty, Staff, Admin)
@@ -107,6 +120,7 @@ export const FacultyOnly = ({ children, ...props }) => (
         {children}
     </RoleGuard>
 );
+FacultyOnly.propTypes = { children: PropTypes.node };
 
 /**
  * withRoleGuard - HOC for role protection

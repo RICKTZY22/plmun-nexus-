@@ -20,7 +20,12 @@ TEST_XSS_REG = "XSS in registration fields"
 TEST_LOGIN_LEAK = "Login error info leak"
 
 def log(test_name, status, detail=""):
-    icon = "[PASS]" if status == "pass" else "[FAIL]" if status == "fail" else "[WARN]"
+    if status == "pass":
+        icon = "[PASS]"
+    elif status == "fail":
+        icon = "[FAIL]"
+    else:
+        icon = "[WARN]"
     RESULTS.append({"test": test_name, "status": status, "detail": detail})
     print(f"  {icon}: {test_name}")
     if detail:
@@ -366,7 +371,7 @@ print(f"  [WARN] Partial:  {partial}")
 print(f"\n  Security Score: {passed}/{total} ({int(passed/total*100) if total else 0}%)")
 
 if failed > 0:
-    print(f"\n  VULNERABILITIES FOUND:")
+    print("\n  VULNERABILITIES FOUND:")
     for r in RESULTS:
         if r["status"] == "fail":
             print(f"    [FAIL] {r['test']}: {r['detail']}")

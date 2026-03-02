@@ -3,6 +3,7 @@
 // Uses accent-aware color palette
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
     BarChart,
     Bar,
@@ -30,8 +31,8 @@ const CustomTooltip = ({ active, payload, label }) => {
     return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
             <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-1">{label}</p>
-            {payload.map((entry, index) => (
-                <p key={index} className="text-xs" style={{ color: entry.color }}>
+            {payload.map((entry) => (
+                <p key={entry.name} className="text-xs" style={{ color: entry.color }}>
                     {entry.name}: <span className="font-semibold">{entry.value}</span>
                 </p>
             ))}
@@ -39,9 +40,18 @@ const CustomTooltip = ({ active, payload, label }) => {
     );
 };
 
+CustomTooltip.propTypes = {
+    active: PropTypes.bool,
+    payload: PropTypes.arrayOf(PropTypes.object),
+    label: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
 // Shared axis styling
 const axisStyle = { fontSize: 11, fill: '#9ca3af' };
 const gridStyle = { strokeDasharray: '3 3', stroke: '#e5e7eb', opacity: 0.5 };
+
+// Legend formatter — extracted so it's not defined inside a component
+const LegendFormatter = (value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>;
 
 // Bar Chart Component
 export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
@@ -58,7 +68,7 @@ export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
                         <Legend
                             verticalAlign="top"
                             height={32}
-                            formatter={(value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>}
+                            formatter={LegendFormatter}
                         />
                         {bars.map((bar, index) => (
                             <Bar
@@ -78,6 +88,18 @@ export const BarChartComponent = ({ data, dataKey, bars, xAxisKey, title }) => (
     </div>
 );
 
+BarChartComponent.propTypes = {
+    data: PropTypes.arrayOf(PropTypes.object),
+    dataKey: PropTypes.string,
+    bars: PropTypes.arrayOf(PropTypes.shape({
+        dataKey: PropTypes.string.isRequired,
+        name: PropTypes.string,
+        color: PropTypes.string,
+    })),
+    xAxisKey: PropTypes.string,
+    title: PropTypes.string,
+};
+
 // Line Chart Component
 export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
     <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
@@ -88,9 +110,7 @@ export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
                 <XAxis dataKey={xAxisKey} tick={axisStyle} axisLine={false} tickLine={false} />
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend
-                    formatter={(value) => <span className="text-xs text-gray-500 dark:text-gray-400">{value}</span>}
-                />
+                <Legend formatter={LegendFormatter} />
                 {lines.map((line, index) => (
                     <Line
                         key={line.dataKey}
@@ -107,6 +127,16 @@ export const LineChartComponent = ({ data, lines, xAxisKey, title }) => (
         </ResponsiveContainer>
     </div>
 );
+
+LineChartComponent.propTypes = {
+    data: PropTypes.arrayOf(PropTypes.object),
+    lines: PropTypes.arrayOf(PropTypes.shape({
+        dataKey: PropTypes.string.isRequired,
+        name: PropTypes.string,
+    })),
+    xAxisKey: PropTypes.string,
+    title: PropTypes.string,
+};
 
 // Area Chart Component
 export const AreaChartComponent = ({ data, dataKey, xAxisKey, title, color = COLORS[0] }) => (
@@ -130,6 +160,35 @@ export const AreaChartComponent = ({ data, dataKey, xAxisKey, title, color = COL
     </div>
 );
 
+AreaChartComponent.propTypes = {
+    data: PropTypes.arrayOf(PropTypes.object),
+    dataKey: PropTypes.string,
+    xAxisKey: PropTypes.string,
+    title: PropTypes.string,
+    color: PropTypes.string,
+};
+
+// Pie tooltip — extracted out of parent component
+const PieTooltipContent = ({ active, payload, total }) => {
+    if (!active || !payload?.[0]) return null;
+    const item = payload[0];
+    const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
+    return (
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
+            <p className="text-xs" style={{ color: item.payload.fill }}>
+                Count: <span className="font-semibold">{item.value}</span> ({pct}%)
+            </p>
+        </div>
+    );
+};
+
+PieTooltipContent.propTypes = {
+    active: PropTypes.bool,
+    payload: PropTypes.arrayOf(PropTypes.object),
+    total: PropTypes.number,
+};
+
 // Pie Chart Component — with percentage labels
 export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
     const total = data.reduce((sum, entry) => sum + (entry[dataKey] || 0), 0);
@@ -147,6 +206,12 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
                 {percent}%
             </text>
         );
+    };
+
+    const pieLegendFormatter = (value) => {
+        const item = data.find(d => d[nameKey] === value);
+        const pct = item && total > 0 ? ((item[dataKey] / total) * 100).toFixed(0) : 0;
+        return <span className="text-xs text-gray-500 dark:text-gray-400">{value} ({pct}%)</span>;
     };
 
     return (
@@ -167,37 +232,26 @@ export const PieChartComponent = ({ data, dataKey, nameKey, title }) => {
                         labelLine={false}
                     >
                         {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            <Cell key={entry[nameKey] || `cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                     </Pie>
-                    <Tooltip
-                        content={({ active, payload }) => {
-                            if (!active || !payload || !payload[0]) return null;
-                            const item = payload[0];
-                            const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
-                            return (
-                                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-                                    <p className="text-xs font-semibold text-gray-900 dark:text-gray-100">{item.name}</p>
-                                    <p className="text-xs" style={{ color: item.payload.fill }}>
-                                        Count: <span className="font-semibold">{item.value}</span> ({pct}%)
-                                    </p>
-                                </div>
-                            );
-                        }}
-                    />
+                    <Tooltip content={<PieTooltipContent total={total} />} />
                     <Legend
                         verticalAlign="bottom"
                         height={32}
-                        formatter={(value) => {
-                            const item = data.find(d => d[nameKey] === value);
-                            const pct = item && total > 0 ? ((item[dataKey] / total) * 100).toFixed(0) : 0;
-                            return <span className="text-xs text-gray-500 dark:text-gray-400">{value} ({pct}%)</span>;
-                        }}
+                        formatter={pieLegendFormatter}
                     />
                 </PieChart>
             </ResponsiveContainer>
         </div>
     );
+};
+
+PieChartComponent.propTypes = {
+    data: PropTypes.arrayOf(PropTypes.object),
+    dataKey: PropTypes.string,
+    nameKey: PropTypes.string,
+    title: PropTypes.string,
 };
 
 export default {

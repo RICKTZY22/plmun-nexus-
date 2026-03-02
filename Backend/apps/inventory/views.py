@@ -148,7 +148,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
         """Kunin yung mga items na mababa na yung stock."""
-        # FIXME: baka kailangan gawing dynamic yung threshold, hindi laging 5
+        # TODO: baka kailangan gawing dynamic yung threshold, hindi laging 5
         items = self.get_queryset().filter(
             quantity__lte=Item.LOW_STOCK_THRESHOLD,
             quantity__gt=0,
