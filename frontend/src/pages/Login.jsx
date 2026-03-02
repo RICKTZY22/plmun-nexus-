@@ -5,7 +5,7 @@ import {
     ChevronDown, Package, ClipboardList, BarChart3, Users,
     GraduationCap, Building2, Heart, Code2, Target, Lightbulb,
     Award, BookOpen, MapPin, Phone, AtSign, ExternalLink,
-    Facebook, Youtube, Linkedin, Twitter
+    Facebook, Youtube, Linkedin, Twitter, X, Sparkles, GitBranch
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { AnimatedInput } from '../components/ui';
@@ -54,11 +54,86 @@ const FEATURES = [
 
 /* ─── Team / Creators ─── */
 const CREATORS = [
-    { name: 'Erick', role: 'Lead Developer', avatar: '👨‍💻' },
-    { name: 'Member 2', role: 'Backend Developer', avatar: '🧑‍💻' },
-    { name: 'Member 3', role: 'Frontend Developer', avatar: '👩‍💻' },
-    { name: 'Member 4', role: 'UI/UX Designer', avatar: '🎨' },
-    { name: 'Member 5', role: 'QA & Documentation', avatar: '📝' },
+    {
+        name: 'Erick',
+        role: 'Lead Developer',
+        avatar: '👨‍💻',
+        color: 'from-accent to-blue-500',
+        bio: 'Led the full-stack development of PLMun Inventory Nexus from architecture design to deployment.',
+        contributions: [
+            'System architecture & database design',
+            'Authentication system (JWT + role-based access)',
+            'Dashboard analytics & reporting',
+            'Deployment pipeline & CI/CD setup',
+            'API design & backend endpoints',
+        ],
+        tech: ['React', 'Django', 'PostgreSQL', 'JWT', 'REST API'],
+        structured: 'Overall system architecture, project structure, and code standards',
+    },
+    {
+        name: 'Member 2',
+        role: 'Backend Developer',
+        avatar: '🧑‍💻',
+        color: 'from-emerald-400 to-cyan-500',
+        bio: 'Built the server-side logic and API layer powering the inventory system.',
+        contributions: [
+            'Django REST API endpoints',
+            'Database models & migrations',
+            'Request/borrow workflow logic',
+            'Data validation & error handling',
+            'Admin management features',
+        ],
+        tech: ['Django', 'Python', 'PostgreSQL', 'REST Framework'],
+        structured: 'Backend folder structure, models, serializers, and views organization',
+    },
+    {
+        name: 'Member 3',
+        role: 'Frontend Developer',
+        avatar: '👩‍💻',
+        color: 'from-purple-400 to-pink-500',
+        bio: 'Crafted the user interface and interactive components for a seamless experience.',
+        contributions: [
+            'React component architecture',
+            'Responsive UI layouts & pages',
+            'State management with Zustand',
+            'Form handling & input validation',
+            'Dark mode implementation',
+        ],
+        tech: ['React', 'Tailwind CSS', 'Zustand', 'Vite'],
+        structured: 'Frontend components, pages, store, and routing structure',
+    },
+    {
+        name: 'Member 4',
+        role: 'UI/UX Designer',
+        avatar: '🎨',
+        color: 'from-amber-400 to-orange-500',
+        bio: 'Designed the visual identity, user flows, and overall user experience of the system.',
+        contributions: [
+            'Wireframes & mockup designs',
+            'Color palette & design system',
+            'User flow & navigation design',
+            'Login & landing page design',
+            'Accessibility & usability review',
+        ],
+        tech: ['Figma', 'UI Design', 'Color Theory', 'Prototyping'],
+        structured: 'Design system, color tokens, typography, and component styling guidelines',
+    },
+    {
+        name: 'Member 5',
+        role: 'QA & Documentation',
+        avatar: '📝',
+        color: 'from-rose-400 to-red-500',
+        bio: 'Ensured quality through testing and created comprehensive project documentation.',
+        contributions: [
+            'Test planning & execution',
+            'Bug tracking & reporting',
+            'User manual & documentation',
+            'System requirements documentation',
+            'Project feasibility study',
+        ],
+        tech: ['Testing', 'Documentation', 'SonarCloud', 'Git'],
+        structured: 'Documentation structure, test plans, and quality assurance workflow',
+    },
 ];
 
 /* ─── Accreditation data ─── */
@@ -98,6 +173,9 @@ const Login = () => {
     const [lockedUntil, setLockedUntil] = useState(() => readGuard().lockedUntil || null);
     const [offenses, setOffenses] = useState(() => readGuard().offenses || 0);
     const [countdown, setCountdown] = useState(0);
+
+    /* ── Selected creator for detail modal ── */
+    const [selectedCreator, setSelectedCreator] = useState(null);
 
     /* ── Background carousel state ── */
     const [bgIndex, setBgIndex] = useState(0);
@@ -194,7 +272,7 @@ const Login = () => {
     };
 
     useEffect(() => {
-        const observer = new IntersectionObserver(handleIntersect, { threshold: 0.12 });
+        const observer = new IntersectionObserver(handleIntersect, { threshold: 0.05 });
         sectionRefs.current.forEach((el) => el && observer.observe(el));
         return () => observer.disconnect();
     }, []);
@@ -705,55 +783,55 @@ const Login = () => {
                         <p className="text-white/50 max-w-lg mx-auto leading-relaxed text-sm">
                             Built with passion by PLMun students as part of their academic project —
                             turning classroom knowledge into a real-world application.
+                            <span className="block mt-2 text-accent-light/60 text-xs">Click on a member to see their contributions</span>
                         </p>
                     </div>
 
                     {/* Team cards with staggered scroll-reveal */}
                     <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-5" style={{ perspective: '1000px' }}>
-                        {CREATORS.map((member, i) => {
-                            const roleColors = [
-                                'from-accent to-blue-500',         // Lead Dev
-                                'from-emerald-400 to-cyan-500',    // Backend
-                                'from-purple-400 to-pink-500',     // Frontend
-                                'from-amber-400 to-orange-500',    // UI/UX
-                                'from-rose-400 to-red-500',        // QA
-                            ];
-                            return (
-                                <div
-                                    key={member.name}
-                                    className={`team-card-glow group relative p-6 rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/10 
-                                        hover:bg-white/[0.12] hover:-translate-y-2 hover:shadow-2xl hover:shadow-accent/10 
-                                        transition-all duration-500 cursor-default
-                                        ${visibleSections.has('team') ? 'animate-card-rise animate-fill-both' : 'opacity-0'}`}
-                                    style={{ animationDelay: `${300 + i * 150}ms` }}
-                                >
-                                    {/* Gradient glow behind avatar */}
-                                    <div className={`absolute top-4 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-br ${roleColors[i]} rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`} />
+                        {CREATORS.map((member, i) => (
+                            <div
+                                key={member.name}
+                                onClick={() => setSelectedCreator(member)}
+                                className={`team-card-glow group relative p-6 rounded-2xl bg-white/[0.06] backdrop-blur-md border border-white/10 
+                                    hover:bg-white/[0.12] hover:-translate-y-2 hover:shadow-2xl hover:shadow-accent/10 
+                                    transition-all duration-500 cursor-pointer
+                                    ${visibleSections.has('team') ? 'animate-card-rise animate-fill-both' : 'opacity-0'}`}
+                                style={{ animationDelay: `${300 + i * 150}ms` }}
+                            >
+                                {/* Gradient glow behind avatar */}
+                                <div className={`absolute top-4 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-br ${member.color} rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`} />
 
-                                    {/* Avatar */}
-                                    <div className="relative mx-auto mb-4">
-                                        <div className={`w-18 h-18 mx-auto rounded-full bg-gradient-to-br ${roleColors[i]} p-[2px] group-hover:animate-avatar-glow transition-all duration-300 group-hover:scale-110`}>
-                                            <div className="w-full h-full rounded-full bg-gray-900/90 flex items-center justify-center text-3xl">
-                                                {member.avatar}
-                                            </div>
+                                {/* Avatar */}
+                                <div className="relative mx-auto mb-4">
+                                    <div className={`w-18 h-18 mx-auto rounded-full bg-gradient-to-br ${member.color} p-[2px] group-hover:animate-avatar-glow transition-all duration-300 group-hover:scale-110`}>
+                                        <div className="w-full h-full rounded-full bg-gray-900/90 flex items-center justify-center text-3xl">
+                                            {member.avatar}
                                         </div>
-                                        {/* Status dot */}
-                                        <div className={`absolute -bottom-0.5 right-1/2 translate-x-4 w-3 h-3 rounded-full bg-gradient-to-br ${roleColors[i]} ring-2 ring-gray-900 group-hover:scale-125 transition-transform duration-300`} />
                                     </div>
-
-                                    {/* Name & Role */}
-                                    <h3 className="font-bold text-white text-sm text-center group-hover:text-accent-light transition-colors duration-300">
-                                        {member.name}
-                                    </h3>
-                                    <p className="text-[11px] text-white/40 mt-1 text-center font-medium uppercase tracking-wider">
-                                        {member.role}
-                                    </p>
-
-                                    {/* Hover shine line */}
-                                    <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    {/* Status dot */}
+                                    <div className={`absolute -bottom-0.5 right-1/2 translate-x-4 w-3 h-3 rounded-full bg-gradient-to-br ${member.color} ring-2 ring-gray-900 group-hover:scale-125 transition-transform duration-300`} />
                                 </div>
-                            );
-                        })}
+
+                                {/* Name & Role */}
+                                <h3 className="font-bold text-white text-sm text-center group-hover:text-accent-light transition-colors duration-300">
+                                    {member.name}
+                                </h3>
+                                <p className="text-[11px] text-white/40 mt-1 text-center font-medium uppercase tracking-wider">
+                                    {member.role}
+                                </p>
+
+                                {/* Click hint */}
+                                <div className="mt-3 flex justify-center">
+                                    <span className="text-[10px] text-white/20 group-hover:text-accent-light/60 transition-colors duration-300 flex items-center gap-1">
+                                        <Sparkles size={10} /> View details
+                                    </span>
+                                </div>
+
+                                {/* Hover shine line */}
+                                <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-accent/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            </div>
+                        ))}
                     </div>
 
                     {/* Tech stack — animated reveal */}
@@ -790,6 +868,104 @@ const Login = () => {
                         <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-accent/30 to-transparent" />
                     </div>
                 </div>
+
+                {/* ═══ Creator Detail Modal ═══ */}
+                {selectedCreator && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                        onClick={() => setSelectedCreator(null)}
+                    >
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in" />
+
+                        {/* Modal */}
+                        <div
+                            className="relative w-full max-w-lg bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl animate-scale-in overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Top gradient bar */}
+                            <div className={`h-1.5 w-full bg-gradient-to-r ${selectedCreator.color}`} />
+
+                            {/* Close button */}
+                            <button
+                                onClick={() => setSelectedCreator(null)}
+                                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all duration-200 z-10"
+                            >
+                                <X size={16} />
+                            </button>
+
+                            <div className="p-8">
+                                {/* Header */}
+                                <div className="flex items-center gap-5 mb-6">
+                                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${selectedCreator.color} p-[2px] flex-shrink-0`}>
+                                        <div className="w-full h-full rounded-2xl bg-gray-900 flex items-center justify-center text-4xl">
+                                            {selectedCreator.avatar}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white">{selectedCreator.name}</h3>
+                                        <p className={`text-sm font-semibold bg-gradient-to-r ${selectedCreator.color} bg-clip-text text-transparent`}>
+                                            {selectedCreator.role}
+                                        </p>
+                                        <p className="text-white/50 text-xs mt-1.5 leading-relaxed">{selectedCreator.bio}</p>
+                                    </div>
+                                </div>
+
+                                {/* Contributions */}
+                                <div className="mb-6">
+                                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Sparkles size={12} className="text-accent-light" />
+                                        Contributions
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {selectedCreator.contributions.map((item, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-start gap-3 p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] animate-fade-in-up animate-fill-both"
+                                                style={{ animationDelay: `${i * 80}ms` }}
+                                            >
+                                                <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${selectedCreator.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+                                                    <span className="text-white text-[10px] font-black">{i + 1}</span>
+                                                </div>
+                                                <p className="text-white/70 text-sm leading-relaxed">{item}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Structured */}
+                                <div className="mb-6">
+                                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <GitBranch size={12} className="text-accent-light" />
+                                        What They Structured
+                                    </h4>
+                                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+                                        <p className="text-white/60 text-sm leading-relaxed">{selectedCreator.structured}</p>
+                                    </div>
+                                </div>
+
+                                {/* Tech used */}
+                                <div>
+                                    <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <Code2 size={12} className="text-accent-light" />
+                                        Technologies Used
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedCreator.tech.map((t) => (
+                                            <span
+                                                key={t}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium bg-gradient-to-r ${selectedCreator.color} bg-clip-padding border border-white/10 text-white/90 bg-opacity-10`}
+                                                style={{ background: 'rgba(255,255,255,0.06)' }}
+                                            >
+                                                {t}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </section>
 
 
