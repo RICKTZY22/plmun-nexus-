@@ -6,6 +6,7 @@ const requestService = {
         if (filters.search) params.append('search', filters.search);
         if (filters.status) params.append('status', filters.status);
         if (filters.priority) params.append('priority', filters.priority);
+        if (filters.include_cleared) params.append('include_cleared', 'true');
 
         const response = await api.get(`/requests/?${params.toString()}`);
         const data = response.data;
@@ -65,6 +66,16 @@ const requestService = {
 
     checkOverdue: async () => {
         const response = await api.post('/requests/check_overdue/');
+        return response.data;
+    },
+
+    clearHistory: async (code) => {
+        const response = await api.post('/requests/clear_history/', { code });
+        return response.data;
+    },
+
+    setClearCode: async (code) => {
+        const response = await api.post('/requests/set_clear_code/', { code });
         return response.data;
     },
 };

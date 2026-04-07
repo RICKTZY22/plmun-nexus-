@@ -4,7 +4,7 @@
    so I refactored it into lookup objects — much easier to read now. */
 import React from 'react';
 import PropTypes from 'prop-types';
-import { MapPin, Package, RotateCcw, Shield, Timer, Clock, Calendar } from 'lucide-react';
+import { MapPin, Package, RotateCcw, Shield, Timer, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import { Modal } from '../ui';
 import { resolveImageUrl } from '../../utils/imageUtils';
 
@@ -13,6 +13,12 @@ const statusColors = {
     IN_USE: 'bg-blue-100 text-blue-700',
     MAINTENANCE: 'bg-amber-100 text-amber-700',
     RETIRED: 'bg-gray-100 text-gray-700',
+};
+
+const priorityStyles = {
+    LOW: { bg: 'bg-green-50 dark:bg-green-900/20', icon: 'bg-green-100 dark:bg-green-800/40', text: 'text-green-600', label: 'text-green-700 dark:text-green-300', desc: 'Consumables & basic supplies' },
+    MEDIUM: { bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'bg-amber-100 dark:bg-amber-800/40', text: 'text-amber-600', label: 'text-amber-700 dark:text-amber-300', desc: 'Standard equipment' },
+    HIGH: { bg: 'bg-red-50 dark:bg-red-900/20', icon: 'bg-red-100 dark:bg-red-800/40', text: 'text-red-600', label: 'text-red-700 dark:text-red-300', desc: 'Fragile or expensive' },
 };
 
 const categoryIcons = {
@@ -43,18 +49,14 @@ const InventoryDetailModal = ({
 
     const ac = accessColors[item.accessLevel] || accessColors.STUDENT;
 
-    // HACK: dynamic Tailwind classes like `bg-${qtyColor}-50` don't work
-    // with JIT purging because the compiler can't see the full class name.
-    // This works in dev but would break in production with purge enabled.
-    // TODO: fix this with a proper lookup object like accessColors above
+    // Quantity color lookup — using full class strings so Tailwind JIT can detect them
     const qtyLow = item.quantity <= 5 && item.quantity > 0;
     const qtyOut = item.quantity === 0;
-    let qtyColor = 'emerald';
-    if (qtyOut) {
-        qtyColor = 'red';
-    } else if (qtyLow) {
-        qtyColor = 'amber';
-    }
+    const qtyStyles = qtyOut
+        ? { bg: 'bg-red-50 dark:bg-red-900/20', icon: 'bg-red-100 dark:bg-red-800/40', text: 'text-red-600 dark:text-red-400' }
+        : qtyLow
+            ? { bg: 'bg-amber-50 dark:bg-amber-900/20', icon: 'bg-amber-100 dark:bg-amber-800/40', text: 'text-amber-600 dark:text-amber-400' }
+            : { bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: 'bg-emerald-100 dark:bg-emerald-800/40', text: 'text-emerald-600 dark:text-emerald-400' };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Item Details" size="md">
@@ -105,9 +107,9 @@ const InventoryDetailModal = ({
                     </div>
 
                     {/* Quantity */}
-                    <div className={`flex items-center gap-2.5 p-3 rounded-xl bg-${qtyColor}-50 dark:bg-${qtyColor}-900/20`}>
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center bg-${qtyColor}-100 dark:bg-${qtyColor}-800/40`}>
-                            <Package size={18} className={`text-${qtyColor}-600`} />
+                    <div className={`flex items-center gap-2.5 p-3 rounded-xl ${qtyStyles.bg}`}>
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${qtyStyles.icon}`}>
+                            <Package size={18} className={qtyStyles.text} />
                         </div>
                         <div>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Quantity</p>
@@ -148,6 +150,25 @@ const InventoryDetailModal = ({
                             </p>
                         </div>
                     </div>
+
+                    {/* Priority */}
+                    {(() => {
+                        const pri = priorityStyles[item.priority] || priorityStyles.MEDIUM;
+                        return (
+                            <div className={`flex items-center gap-2.5 p-3 rounded-xl ${pri.bg}`}>
+                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${pri.icon}`}>
+                                    <AlertTriangle size={18} className={pri.text} />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Priority</p>
+                                    <p className={`text-sm font-semibold ${pri.label}`}>
+                                        {item.priority || 'MEDIUM'}
+                                    </p>
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500">{pri.desc}</p>
+                                </div>
+                            </div>
+                        );
+                    })()}
 
                     {/* Borrow Duration */}
                     {item.isReturnable && item.borrowDuration && (
@@ -258,6 +279,7 @@ InventoryDetailModal.propTypes = {
         borrowDuration: PropTypes.number,
         borrowDurationUnit: PropTypes.string,
         description: PropTypes.string,
+        priority: PropTypes.string,
         statusNote: PropTypes.string,
         statusChangedAt: PropTypes.string,
         statusChangedByName: PropTypes.string,

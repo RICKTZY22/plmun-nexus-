@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD 1.0 — User Authentication | PLMun Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dfd-styles.css">
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ DFD Level 1 — Process 1.0</div>
+  <h1>User Authentication & Registration</h1>
+  <p>Handles user login with JWT tokens, new account registration, progressive lockout for brute-force protection, token refresh, and session management.</p>
+</div>
+<div class="container">
+<nav class="nav">
+  <a class="active" href="dfd-1-authentication.html">1.0 Authentication</a>
+  <a href="dfd-2-inventory.html">2.0 Inventory</a>
+  <a href="dfd-3-requests.html">3.0 Requests</a>
+  <a href="dfd-4-notifications.html">4.0 Notifications</a>
+  <a href="dfd-5-reports.html">5.0 Reports</a>
+  <a href="dfd-6-administration.html">6.0 Administration</a>
+</nav>
+
+<div class="legend">
+  <div class="legend-item"><div class="leg-ext"></div>External Entity</div>
+  <div class="legend-item"><div class="leg-proc"></div>Process</div>
+  <div class="legend-item"><div class="leg-store"></div>Data Store</div>
+  <div class="legend-item"><div class="leg-flow"></div>Data Flow</div>
+</div>
+
+<!-- CONTEXT -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">External Entities</div>
+  <div class="proc-title">Actors Involved</div>
+</div>
+<div class="proc-body">
+  <div class="sub-desc sd-green"><strong>👤 User (Student / Faculty / Staff / Admin)</strong> — Any person attempting to log in, register, or refresh their session token.</div>
+  <div class="sub-desc sd-green"><strong>🌐 Client Browser</strong> — Stores JWT tokens in localStorage via Zustand persist middleware. Sends Bearer token on every API request.</div>
+</div>
+</div>
+
+<!-- SUB-PROCESS 1.1 -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Sub-Process 1.1</div>
+  <div class="proc-title">Validate Credentials</div>
+  <div class="proc-desc">Receives username and password from the user. Checks against the hashed password stored in D1: Users. Verifies the account is active and not locked out.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">👤 User</div>
+      <div class="arrow">username, password</div>
+      <div class="proc-circle"><div class="num">1.1</div>Validate<br>Credentials</div>
+      <div class="arrow">Lookup user record</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+  </div>
+  <div class="sub-desc sd-green"><strong>Input:</strong> username (string), password (plaintext) from POST /api/auth/login/</div>
+  <div class="sub-desc sd-green"><strong>Processing:</strong> Django's check_password() compares plaintext against bcrypt hash. Also checks: is_active=True, failed_attempts < 5, lockout_until < now()</div>
+  <div class="sub-desc sd-green"><strong>Output (Success):</strong> User object passed to Process 1.2 for token generation</div>
+  <div class="sub-desc sd-green"><strong>Output (Failure):</strong> failed_login_attempts incremented, AuditLog entry created (action="Login Failed"), 401 returned with remaining attempts count</div>
+</div>
+</div>
+
+<!-- SUB-PROCESS 1.2 -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Sub-Process 1.2</div>
+  <div class="proc-title">Generate JWT Tokens</div>
+  <div class="proc-desc">Creates a JWT access token (60-minute expiry) and refresh token (7-day expiry) using SimpleJWT. Embeds user ID, role, and name in the access token payload.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.1</div>Validate</div>
+      <div class="arrow">Authenticated User</div>
+      <div class="proc-circle"><div class="num">1.2</div>Generate<br>JWT Tokens</div>
+      <div class="arrow">access + refresh token</div>
+      <div class="ext">👤 User</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.2</div>Generate</div>
+      <div class="arrow">Login audit entry</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+  </div>
+  <div class="sub-desc sd-green"><strong>Access Token Payload:</strong> { user_id, username, role, first_name, last_name, email, department, student_id, exp }</div>
+  <div class="sub-desc sd-green"><strong>Access Token Lifetime:</strong> 60 minutes — short-lived for security</div>
+  <div class="sub-desc sd-green"><strong>Refresh Token Lifetime:</strong> 7 days — allows silent re-authentication</div>
+  <div class="sub-desc sd-green"><strong>Side Effect:</strong> AuditLog entry created: action="Login", username, IP address, timestamp</div>
+</div>
+</div>
+
+<!-- SUB-PROCESS 1.3 -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Sub-Process 1.3</div>
+  <div class="proc-title">Register Account</div>
+  <div class="proc-desc">Creates a new User record with default role STUDENT. Validates uniqueness of username and email. Hashes password before storing.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">👤 New User</div>
+      <div class="arrow">Registration form data</div>
+      <div class="proc-circle"><div class="num">1.3</div>Register<br>Account</div>
+      <div class="arrow">INSERT new user</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.3</div>Register</div>
+      <div class="arrow">Register audit entry</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+  </div>
+  <div class="sub-desc sd-green"><strong>Input Fields:</strong> first_name, last_name, username, email, student_id, department, password, password_confirm</div>
+  <div class="sub-desc sd-green"><strong>Validation:</strong> username unique, email unique, password min 8 chars, password_confirm matches</div>
+  <div class="sub-desc sd-green"><strong>Default Values:</strong> role=STUDENT, is_active=True, is_flagged=False, overdue_count=0</div>
+  <div class="sub-desc sd-green"><strong>Output:</strong> Auto-login — triggers Process 1.2 to generate tokens immediately after registration</div>
+</div>
+</div>
+
+<!-- SUB-PROCESS 1.4 -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Sub-Process 1.4</div>
+  <div class="proc-title">Check Progressive Lockout</div>
+  <div class="proc-desc">Prevents brute-force attacks by locking accounts after 5 consecutive failed login attempts for 15 minutes.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.1</div>Validate</div>
+      <div class="arrow">Failed attempt event</div>
+      <div class="proc-circle"><div class="num">1.4</div>Check<br>Lockout</div>
+      <div class="arrow">Log failed attempt</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Failed Attempts</th><th>Action</th><th>User Feedback</th></tr></thead>
+    <tbody>
+      <tr><td>1–4</td><td>Increment counter, allow retry</td><td class="data">"Invalid credentials. X attempts remaining."</td></tr>
+      <tr><td>5</td><td>Set lockout_until = now() + 15min</td><td class="data">"Account locked. Try again in 15 minutes."</td></tr>
+      <tr><td>Successful login</td><td>Reset counter to 0, clear lockout</td><td class="data">Normal login flow proceeds</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- SUB-PROCESS 1.5 -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Sub-Process 1.5</div>
+  <div class="proc-title">Refresh Access Token</div>
+  <div class="proc-desc">When the 60-minute access token expires, the client sends the refresh token to get a new access token without re-entering credentials. Includes a mutex queue to handle concurrent refreshes.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">🌐 Client Browser</div>
+      <div class="arrow">refresh_token</div>
+      <div class="proc-circle"><div class="num">1.5</div>Refresh<br>Token</div>
+      <div class="arrow">new access_token</div>
+      <div class="ext">🌐 Client Browser</div>
+    </div>
+  </div>
+  <div class="sub-desc sd-green"><strong>Endpoint:</strong> POST /api/auth/token/refresh/ with { refresh: "eyJ..." }</div>
+  <div class="sub-desc sd-green"><strong>Mutex Queue:</strong> If 3 API calls fail with 401 simultaneously, only 1 refresh request is made. The other 2 wait in a queue and retry with the new token once refresh completes.</div>
+  <div class="sub-desc sd-green"><strong>Failure:</strong> If refresh token is also expired (>7 days), user is logged out and redirected to /login</div>
+</div>
+</div>
+
+<!-- FLOW TABLE -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Complete Data Flow Table</div>
+  <div class="proc-title">All Flows in Process 1.0</div>
+</div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>#</th><th>Flow Name</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>F1.1</td><td>Login Credentials</td><td class="from">User</td><td class="to">1.1 Validate</td><td class="data">username (string), password (plaintext string)</td></tr>
+      <tr><td>F1.2</td><td>User Lookup</td><td class="from">1.1 Validate</td><td class="to">D1: Users</td><td class="data">SELECT by username → returns hash, role, is_active, failed_attempts</td></tr>
+      <tr><td>F1.3</td><td>Auth Result</td><td class="from">1.1 Validate</td><td class="to">1.2 Generate JWT</td><td class="data">Authenticated user object (id, role, name)</td></tr>
+      <tr><td>F1.4</td><td>Access Token</td><td class="from">1.2 Generate</td><td class="to">User</td><td class="data">JWT access token (60 min), embedded claims</td></tr>
+      <tr><td>F1.5</td><td>Refresh Token</td><td class="from">1.2 Generate</td><td class="to">User</td><td class="data">JWT refresh token (7 days), opaque</td></tr>
+      <tr><td>F1.6</td><td>Registration Data</td><td class="from">New User</td><td class="to">1.3 Register</td><td class="data">first_name, last_name, username, email, student_id, department, password</td></tr>
+      <tr><td>F1.7</td><td>New User Record</td><td class="from">1.3 Register</td><td class="to">D1: Users</td><td class="data">INSERT user with role=STUDENT, hashed password</td></tr>
+      <tr><td>F1.8</td><td>Failed Login Log</td><td class="from">1.4 Lockout</td><td class="to">D6: Audit Logs</td><td class="data">username, action="Login Failed", ip_address, timestamp</td></tr>
+      <tr><td>F1.9</td><td>Token Refresh</td><td class="from">Client</td><td class="to">1.5 Refresh</td><td class="data">refresh_token → validated → new access_token returned</td></tr>
+      <tr><td>F1.10</td><td>Login Audit</td><td class="from">1.2 Generate</td><td class="to">D6: Audit Logs</td><td class="data">username, action="Login", ip_address, timestamp</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</div>
+<div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 1.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026</div>
+</body></html>

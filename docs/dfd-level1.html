@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD Level 1 — PLMun Inventory Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;line-height:1.6}
+.hero{position:relative;padding:48px 24px 32px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(52,211,153,.12) 0%,transparent 60%)}
+.hero h1{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:900;background:linear-gradient(135deg,#e2e8f0,#34d399,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.hero p{color:#64748b;max-width:640px;margin:0 auto;font-size:.82rem}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:20px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.2);margin-bottom:14px}
+.container{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin:24px 0 36px;padding:20px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:.72rem;color:#94a3b8}
+.leg-ext{width:36px;height:20px;border-radius:4px;border:2px solid #38bdf8;background:rgba(56,189,248,.1)}
+.leg-proc{width:28px;height:28px;border-radius:50%;border:2px solid #34d399;background:rgba(52,211,153,.1)}
+.leg-store{width:36px;height:16px;border-top:2px solid #a855f7;border-bottom:2px solid #a855f7;background:rgba(168,85,247,.06)}
+.leg-flow{width:36px;height:2px;background:#475569;position:relative}.leg-flow::after{content:'';position:absolute;right:0;top:-3px;border:4px solid transparent;border-left:6px solid #475569}
+
+/* Process section */
+.proc-section{margin-bottom:40px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden}
+.proc-header{padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.proc-header::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.ph-green .proc-header::before{background:linear-gradient(90deg,#34d399,#22d3ee)}
+.ph-blue .proc-header::before{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+.ph-purple .proc-header::before{background:linear-gradient(90deg,#a855f7,#ec4899)}
+.ph-amber .proc-header::before{background:linear-gradient(90deg,#f59e0b,#ef4444)}
+.ph-cyan .proc-header::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9)}
+.ph-rose .proc-header::before{background:linear-gradient(90deg,#f43f5e,#ec4899)}
+.proc-num{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.pn-green{color:#34d399}.pn-blue{color:#3b82f6}.pn-purple{color:#a855f7}.pn-amber{color:#f59e0b}.pn-cyan{color:#06b6d4}.pn-rose{color:#f43f5e}
+.proc-title{font-size:1.15rem;font-weight:800;color:#f1f5f9}
+.proc-desc{font-size:.78rem;color:#94a3b8;margin-top:4px}
+.proc-body{padding:24px}
+
+/* DFD diagram */
+.dfd{display:flex;flex-direction:column;gap:20px}
+.dfd-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+/* Shapes */
+.ext{padding:10px 16px;border-radius:8px;font-weight:600;font-size:.7rem;border:2px solid #38bdf8;background:rgba(56,189,248,.08);color:#7dd3fc;text-align:center;min-width:100px}
+.proc-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:.65rem;border:3px solid #34d399;background:rgba(52,211,153,.08);color:#6ee7b7;line-height:1.3;flex-shrink:0}
+.proc-circle .num{font-size:.5rem;opacity:.6;margin-bottom:2px}
+.store-shape{padding:6px 14px;border-top:2px solid #a855f7;border-bottom:2px solid #a855f7;font-size:.68rem;font-weight:500;text-align:center;color:#c4b5fd;background:rgba(168,85,247,.06);min-width:100px}
+.arrow{display:flex;align-items:center;gap:4px;font-size:.58rem;color:#64748b;white-space:nowrap}
+.arrow::after{content:'→';font-size:1rem;color:#475569}
+.arrow.left::before{content:'←';font-size:1rem;color:#475569}
+.arrow.left::after{display:none}
+.arrow.bi::before{content:'←';font-size:.9rem;color:#475569}
+
+/* Flow table */
+.flow-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.72rem}
+.flow-table th{background:rgba(255,255,255,.05);padding:8px 12px;text-align:left;font-weight:600;color:#94a3b8;font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid rgba(255,255,255,.08)}
+.flow-table td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.03);color:#cbd5e1}
+.flow-table tr:hover{background:rgba(255,255,255,.02)}
+.from{color:#7dd3fc}.to{color:#6ee7b7}.data{color:#c4b5fd}
+
+.foot{text-align:center;padding:24px;color:#334155;font-size:.65rem;border-top:1px solid rgba(255,255,255,.04);margin-top:20px}
+@media(max-width:640px){.dfd-row{flex-direction:column}.arrow::after,.arrow::before{transform:rotate(90deg)}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ System Design Document</div>
+  <h1>Data Flow Diagram — Level 1</h1>
+  <p>Detailed decomposition of each major process in the PLMun Inventory Nexus system, showing all data flows, external entities, and data stores.</p>
+</div>
+
+<div class="container">
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="leg-ext"></div>External Entity</div>
+  <div class="legend-item"><div class="leg-proc"></div>Process</div>
+  <div class="legend-item"><div class="leg-store"></div>Data Store</div>
+  <div class="legend-item"><div class="leg-flow"></div>Data Flow</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 1: USER AUTHENTICATION -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Process 1.0</div>
+  <div class="proc-title">User Authentication & Registration</div>
+  <div class="proc-desc">Handles user login with JWT tokens, new account registration, progressive lockout for brute-force protection, and session management.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">👤 User<br><small>(Student / Faculty / Staff)</small></div>
+      <div class="arrow">Login Credentials</div>
+      <div class="proc-circle"><div class="num">1.1</div>Validate<br>Credentials</div>
+      <div class="arrow">User Record</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="store-shape">D1: Users</div>
+      <div class="arrow left">Auth Result</div>
+      <div class="proc-circle"><div class="num">1.2</div>Generate<br>JWT Tokens</div>
+      <div class="arrow">Access + Refresh Token</div>
+      <div class="ext">👤 User</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">👤 New User</div>
+      <div class="arrow">Registration Data</div>
+      <div class="proc-circle"><div class="num">1.3</div>Register<br>Account</div>
+      <div class="arrow">New User Record</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.4</div>Check<br>Lockout</div>
+      <div class="arrow">Failed Attempt Log</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">1.5</div>Refresh<br>Token</div>
+      <div class="arrow bi">Refresh / New Access Token</div>
+      <div class="ext">👤 User</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Login Credentials</td><td class="from">User</td><td class="to">1.1 Validate</td><td class="data">username, password</td></tr>
+      <tr><td>User Record</td><td class="from">D1: Users</td><td class="to">1.1 Validate</td><td class="data">stored hash, role, is_active, failed_attempts</td></tr>
+      <tr><td>Auth Result</td><td class="from">1.1 Validate</td><td class="to">1.2 Generate JWT</td><td class="data">user_id, role, auth_success boolean</td></tr>
+      <tr><td>JWT Tokens</td><td class="from">1.2 Generate JWT</td><td class="to">User</td><td class="data">access_token (60min), refresh_token (7d)</td></tr>
+      <tr><td>Registration Data</td><td class="from">New User</td><td class="to">1.3 Register</td><td class="data">first_name, last_name, email, student_id, department, password</td></tr>
+      <tr><td>Failed Attempt</td><td class="from">1.4 Lockout</td><td class="to">D6: Audit Logs</td><td class="data">username, ip_address, timestamp, action="Login Failed"</td></tr>
+      <tr><td>Refresh Request</td><td class="from">User</td><td class="to">1.5 Refresh</td><td class="data">refresh_token → new access_token</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 2: INVENTORY MANAGEMENT -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-blue">
+<div class="proc-header">
+  <div class="proc-num pn-blue">Process 2.0</div>
+  <div class="proc-title">Inventory Management</div>
+  <div class="proc-desc">CRUD operations for inventory items including adding, editing, deleting, changing status, and browsing with filters. Staff/Admin only for write operations.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Item Data</div>
+      <div class="proc-circle"><div class="num">2.1</div>Add New<br>Item</div>
+      <div class="arrow">Item Record</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Updated Fields</div>
+      <div class="proc-circle"><div class="num">2.2</div>Update<br>Item</div>
+      <div class="arrow bi">Read / Write</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Item ID</div>
+      <div class="proc-circle"><div class="num">2.3</div>Delete<br>Item</div>
+      <div class="arrow">Delete Record</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Status + Note</div>
+      <div class="proc-circle"><div class="num">2.4</div>Change<br>Status</div>
+      <div class="arrow">Status Update</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">👤 All Users</div>
+      <div class="arrow">Search / Filters</div>
+      <div class="proc-circle"><div class="num">2.5</div>Browse<br>Inventory</div>
+      <div class="arrow left">Filtered Items List</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">2.6</div>Log<br>Changes</div>
+      <div class="arrow">Audit Entry</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Item Data</td><td class="from">Staff/Admin</td><td class="to">2.1 Add Item</td><td class="data">name, category, quantity, status, location, image, priority, access_level, borrow_duration</td></tr>
+      <tr><td>Updated Fields</td><td class="from">Staff/Admin</td><td class="to">2.2 Update</td><td class="data">Any subset of item fields (partial update supported)</td></tr>
+      <tr><td>Status Change</td><td class="from">Staff/Admin</td><td class="to">2.4 Change Status</td><td class="data">new_status (AVAILABLE/IN_USE/MAINTENANCE/RETIRED), status_note, maintenance_eta</td></tr>
+      <tr><td>Search Query</td><td class="from">All Users</td><td class="to">2.5 Browse</td><td class="data">search_term, category_filter, status_filter</td></tr>
+      <tr><td>Items List</td><td class="from">D2: Items</td><td class="to">All Users</td><td class="data">Filtered array of items (access_level enforced per user role)</td></tr>
+      <tr><td>Audit Entry</td><td class="from">2.6 Log</td><td class="to">D6: Audit Logs</td><td class="data">user, action (Created/Updated/Deleted), item_name, timestamp</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 3: BORROW REQUEST WORKFLOW -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-purple">
+<div class="proc-header">
+  <div class="proc-num pn-purple">Process 3.0</div>
+  <div class="proc-title">Borrow Request Workflow</div>
+  <div class="proc-desc">Full lifecycle of a borrow request: submission → approval/rejection → item release → return. Includes atomic stock deduction and overdue tracking.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">👤 Requester</div>
+      <div class="arrow">Request Data</div>
+      <div class="proc-circle"><div class="num">3.1</div>Submit<br>Request</div>
+      <div class="arrow">New Request</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+    <div class="dfd-row">
+      <div class="store-shape">D3: Requests</div>
+      <div class="arrow">Pending Requests</div>
+      <div class="proc-circle"><div class="num">3.2</div>Review<br>Request</div>
+      <div class="arrow left">Request List</div>
+      <div class="ext">🛡️ Staff / Admin</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Approve Action</div>
+      <div class="proc-circle"><div class="num">3.3</div>Approve &<br>Deduct Stock</div>
+      <div class="arrow">Quantity -= N</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Reject + Reason</div>
+      <div class="proc-circle"><div class="num">3.4</div>Reject<br>Request</div>
+      <div class="arrow">Status → REJECTED</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Release Action</div>
+      <div class="proc-circle"><div class="num">3.5</div>Release<br>Item</div>
+      <div class="arrow">Status → COMPLETED</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Return Action</div>
+      <div class="proc-circle"><div class="num">3.6</div>Process<br>Return</div>
+      <div class="arrow">Quantity += N</div>
+      <div class="store-shape">D2: Items</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">👤 Requester</div>
+      <div class="arrow">Cancel Action</div>
+      <div class="proc-circle"><div class="num">3.7</div>Cancel<br>Request</div>
+      <div class="arrow">Status → CANCELLED</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Request Data</td><td class="from">Requester</td><td class="to">3.1 Submit</td><td class="data">item_id, quantity, purpose, expected_return_date</td></tr>
+      <tr><td>Approve</td><td class="from">Staff</td><td class="to">3.3 Approve</td><td class="data">request_id → atomic F() deduction on item quantity</td></tr>
+      <tr><td>Reject</td><td class="from">Staff</td><td class="to">3.4 Reject</td><td class="data">request_id, rejection_reason text</td></tr>
+      <tr><td>Release</td><td class="from">Staff</td><td class="to">3.5 Release</td><td class="data">request_id → status set to COMPLETED, item physically handed over</td></tr>
+      <tr><td>Return</td><td class="from">Staff</td><td class="to">3.6 Return</td><td class="data">request_id → quantity restored to D2, returned_at timestamp set</td></tr>
+      <tr><td>Cancel</td><td class="from">Requester</td><td class="to">3.7 Cancel</td><td class="data">request_id (only PENDING requests can be cancelled by owner)</td></tr>
+      <tr><td>Overdue Check</td><td class="from">3.6 Return</td><td class="to">D1: Users</td><td class="data">If returned late: user.is_flagged=true, overdue_count++</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 4: NOTIFICATION SYSTEM -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-amber">
+<div class="proc-header">
+  <div class="proc-num pn-amber">Process 4.0</div>
+  <div class="proc-title">Notification System</div>
+  <div class="proc-desc">Real-time notifications triggered by request status changes, comments, and overdue reminders. Includes 24-hour deduplication cooldown and read/unread tracking.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="store-shape">D3: Requests</div>
+      <div class="arrow">Status Change Event</div>
+      <div class="proc-circle"><div class="num">4.1</div>Generate<br>Notification</div>
+      <div class="arrow">Notification Record</div>
+      <div class="store-shape">D4: Notifications</div>
+    </div>
+    <div class="dfd-row">
+      <div class="store-shape">D4: Notifications</div>
+      <div class="arrow">Unread Notifications</div>
+      <div class="proc-circle"><div class="num">4.2</div>Poll &<br>Display</div>
+      <div class="arrow">Notification List</div>
+      <div class="ext">👤 User</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">👤 User</div>
+      <div class="arrow">Mark Read Action</div>
+      <div class="proc-circle"><div class="num">4.3</div>Mark as<br>Read</div>
+      <div class="arrow">is_read = true</div>
+      <div class="store-shape">D4: Notifications</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">4.4</div>Dedup<br>Check</div>
+      <div class="arrow left">Check 24h cooldown</div>
+      <div class="store-shape">D4: Notifications</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Status Change</td><td class="from">Process 3.x</td><td class="to">4.1 Generate</td><td class="data">request_id, old_status, new_status, triggered_by user_id</td></tr>
+      <tr><td>Notification</td><td class="from">4.1 Generate</td><td class="to">D4</td><td class="data">recipient, sender, type (COMMENT/STATUS_CHANGE/OVERDUE), message</td></tr>
+      <tr><td>Poll Request</td><td class="from">User (30s interval)</td><td class="to">4.2 Poll</td><td class="data">user_id → returns unread notifications array</td></tr>
+      <tr><td>Dedup Check</td><td class="from">4.4</td><td class="to">D4</td><td class="data">Checks if same (recipient, request, type) exists within 24 hours</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 5: REPORTING & EXPORT -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-cyan">
+<div class="proc-header">
+  <div class="proc-num pn-cyan">Process 5.0</div>
+  <div class="proc-title">Reporting & Data Export</div>
+  <div class="proc-desc">Generates analytics dashboards, statistical reports, and exports data to CSV/PDF formats. Aggregates data from multiple data stores for visualization.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="store-shape">D2: Items</div>
+      <div class="arrow">Inventory Stats</div>
+      <div class="proc-circle"><div class="num">5.1</div>Compute<br>Statistics</div>
+      <div class="arrow left">Request Stats</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+    <div class="dfd-row">
+      <div class="proc-circle"><div class="num">5.1</div>Compute<br>Statistics</div>
+      <div class="arrow">Aggregated Data</div>
+      <div class="proc-circle"><div class="num">5.2</div>Render<br>Dashboard</div>
+      <div class="arrow">Charts + Stats</div>
+      <div class="ext">🛡️ Staff / Admin</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Export Request</div>
+      <div class="proc-circle"><div class="num">5.3</div>Export<br>CSV</div>
+      <div class="arrow">CSV File</div>
+      <div class="ext">📄 File System</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Export Request</div>
+      <div class="proc-circle"><div class="num">5.4</div>Export<br>PDF</div>
+      <div class="arrow">PDF Document</div>
+      <div class="ext">📄 File System</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Inventory Stats</td><td class="from">D2: Items</td><td class="to">5.1 Compute</td><td class="data">total, available, in_use, maintenance, retired, low_stock counts</td></tr>
+      <tr><td>Request Stats</td><td class="from">D3: Requests</td><td class="to">5.1 Compute</td><td class="data">pending, approved, rejected, monthly trends, top requesters</td></tr>
+      <tr><td>Dashboard Data</td><td class="from">5.2 Render</td><td class="to">Staff/Admin</td><td class="data">Pie charts, bar charts, stat cards, recent activity feed</td></tr>
+      <tr><td>CSV Export</td><td class="from">5.3 Export CSV</td><td class="to">File System</td><td class="data">Headers + rows → UTF-8 CSV with BOM, Save As dialog</td></tr>
+      <tr><td>PDF Export</td><td class="from">5.4 Export PDF</td><td class="to">File System</td><td class="data">Title, summary stats, auto-table, page numbers, branding</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PROCESS 6: USER & SYSTEM ADMINISTRATION -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="proc-section ph-rose">
+<div class="proc-header">
+  <div class="proc-num pn-rose">Process 6.0</div>
+  <div class="proc-title">User & System Administration</div>
+  <div class="proc-desc">Admin-only operations: user management (role assignment, activation), system audit logs, profile management, and maintenance tasks.</div>
+</div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row">
+      <div class="ext">🔑 Admin</div>
+      <div class="arrow">Role Change</div>
+      <div class="proc-circle"><div class="num">6.1</div>Manage<br>Users</div>
+      <div class="arrow">Updated Role</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🔑 Admin</div>
+      <div class="arrow">Toggle Active</div>
+      <div class="proc-circle"><div class="num">6.2</div>Activate /<br>Deactivate</div>
+      <div class="arrow">is_active flag</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">👤 Any User</div>
+      <div class="arrow">Profile Data</div>
+      <div class="proc-circle"><div class="num">6.3</div>Update<br>Profile</div>
+      <div class="arrow">Updated Record</div>
+      <div class="store-shape">D1: Users</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Query Logs</div>
+      <div class="proc-circle"><div class="num">6.4</div>View Audit<br>Logs</div>
+      <div class="arrow left">Log Entries</div>
+      <div class="store-shape">D6: Audit Logs</div>
+    </div>
+    <div class="dfd-row">
+      <div class="ext">🛡️ Staff / Admin</div>
+      <div class="arrow">Clear Action</div>
+      <div class="proc-circle"><div class="num">6.5</div>System<br>Maintenance</div>
+      <div class="arrow">Soft Delete</div>
+      <div class="store-shape">D3: Requests</div>
+    </div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Flow</th><th>From</th><th>To</th><th>Data Description</th></tr></thead>
+    <tbody>
+      <tr><td>Role Change</td><td class="from">Admin</td><td class="to">6.1 Manage</td><td class="data">user_id, new_role (STUDENT/FACULTY/STAFF/ADMIN)</td></tr>
+      <tr><td>Toggle Active</td><td class="from">Admin</td><td class="to">6.2 Activate</td><td class="data">user_id → is_active = true/false</td></tr>
+      <tr><td>Profile Update</td><td class="from">Any User</td><td class="to">6.3 Profile</td><td class="data">first_name, last_name, email, phone, department, avatar</td></tr>
+      <tr><td>Audit Query</td><td class="from">Staff/Admin</td><td class="to">6.4 Logs</td><td class="data">Filtered log entries: user, action, details, ip, timestamp</td></tr>
+      <tr><td>Clear History</td><td class="from">Staff/Admin</td><td class="to">6.5 Maintenance</td><td class="data">Soft-delete completed/returned/cancelled requests (is_cleared=true)</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+<!-- DATA STORES SUMMARY -->
+<div class="proc-section ph-green">
+<div class="proc-header">
+  <div class="proc-num pn-green">Data Stores Summary</div>
+  <div class="proc-title">System Data Stores</div>
+</div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>ID</th><th>Name</th><th>Key Fields</th><th>Used By</th></tr></thead>
+    <tbody>
+      <tr><td><strong>D1</strong></td><td>Users</td><td class="data">id, username, email, role, student_id, department, avatar, is_flagged, overdue_count</td><td>Process 1, 3, 6</td></tr>
+      <tr><td><strong>D2</strong></td><td>Items</td><td class="data">id, name, category, quantity, status, location, image, priority, access_level, is_returnable</td><td>Process 2, 3, 5</td></tr>
+      <tr><td><strong>D3</strong></td><td>Requests</td><td class="data">id, item, requested_by, quantity, purpose, status, approved_by, expected_return, is_cleared</td><td>Process 3, 4, 5, 6</td></tr>
+      <tr><td><strong>D4</strong></td><td>Notifications</td><td class="data">id, recipient, sender, request, type, message, is_read</td><td>Process 4</td></tr>
+      <tr><td><strong>D5</strong></td><td>Comments</td><td class="data">id, request, author, text, created_at</td><td>Process 3, 4</td></tr>
+      <tr><td><strong>D6</strong></td><td>Audit Logs</td><td class="data">id, user, username, action, details, ip_address, timestamp</td><td>Process 1, 2, 6</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</div>
+
+<div class="foot">
+  PLMun Inventory Nexus · DFD Level 1 · BSCS 3D · Software Engineering 1 · AY 2025–2026 · Prof. Mr. Melchor Paz
+</div>
+</body>
+</html>

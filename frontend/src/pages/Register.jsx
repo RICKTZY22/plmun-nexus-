@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Users, Shield, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, Users, Shield, Eye, EyeOff, CheckCircle2, XCircle, Hash } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import { AnimatedInput } from '../components/ui';
 import universityBuilding from '../assets/images/university-building.jpg';
@@ -53,6 +53,7 @@ const Register = () => {
         fullName: '',
         email: '',
         department: '',
+        studentId: '',
         password: '',
         confirmPassword: '',
         role: 'STUDENT',
@@ -71,6 +72,9 @@ const Register = () => {
     };
 
     const validateForm = () => {
+        if (!formData.email.trim().toLowerCase().endsWith('@plmun.edu.ph')) {
+            return 'Only @plmun.edu.ph email addresses are allowed.';
+        }
         if (formData.password !== formData.confirmPassword) {
             return 'Passwords do not match';
         }
@@ -98,6 +102,7 @@ const Register = () => {
             password: formData.password,
             role: formData.role,
             department: formData.department.trim(),
+            studentId: formData.role === 'STUDENT' ? formData.studentId.trim() : '',
         });
         if (result.success) navigate('/dashboard');
     };
@@ -137,7 +142,7 @@ const Register = () => {
 
                     <div className="space-y-4">
                         <h1
-                            className={`text-4xl font-black text-white leading-tight transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                            className={`text-4xl font-bold text-white leading-tight transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                             style={{ transitionDelay: '200ms' }}
                         >
                             Join the<br />
@@ -153,7 +158,7 @@ const Register = () => {
                     </div>
 
                     <p className={`text-white/40 text-xs transition-all duration-700 ${mounted ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '700ms' }}>
-                        © 2025 Pamantasan ng Lungsod ng Muntinlupa · "Lakas, Talino, at Buhay"
+                        © {new Date().getFullYear()} Pamantasan ng Lungsod ng Muntinlupa · "Lakas, Talino, at Buhay"
                     </p>
                 </div>
             </div>
@@ -187,7 +192,7 @@ const Register = () => {
                             className={`mb-6 transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
                             style={{ transitionDelay: '350ms' }}
                         >
-                            <h2 className="text-2xl font-black text-gray-900 dark:text-white">Create account</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create account</h2>
                             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Fill in the details below to get started</p>
                         </div>
 
@@ -195,30 +200,39 @@ const Register = () => {
                         {(error || validationError) && (
                             <div className="mb-5 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 animate-slide-in">
                                 <p className="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0 animate-pulse" />
+                                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full flex-shrink-0" />
                                     {error || validationError}
                                 </p>
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
                             {/* Full Name */}
                             <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '400ms' }}>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Full Name</label>
-                                <AnimatedInput icon={User} type="text" placeholder="Juan Dela Cruz" value={formData.fullName} onChange={handleChange('fullName')} />
+                                <AnimatedInput icon={User} type="text" placeholder="Juan Dela Cruz" value={formData.fullName} onChange={handleChange('fullName')} autoComplete="name" />
                             </div>
 
                             {/* Email */}
                             <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '450ms' }}>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Email Address</label>
-                                <AnimatedInput icon={Mail} type="email" placeholder="your@plmun.edu.ph" value={formData.email} onChange={handleChange('email')} />
+                                <AnimatedInput icon={Mail} type="email" placeholder="your@plmun.edu.ph" value={formData.email} onChange={handleChange('email')} autoComplete="email" />
                             </div>
 
                             {/* Department */}
                             <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '500ms' }}>
                                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Department</label>
-                                <AnimatedInput icon={Users} type="text" placeholder="e.g. CCS, CBA" value={formData.department} onChange={handleChange('department')} />
+                                <AnimatedInput icon={Users} type="text" placeholder="e.g. CCS, CBA" value={formData.department} onChange={handleChange('department')} autoComplete="organization" />
                             </div>
+
+                            {/* Student ID — only for students */}
+                            {formData.role === 'STUDENT' && (
+                                <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '520ms' }}>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 ml-0.5">Student ID Number</label>
+                                    <AnimatedInput icon={Hash} type="text" placeholder="e.g. 2024-00123" value={formData.studentId} onChange={handleChange('studentId')} autoComplete="one-time-code" name="student-id-number" />
+                                    <p className="text-[10px] text-gray-400 mt-1 ml-0.5">Your official PLMun student ID number</p>
+                                </div>
+                            )}
 
                             {/* Password */}
                             <div className={`transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`} style={{ transitionDelay: '550ms' }}>
@@ -229,6 +243,7 @@ const Register = () => {
                                     placeholder="••••••••"
                                     value={formData.password}
                                     onChange={handleChange('password')}
+                                    autoComplete="new-password"
                                     rightSlot={
                                         <button type="button" tabIndex={-1} onClick={() => setShowPassword(v => !v)}
                                             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
@@ -249,6 +264,7 @@ const Register = () => {
                                         placeholder="••••••••"
                                         value={formData.confirmPassword}
                                         onChange={handleChange('confirmPassword')}
+                                        autoComplete="new-password"
                                         borderClass={
                                             formData.confirmPassword
                                                 ? passwordsMatch
@@ -308,7 +324,7 @@ const Register = () => {
                         <span>Your information is protected and encrypted</span>
                     </div>
                     <p className={`text-center text-gray-400 text-xs mt-2 transition-all duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`} style={{ transitionDelay: '900ms' }}>
-                        © 2025 Pamantasan ng Lungsod ng Muntinlupa · All rights reserved.
+                        © {new Date().getFullYear()} Pamantasan ng Lungsod ng Muntinlupa · All rights reserved.
                     </p>
                 </div>
             </div>

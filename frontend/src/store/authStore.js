@@ -9,17 +9,23 @@ import useUIStore from './uiStore';
 // para sa mga shared computers sa lab na nakakalimutan mag-logout ng mga students
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 let idleTimer = null;
+let idleStartedAt = 0;   // timestamp when timer started
+let idleRemainingMs = 0;  // remaining ms when paused (tab hidden)
 
 const clearIdleTimer = () => {
     if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+    idleStartedAt = 0;
+    idleRemainingMs = 0;
 };
 
-const startIdleTimer = (logoutFn) => {
+const startIdleTimer = (logoutFn, ms = IDLE_TIMEOUT_MS) => {
     clearIdleTimer();
+    idleStartedAt = Date.now();
+    idleRemainingMs = ms;
     idleTimer = setTimeout(() => {
         logoutFn();
         window.location.href = '/login';
-    }, IDLE_TIMEOUT_MS);
+    }, ms);
 };
 
 const resetIdleTimer = (logoutFn) => () => startIdleTimer(logoutFn);
@@ -29,11 +35,39 @@ const IDLE_EVENTS = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
 const attachIdleListeners = (logoutFn) => {
     const handler = resetIdleTimer(logoutFn);
     IDLE_EVENTS.forEach(evt => window.addEventListener(evt, handler, { passive: true }));
+
+    // Pause timer when tab is hidden, resume with remaining time when visible
+    const onVisChange = () => {
+        if (document.hidden) {
+            // Tab hidden → save remaining time and clear timer
+            if (idleTimer && idleStartedAt) {
+                const elapsed = Date.now() - idleStartedAt;
+                idleRemainingMs = Math.max(0, idleRemainingMs - elapsed);
+                clearTimeout(idleTimer);
+                idleTimer = null;
+            }
+        } else {
+            // Tab visible → resume with remaining time (or logout if expired)
+            if (idleRemainingMs <= 0) {
+                logoutFn();
+                window.location.href = '/login';
+            } else {
+                startIdleTimer(logoutFn, idleRemainingMs);
+            }
+        }
+    };
+    document.addEventListener('visibilitychange', onVisChange);
+
+    // Return both handlers for cleanup
+    handler._visHandler = onVisChange;
     return handler;
 };
 
 const detachIdleListeners = (handler) => {
-    if (handler) IDLE_EVENTS.forEach(evt => window.removeEventListener(evt, handler));
+    if (handler) {
+        IDLE_EVENTS.forEach(evt => window.removeEventListener(evt, handler));
+        if (handler._visHandler) document.removeEventListener('visibilitychange', handler._visHandler);
+    }
 };
 
 // normalize yung user data galing sa API
@@ -46,20 +80,22 @@ const mapUserResponse = (user) => ({
     role: user.role,
     avatar: user.avatar,
     department: user.department,
+    studentId: user.studentId ?? user.student_id ?? '',
     isActive: user.isActive ?? user.is_active,
     isFlagged: user.isFlagged ?? user.is_flagged ?? false,
     overdueCount: user.overdueCount ?? user.overdue_count ?? 0,
     createdAt: user.date_joined,
 });
 
+// Keep idle handler reference at module level — NOT in Zustand state,
+// because persist() would try to serialize the function to localStorage.
+let _currentIdleHandler = null;
+
 // zustand store - mas simple kesa Redux, less boilerplate
 const useAuthStore = create(
     persist(
         (set, get) => ({
             // --- state ---
-            // FIXME: the idle timer still counts down when the tab is in the
-            // background. Should probably use visibilitychange event to pause it.
-            // Not urgent since 30min is generous enough for most campus sessions.
             user: null,
             token: null,
             refreshToken: null,
@@ -103,7 +139,7 @@ const useAuthStore = create(
                     // Start idle session timeout
                     const logoutFn = get().logout;
                     const handler = attachIdleListeners(logoutFn);
-                    get()._idleHandler = handler;
+                    _currentIdleHandler = handler;
                     startIdleTimer(logoutFn);
 
                     return { success: true, user };
@@ -112,6 +148,17 @@ const useAuthStore = create(
                         error.response?.data?.error ||
                         error.message ||
                         'Login failed';
+
+                    // Backend returns 'ACCOUNT_DEACTIVATED' specifically for inactive accounts
+                    const isDeactivated = errorMessage === 'ACCOUNT_DEACTIVATED' ||
+                        (typeof errorMessage === 'object' && errorMessage?.detail === 'ACCOUNT_DEACTIVATED');
+
+                    if (isDeactivated) {
+                        set({ isLoading: false });
+                        window.location.href = '/deactivated';
+                        return { success: false, error: 'Account deactivated' };
+                    }
+
                     set({ error: errorMessage, isLoading: false });
                     return { success: false, error: errorMessage };
                 }
@@ -230,10 +277,10 @@ const useAuthStore = create(
                     )) {
                         set({ user: { ...current, ...mapped } });
                     }
-                    // if account was deactivated, tell them why before booting
+                    // if account was deactivated, redirect to deactivated page
                     if (mapped.isActive === false) {
-                        localStorage.setItem('plmun-deactivated', 'true');
                         get().logout();
+                        window.location.href = '/deactivated';
                     }
                 } catch {
                     // don't care if this fails — it's just a background check
@@ -243,7 +290,8 @@ const useAuthStore = create(
             logout: () => {
                 // Clear idle timer and listeners
                 clearIdleTimer();
-                detachIdleListeners(get()._idleHandler);
+                detachIdleListeners(_currentIdleHandler);
+                _currentIdleHandler = null;
                 // Reset UI settings to defaults
                 useUIStore.getState().resetToDefaults();
                 set({

@@ -85,7 +85,7 @@ const StaffTab = ({ staffSettings, setStaffSettings, categories, saveSettings, s
                             <div>
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">Auto-generate reports</span>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Automatically generate and email reports</p>
-                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Coming Soon</p>
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Work in Progress</p>
                             </div>
                             <input
                                 type="checkbox"

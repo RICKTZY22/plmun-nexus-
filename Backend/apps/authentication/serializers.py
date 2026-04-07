@@ -48,6 +48,17 @@ class RegisterSerializer(serializers.ModelSerializer):
             'role', 'department', 'student_id',
         ]
 
+    def validate_email(self, value):
+        """Only allow @plmun.edu.ph email addresses for registration."""
+        from django.conf import settings as django_settings
+        allowed_domains = getattr(django_settings, 'ALLOWED_EMAIL_DOMAINS', ['plmun.edu.ph'])
+        domain = value.strip().lower().split('@')[-1]
+        if domain not in allowed_domains:
+            raise serializers.ValidationError(
+                'Registration is restricted to PLMUN email addresses (@plmun.edu.ph).'
+            )
+        return value.strip().lower()
+
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'Passwords do not match.'})
@@ -67,7 +78,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             first_name=first_name,
             last_name=last_name,
-            role='STUDENT',  # laging STUDENT pag nag-register, admin lang pwede mag-promote
+            role=validated_data.get('role', 'STUDENT'),
             department=validated_data.get('department', ''),
             student_id=validated_data.get('student_id', ''),
         )
@@ -111,4 +122,17 @@ class ChangePasswordSerializer(serializers.Serializer):
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
         user.save()
+
+        # Invalidate all existing refresh tokens for this user (S9)
+        # so stolen/leaked tokens can't be used after a password change.
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import (
+                OutstandingToken, BlacklistedToken,
+            )
+            tokens = OutstandingToken.objects.filter(user=user)
+            for token in tokens:
+                BlacklistedToken.objects.get_or_create(token=token)
+        except Exception:
+            pass  # token_blacklist might not be fully configured — fail silently
+
         return user

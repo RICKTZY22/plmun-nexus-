@@ -31,25 +31,45 @@ def _format_overdue_duration(overdue_delta):
     return f'{overdue_delta.days} day(s)'
 
 def _create_notif_if_new(recipient, request_obj, notif_type, message, sender=None):
-    """Gawa ng notification kung wala pa sa last 5 min na pareho."""
-    recent_cutoff = timezone.now() - timedelta(minutes=5)
-    already_exists = Notification.objects.filter(
+    """Smart notification dedup:
+    1. If there's an UNREAD notification of the same type+request → skip entirely
+       (user hasn't seen the first one yet, don't pile on)
+    2. If the last READ notification was within 1 day → skip
+       (only remind once per day after they've read the previous one)
+    3. Otherwise → create the notification
+    """
+    base_filter = {
+        'recipient': recipient,
+        'type': notif_type,
+    }
+    if request_obj is not None:
+        base_filter['request'] = request_obj
+
+    # Rule 1: unread notification of same type+request exists → skip
+    has_unread = Notification.objects.filter(**base_filter, is_read=False).exists()
+    if has_unread:
+        return
+
+    # Rule 2: read notification within last 24 hours → skip (1-day cooldown)
+    one_day_ago = timezone.now() - timedelta(days=1)
+    recent_read = Notification.objects.filter(
+        **base_filter,
+        is_read=True,
+        created_at__gte=one_day_ago,
+    ).exists()
+    if recent_read:
+        return
+
+    Notification.objects.create(
         recipient=recipient,
+        sender=sender,
         request=request_obj,
         type=notif_type,
-        created_at__gte=recent_cutoff,
-    ).exists()
-    if not already_exists:
-        Notification.objects.create(
-            recipient=recipient,
-            sender=sender,
-            request=request_obj,
-            type=notif_type,
-            message=message,
-        )
+        message=message,
+    )
 
 
-# TODO(erick): yung approve/reject/release pareho-pareho yung validation logic
+# TODO(erick): the approve/reject actions share similar validation logic
 # pwede siguro gawing mixin para mas malinis
 class RequestViewSet(viewsets.ModelViewSet):
 
@@ -66,7 +86,13 @@ class RequestViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        queryset = Request.objects.all()
+        # Reports/charts pass ?include_cleared=true to get ALL historical data.
+        # The active request list (Requests page) excludes cleared records.
+        include_cleared = self.request.query_params.get('include_cleared', '').lower() == 'true'
+        if include_cleared:
+            queryset = Request.objects.all()
+        else:
+            queryset = Request.objects.filter(is_cleared=False)
         user = self.request.user
 
         if not user.has_min_role('STAFF'):
@@ -74,14 +100,10 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         # Filters
         status_filter = self.request.query_params.get('status', '')
-        priority = self.request.query_params.get('priority', '')
         search = self.request.query_params.get('search', '')
 
         if status_filter:
             queryset = queryset.filter(status=status_filter)
-
-        if priority:
-            queryset = queryset.filter(priority=priority)
 
         if search:
             queryset = queryset.filter(
@@ -94,7 +116,9 @@ class RequestViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        req = serializer.save(requested_by=request.user)
+        # Auto-inherit priority from the item (set by staff/admin in inventory)
+        item = serializer.validated_data['item']
+        req = serializer.save(requested_by=request.user, priority=item.priority)
 
         # Audit log
         log_action(AuditLog.REQUEST_CREATED, user=request.user,
@@ -328,6 +352,18 @@ class RequestViewSet(viewsets.ModelViewSet):
         req.returned_at = timezone.now()
         req.save()
 
+        # Auto-unflag user if they have no remaining overdue items
+        borrower = req.requested_by
+        remaining_overdue = Request.objects.filter(
+            requested_by=borrower,
+            status__in=['APPROVED', 'COMPLETED'],
+            expected_return__lt=timezone.now(),
+        ).exclude(pk=req.pk).count()
+
+        if remaining_overdue == 0 and borrower.is_flagged:
+            borrower.is_flagged = False
+            borrower.save(update_fields=['is_flagged'])
+
         # Audit log
         log_action(AuditLog.REQUEST_RETURNED, user=request.user,
                    details=f'Returned item for request #{req.id} "{req.item_name}" (qty: {req.quantity})',
@@ -357,7 +393,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         clearable_statuses = ['COMPLETED', 'RETURNED', 'REJECTED', 'CANCELLED']
         qs = self.get_queryset().filter(status__in=clearable_statuses)
-        count, _ = qs.delete()
+        count = qs.update(is_cleared=True)  # soft-delete: keep for reports/charts
 
         # Audit log
         log_action(AuditLog.OTHER, user=request.user,
@@ -403,9 +439,11 @@ class RequestViewSet(viewsets.ModelViewSet):
             author_name = request.user.get_full_name() or request.user.username
             message = f'{author_name} commented on "{req.item_name}": "{comment.text[:80]}"'
             # dedup comments too — rapid double-post shouldn't spam everyone
-            for recipient_id in recipients:
+            # Bulk-fetch all recipients in a single query (fixes N+1)
+            recipient_users = User.objects.in_bulk(list(recipients))
+            for recipient_id, recipient in recipient_users.items():
                 _create_notif_if_new(
-                    recipient=User.objects.get(pk=recipient_id),
+                    recipient=recipient,
                     request_obj=req,
                     notif_type='COMMENT',
                     message=message,
@@ -433,10 +471,73 @@ class RequestViewSet(viewsets.ModelViewSet):
             'rejected': queryset.filter(status='REJECTED').count(),
             'returned': queryset.filter(status='RETURNED').count(),
             'overdue': overdue_qs.count(),
-            'highPriority': queryset.filter(priority='HIGH', status='PENDING').count(),
         }
 
         return Response(stats)
+
+    @action(detail=False, methods=['post'], permission_classes=[IsStaffOrAbove])
+    def clear_history(self, request):
+        """Clear all completed/returned/rejected/cancelled requests.
+        Requires the admin-set clear code for safety.
+        """
+        admin_code = request.data.get('code', '')
+        from django.conf import settings as django_settings
+        from django.core.cache import cache
+        expected_code = cache.get('history_clear_code') or getattr(django_settings, 'HISTORY_CLEAR_CODE', 'PLMun2025')
+
+        if admin_code != expected_code:
+            return Response(
+                {'error': 'Invalid clear code. Contact your administrator.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        clearable = Request.objects.filter(
+            status__in=['COMPLETED', 'RETURNED', 'REJECTED', 'CANCELLED'],
+        )
+        count, _ = clearable.delete()
+
+        log_action(
+            AuditLog.OTHER,
+            user=request.user,
+            details=f'Cleared {count} request history records',
+            request=request,
+        )
+
+        return Response({'status': f'{count} history records cleared'})
+
+    @action(detail=False, methods=['post'], permission_classes=[IsStaffOrAbove])
+    def set_clear_code(self, request):
+        """Admin sets or updates the clear code.
+        Stored in a simple system preferences key in localStorage on frontend,
+        but validated here against the Django settings.
+        """
+        if not request.user.has_min_role('ADMIN'):
+            return Response(
+                {'error': 'Only admins can set the clear code.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        new_code = request.data.get('code', '').strip()
+        if len(new_code) < 4:
+            return Response(
+                {'error': 'Code must be at least 4 characters.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Store in Django settings file is not practical at runtime,
+        # so we store it in a lightweight cache/DB approach using a simple model
+        # For now, use a simple key-value in the system — stored via environment or cache
+        from django.core.cache import cache
+        cache.set('history_clear_code', new_code, timeout=None)
+
+        log_action(
+            AuditLog.OTHER,
+            user=request.user,
+            details='Updated history clear code',
+            request=request,
+        )
+
+        return Response({'status': 'Clear code updated successfully'})
 
     @action(detail=False, methods=['get'])
     def overdue_requests(self, request):
@@ -498,7 +599,9 @@ class RequestViewSet(viewsets.ModelViewSet):
 
             # collect for staff digest instead of spamming one notif per item
             borrower_name = borrower.get_full_name() or borrower.username
-            overdue_summaries.append(f'"{req.item_name}" by {borrower_name} ({overdue_text})')
+            sid = borrower.student_id
+            id_tag = f' [{sid}]' if sid else ''
+            overdue_summaries.append(f'"{req.item_name}" by {borrower_name}{id_tag} ({overdue_text})')
 
         # Batch create borrower notifications
         Notification.objects.bulk_create(borrower_notifications)
@@ -521,19 +624,35 @@ class RequestViewSet(viewsets.ModelViewSet):
                     message=summary_msg,
                 )
 
-        # i-flag lang yung mga hindi pa flagged para di mag-inflate yung overdue_count
+        # Flag users and increment overdue count as lifetime history
+        # Only count requests that have NEVER been counted before (no overdue notification ever)
+        # This prevents the count from inflating on repeated daily scans
         if flagged_user_ids:
-            User.objects.filter(
-                pk__in=flagged_user_ids,
-                is_flagged=False,
-            ).update(
-                overdue_count=F('overdue_count') + 1,
-                is_flagged=True,
+            from collections import Counter
+
+            # Check which overdue requests have EVER had an overdue notification sent
+            ever_notified_ids = set(
+                Notification.objects.filter(
+                    type='OVERDUE',
+                    request__in=overdue,
+                ).values_list('request_id', flat=True)
             )
-            # Ensure already-flagged users are still marked (idempotent)
-            User.objects.filter(
-                pk__in=flagged_user_ids,
-            ).update(is_flagged=True)
+
+            new_overdue_per_user = Counter()
+            for req in overdue:
+                if req.id not in ever_notified_ids:
+                    new_overdue_per_user[req.requested_by_id] += 1
+
+            for user_id in flagged_user_ids:
+                new_count = new_overdue_per_user.get(user_id, 0)
+                if new_count > 0:
+                    User.objects.filter(pk=user_id).update(
+                        overdue_count=F('overdue_count') + new_count,
+                        is_flagged=True,
+                    )
+                else:
+                    # Already flagged from previous scan, just ensure flag stays
+                    User.objects.filter(pk=user_id).update(is_flagged=True)
 
         return Response({'status': f'{len(borrower_notifications)} overdue notifications created'})
 

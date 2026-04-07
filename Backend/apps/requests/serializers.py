@@ -43,6 +43,7 @@ class RequestSerializer(serializers.ModelSerializer):
 
     requestedBy = serializers.SerializerMethodField()
     requestedById = serializers.IntegerField(source='requested_by_id', read_only=True)
+    requestedByStudentId = serializers.SerializerMethodField()
     approvedBy = serializers.SerializerMethodField()
     itemName = serializers.CharField(source='item_name', read_only=True)
     requestDate = serializers.DateField(source='request_date', read_only=True)
@@ -60,19 +61,23 @@ class RequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
         fields = [
-            'id', 'item', 'itemName', 'requestedBy', 'requestedById', 'quantity', 'purpose',
-            'status', 'priority', 'requestDate', 'expectedReturn',
+            'id', 'item', 'itemName', 'requestedBy', 'requestedById', 'requestedByStudentId',
+            'quantity', 'purpose', 'status', 'priority', 'requestDate', 'expectedReturn',
             'approvedBy', 'approvedAt', 'rejectionReason', 'returnedAt', 'isReturnable',
             'isOverdue', 'borrowDuration', 'borrowDurationUnit', 'createdAt', 'comments',
         ]
         read_only_fields = [
-            'id', 'requestedBy', 'requestedById', 'requestDate', 'approvedBy', 'approvedAt',
+            'id', 'requestedBy', 'requestedById', 'requestedByStudentId',
+            'requestDate', 'approvedBy', 'approvedAt',
             'rejectionReason', 'returnedAt', 'isReturnable', 'isOverdue',
             'borrowDuration', 'borrowDurationUnit', 'createdAt', 'comments', 'itemName',
         ]
 
     def get_requestedBy(self, obj) -> str:
         return obj.requested_by.get_full_name() or obj.requested_by.username
+
+    def get_requestedByStudentId(self, obj) -> str:
+        return getattr(obj.requested_by, 'student_id', '') or ''
 
     def get_approvedBy(self, obj) -> Optional[str]:
         if obj.approved_by:
@@ -106,7 +111,6 @@ class RequestSerializer(serializers.ModelSerializer):
             return None
 
 
-# TODO: mag-add ng max quantity validation base sa item.quantity
 class RequestCreateSerializer(serializers.ModelSerializer):
 
     itemName = serializers.CharField(source='item_name')
@@ -114,12 +118,22 @@ class RequestCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Request
-        fields = ['item', 'itemName', 'quantity', 'purpose', 'priority', 'expectedReturn']
+        fields = ['item', 'itemName', 'quantity', 'purpose', 'expectedReturn']
 
     def validate_quantity(self, value):
         if value < 1:
             raise serializers.ValidationError('Quantity must be at least 1.')
         return value
+
+    def validate(self, attrs):
+        """Ensure requested quantity does not exceed available stock."""
+        item = attrs.get('item')
+        quantity = attrs.get('quantity', 1)
+        if item and quantity > item.quantity:
+            raise serializers.ValidationError({
+                'quantity': f'Only {item.quantity} available in stock. You requested {quantity}.'
+            })
+        return attrs
 
     def validate_purpose(self, value):
         """Strip HTML tags to prevent stored XSS."""

@@ -31,7 +31,7 @@ const InventoryFormModal = ({
                     <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Category</label>
                         <select
-                            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                            className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                             value={formData.category}
                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                         >
@@ -48,14 +48,17 @@ const InventoryFormModal = ({
                         min="1"
                         required
                         value={formData.quantity}
-                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
+                        onChange={(e) => {
+                            const parsed = parseInt(e.target.value) || 1;
+                            setFormData({ ...formData, quantity: Math.max(1, parsed) });
+                        }}
                     />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Status</label>
                         <select
-                            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm"
+                            className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                             value={formData.status}
                             onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                         >
@@ -75,7 +78,7 @@ const InventoryFormModal = ({
                 <div className="space-y-1">
                     <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Access Level</label>
                     <select
-                        className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
+                        className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none"
                         value={formData.accessLevel}
                         onChange={(e) => setFormData({ ...formData, accessLevel: e.target.value })}
                     >
@@ -86,12 +89,25 @@ const InventoryFormModal = ({
                     </select>
                     <p className="text-[11px] text-gray-400 ml-1">Controls which roles can see and request this item</p>
                 </div>
+                <div className="space-y-1">
+                    <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Priority Level</label>
+                    <select
+                        className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
+                        value={formData.priority}
+                        onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                    >
+                        <option value="LOW">🟢 Low — Consumables, basic supplies (ballpens, paper)</option>
+                        <option value="MEDIUM">🟡 Medium — Standard equipment (chairs, keyboards)</option>
+                        <option value="HIGH">🔴 High — Fragile/expensive items (lab glass, projectors)</option>
+                    </select>
+                    <p className="text-[11px] text-gray-400 ml-1">Indicates handling care and tracking importance</p>
+                </div>
                 <ImageUpload
                     value={formData.imageUrl}
                     onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
                     compact
                 />
-                <label className="flex items-center gap-3 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                <label className="flex items-center gap-3 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer">
                     <input
                         type="checkbox"
                         checked={formData.isReturnable}
@@ -110,7 +126,7 @@ const InventoryFormModal = ({
                             <input
                                 type="number"
                                 min="1"
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
+                                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                                 value={formData.borrowDuration}
                                 onChange={(e) => setFormData({ ...formData, borrowDuration: parseInt(e.target.value) || '' })}
                                 placeholder="e.g. 3"
@@ -119,7 +135,7 @@ const InventoryFormModal = ({
                         <div className="space-y-1">
                             <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Unit</label>
                             <select
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
+                                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none appearance-none cursor-pointer [&>option]:bg-white [&>option]:dark:bg-gray-800 [&>option]:text-gray-900 [&>option]:dark:text-gray-100"
                                 value={formData.borrowDurationUnit}
                                 onChange={(e) => setFormData({ ...formData, borrowDurationUnit: e.target.value })}
                             >

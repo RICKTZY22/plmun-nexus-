@@ -28,6 +28,11 @@ class Item(models.Model):
         STAFF = 'STAFF', 'Staff'
         ADMIN = 'ADMIN', 'Admin'
 
+    class Priority(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+
     name = models.CharField(max_length=200)
     category = models.CharField(
         max_length=50,
@@ -49,6 +54,12 @@ class Item(models.Model):
         default=AccessLevel.STUDENT,
     )
     is_returnable = models.BooleanField(default=True)
+    priority = models.CharField(
+        max_length=10,
+        choices=Priority.choices,
+        default=Priority.MEDIUM,
+        help_text='Item importance: LOW (consumables), MEDIUM (standard), HIGH (fragile/expensive)',
+    )
     # TODO: mag-add ng 'condition' field para ma-track kung sira na or what
 
     # Status metadata
@@ -91,14 +102,18 @@ class Item(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # 5 was chosen based on average restock turnaround at PLMun:
-    # procurement takes ~3 business days so we flag at 5 to give
-    # staff enough lead time to reorder before we actually run out.
+    # Default is 5 — configurable via settings.LOW_STOCK_THRESHOLD
+    @classmethod
+    def get_low_stock_threshold(cls):
+        from django.conf import settings as django_settings
+        return getattr(django_settings, 'LOW_STOCK_THRESHOLD', 5)
+
+    # Keep backward compat for existing code that references Item.LOW_STOCK_THRESHOLD
     LOW_STOCK_THRESHOLD = 5
 
     @property
     def is_low_stock(self) -> bool:
-        return self.quantity <= self.LOW_STOCK_THRESHOLD and self.quantity > 0
+        return self.quantity <= self.get_low_stock_threshold() and self.quantity > 0
 
     @property
     def is_out_of_stock(self) -> bool:

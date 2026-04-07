@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Check, X, Clock, CheckCircle, Package, Lock, Eye, FileText, User, Calendar, MapPin, RotateCcw, Trash2, AlertTriangle, Timer, Ban, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, Check, X, Clock, CheckCircle, Package, Lock, Eye, FileText, User, Calendar, RotateCcw, Trash2, AlertTriangle, Timer, Ban, ChevronDown, ChevronRight, Flag } from 'lucide-react';
 import { Button, Input, Card, Modal, Table, CommentBox } from '../components/ui';
 import { StaffOnly } from '../components/auth';
-import { useRequests, useInventory } from '../hooks';
-import { useIsMobile } from '../hooks';
+import { useRequests, useInventory, useIsMobile } from '../hooks';
 import useAuthStore from '../store/authStore';
 import { hasMinRole, ROLES } from '../utils/roles';
 import { useLocation } from 'react-router-dom';
 
 const statusColors = {
-    PENDING: 'bg-amber-100 text-amber-700',
-    APPROVED: 'bg-emerald-100 text-emerald-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    COMPLETED: 'bg-blue-100 text-blue-700',
-    RETURNED: 'bg-purple-100 text-purple-700',
-    CANCELLED: 'bg-gray-100 text-gray-700',
+    PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    APPROVED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+    REJECTED: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    COMPLETED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    RETURNED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    CANCELLED: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
 const statusIcons = {
@@ -26,29 +25,50 @@ const statusIcons = {
     CANCELLED: X,
 };
 
+const priorityConfig = {
+    HIGH: { label: 'High', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', icon: '🔴', weight: 3 },
+    MEDIUM: { label: 'Medium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: '🟡', weight: 2 },
+    LOW: { label: 'Low', color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', icon: '⚪', weight: 1 },
+};
+
+const PriorityBadge = ({ priority }) => {
+    const cfg = priorityConfig[priority] || priorityConfig.MEDIUM;
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${cfg.color}`}>
+            <Flag size={10} />
+            {cfg.label}
+        </span>
+    );
+};
+
 // responsive layout - cards pag mobile, table pag desktop
 const RequestGroupBody = ({ groupRequests, user, isStaffPlus, handleApprove, handleRejectClick, handleCancelClick, returnRequest, setDetailRequest, setDetailModalOpen, getComments, setDetailComments }) => {
     const isMobile = useIsMobile();
-    const priorityColor = { HIGH: 'text-red-600 bg-red-50 dark:bg-red-900/20', LOW: 'text-gray-500 bg-gray-50 dark:bg-gray-700', NORMAL: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20' };
 
     if (isMobile) {
         return (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {groupRequests.map(request => {
                     const isOwnRequest = request.requestedById === user?.id;
-                    const prio = (request.priority || 'NORMAL').toUpperCase();
                     return (
                         <div key={request.id} className="p-3 space-y-2">
-                            {/* Row 1: Item name + priority */}
+                            {/* Row 1: Item name */}
                             <div className="flex items-center justify-between gap-2">
                                 <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">{request.itemName}</p>
-                                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ${priorityColor[prio] || priorityColor.NORMAL}`}>{prio}</span>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <PriorityBadge priority={request.priority} />
+                                    <span className="text-xs text-gray-400">×{request.quantity}</span>
+                                </div>
                             </div>
                             {/* Row 2: Meta info */}
                             <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center gap-1"><User size={12} />{request.requestedBy}</span>
+                                <span className="flex items-center gap-1">
+                                    <User size={12} />{request.requestedBy}
+                                    {request.requestedByStudentId && (
+                                        <span className="font-mono text-indigo-600 dark:text-indigo-400">({request.requestedByStudentId})</span>
+                                    )}
+                                </span>
                                 <span className="flex items-center gap-1"><Calendar size={12} />{request.requestDate}</span>
-                                <span>×{request.quantity}</span>
                             </div>
                             {/* Row 3: Purpose */}
                             {request.purpose && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{request.purpose}</p>}
@@ -83,28 +103,32 @@ const RequestGroupBody = ({ groupRequests, user, isStaffPlus, handleApprove, han
                     <Table.Head>Item</Table.Head>
                     <Table.Head>Requested By</Table.Head>
                     <Table.Head>Qty</Table.Head>
+                    <Table.Head>Priority</Table.Head>
                     <Table.Head>Purpose</Table.Head>
                     <Table.Head>Date</Table.Head>
-                    <Table.Head>Priority</Table.Head>
                     <Table.Head className="text-right">Actions</Table.Head>
                 </Table.Row>
             </Table.Header>
             <Table.Body>
                 {groupRequests.map(request => {
                     const isOwnRequest = request.requestedById === user?.id;
-                    const prio = (request.priority || 'NORMAL').toUpperCase();
                     return (
                         <Table.Row key={request.id}>
                             <Table.Cell className="font-medium">{request.itemName}</Table.Cell>
-                            <Table.Cell>{request.requestedBy}</Table.Cell>
+                            <Table.Cell>
+                                <div>
+                                    <span>{request.requestedBy}</span>
+                                    {request.requestedByStudentId && (
+                                        <span className="block text-[10px] font-mono text-indigo-600 dark:text-indigo-400">
+                                            ID: {request.requestedByStudentId}
+                                        </span>
+                                    )}
+                                </div>
+                            </Table.Cell>
                             <Table.Cell>{request.quantity}</Table.Cell>
+                            <Table.Cell><PriorityBadge priority={request.priority} /></Table.Cell>
                             <Table.Cell className="max-w-[180px] truncate">{request.purpose}</Table.Cell>
                             <Table.Cell className="text-xs">{request.requestDate}</Table.Cell>
-                            <Table.Cell>
-                                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${priorityColor[prio] || priorityColor.NORMAL}`}>
-                                    {prio}
-                                </span>
-                            </Table.Cell>
                             <Table.Cell>
                                 <div className="flex justify-end gap-1">
                                     <Button variant="ghost" size="sm" onClick={async () => { setDetailRequest(request); setDetailModalOpen(true); const cmts = await getComments(request.id); setDetailComments(cmts); }} className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Details"><Eye size={16} /></Button>
@@ -216,7 +240,6 @@ const Requests = () => {
         item: null,
         quantity: savedPrefs.defaultQuantity || 1,
         purpose: savedPrefs.defaultPurpose || '',
-        priority: savedPrefs.defaultPriority || 'NORMAL',
     });
     const [formError, setFormError] = useState('');
 
@@ -322,11 +345,10 @@ const Requests = () => {
             itemName: formData.itemName,
             quantity: formData.quantity,
             purpose: formData.purpose,
-            priority: formData.priority,
         };
         await createRequest(payload);
         setIsModalOpen(false);
-        setFormData({ itemName: '', item: null, quantity: savedPrefs.defaultQuantity || 1, purpose: savedPrefs.defaultPurpose || '', priority: savedPrefs.defaultPriority || 'NORMAL' });
+        setFormData({ itemName: '', item: null, quantity: savedPrefs.defaultQuantity || 1, purpose: savedPrefs.defaultPurpose || '' });
         setItemSearch('');
         setSelectedItem(null);
     };
@@ -472,8 +494,15 @@ const Requests = () => {
                     { key: 'CANCELLED', label: 'Cancelled', icon: Ban, color: 'bg-gray-400', textColor: 'text-gray-600', bgLight: 'bg-gray-50 dark:bg-gray-800/30', borderColor: 'border-gray-200 dark:border-gray-700', filter: r => r.status === 'CANCELLED' },
                 ];
 
+                // Sort by priority within each group: HIGH (3) → NORMAL (2) → LOW (1)
+                const sortByPriority = (a, b) => {
+                    const wa = (priorityConfig[a.priority] || priorityConfig.MEDIUM).weight;
+                    const wb = (priorityConfig[b.priority] || priorityConfig.MEDIUM).weight;
+                    return wb - wa; // descending: HIGH first
+                };
+
                 return statusGroups.map(group => {
-                    const groupRequests = displayedRequests.filter(group.filter);
+                    const groupRequests = displayedRequests.filter(group.filter).sort(sortByPriority);
                     if (groupRequests.length === 0) return null;
                     const isCollapsed = collapsedSections[group.key];
                     const GroupIcon = group.icon;
@@ -606,7 +635,7 @@ const Requests = () => {
                     {/* Requester (auto-filled) */}
                     <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Requested By</label>
-                        <div className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-600">
+                        <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-600 dark:text-gray-300">
                             {user?.fullName || 'Unknown User'}
                         </div>
                     </div>
@@ -624,7 +653,7 @@ const Requests = () => {
                     <div className="space-y-1">
                         <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Purpose *</label>
                         <textarea
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-primary outline-none resize-none"
                             rows="3"
                             required
                             value={formData.purpose}
@@ -633,19 +662,6 @@ const Requests = () => {
                         />
                     </div>
 
-                    {/* Priority selector */}
-                    <div className="space-y-1">
-                        <label className="block text-xs font-bold text-gray-500 uppercase ml-1">Priority</label>
-                        <select
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none"
-                            value={formData.priority}
-                            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                        >
-                            <option value="LOW">Low</option>
-                            <option value="NORMAL">Normal</option>
-                            <option value="HIGH">High</option>
-                        </select>
-                    </div>
 
                     <div className="flex gap-3 pt-4">
                         <Button type="button" variant="ghost" className="flex-1" onClick={() => setIsModalOpen(false)}>
@@ -696,7 +712,7 @@ const Requests = () => {
                 <div className="space-y-4">
                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700/50">
                         <p className="text-sm text-amber-800 dark:text-amber-300 text-center">
-                            ⚠️ This action cannot be undone. The request will be permanently cancelled.
+                            This action cannot be undone. The request will be permanently cancelled.
                         </p>
                     </div>
                     <div className="flex gap-3">
@@ -724,12 +740,13 @@ const Requests = () => {
             >
                 {detailRequest && (
                     <div className="space-y-4">
-                        {/* Status Badge + ID */}
+                        {/* Status Badge + Priority + ID */}
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[detailRequest.status]}`}>
                                     {detailRequest.status}
                                 </span>
+                                <PriorityBadge priority={detailRequest.priority} />
                                 {detailRequest.isOverdue && (
                                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
                                         <AlertTriangle size={12} />
@@ -758,6 +775,9 @@ const Requests = () => {
                                 <div>
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">Requested By</p>
                                     <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{detailRequest.requestedBy}</p>
+                                    {detailRequest.requestedByStudentId && (
+                                        <p className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">Student ID: {detailRequest.requestedByStudentId}</p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg">

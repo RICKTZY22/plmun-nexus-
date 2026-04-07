@@ -4,7 +4,7 @@ import { formatApiError } from '../utils/errorUtils';
 
 // stats calculator - ino-update 'to every time may action sa request
 const buildStats = (items) => {
-    const init = { total: 0, pending: 0, approved: 0, rejected: 0, completed: 0, returned: 0, highPriority: 0 };
+    const init = { total: 0, pending: 0, approved: 0, rejected: 0, completed: 0, returned: 0, overdue: 0 };
     return items.reduce((acc, r) => {
         acc.total++;
         if (r.status === 'PENDING') acc.pending++;
@@ -12,7 +12,7 @@ const buildStats = (items) => {
         else if (r.status === 'REJECTED') acc.rejected++;
         else if (r.status === 'COMPLETED') acc.completed++;
         else if (r.status === 'RETURNED') acc.returned++;
-        if (r.priority === 'HIGH' && r.status === 'PENDING') acc.highPriority++;
+        if (r.isOverdue) acc.overdue++;
         return acc;
     }, init);
 };

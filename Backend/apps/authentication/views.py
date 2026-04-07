@@ -71,6 +71,26 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
 
+        # Check for deactivated account BEFORE JWT auth
+        # JWT returns the same "No active account" error for both wrong passwords
+        # and deactivated accounts, so we check first and return a distinct code.
+        email = request.data.get('email', '').strip().lower()
+        username = request.data.get('username', '').strip()
+        lookup = username or email
+        if lookup:
+            try:
+                user_check = User.objects.get(email__iexact=lookup) if '@' in lookup else User.objects.get(username=lookup)
+                if not user_check.is_active:
+                    log_action(AuditLog.LOGIN_FAILED,
+                               details=f'Login attempt on deactivated account: {lookup}',
+                               request=request)
+                    return Response(
+                        {'detail': 'ACCOUNT_DEACTIVATED'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            except User.DoesNotExist:
+                pass  # let JWT handle "invalid credentials"
+
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
@@ -325,3 +345,49 @@ class BackupView(APIView):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
         return response
+
+
+class MaintenanceView(APIView):
+    """Server-managed maintenance mode.
+    GET  → anyone authenticated can check status
+    POST → admin-only: enable/disable with duration
+    Uses Django cache so state auto-expires and survives server restarts if
+    a persistent cache backend (Redis/Memcached) is configured."""
+
+    CACHE_KEY = 'plmun_maintenance'
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [permissions.IsAuthenticated(), IsAdmin()]
+        return [permissions.AllowAny()]
+
+    def get(self, request):
+        from django.core.cache import cache
+        import time as _time
+        data = cache.get(self.CACHE_KEY)
+        if data and data.get('endTime', 0) > int(_time.time() * 1000):
+            return Response({'enabled': True, 'endTime': data['endTime']})
+        return Response({'enabled': False, 'endTime': 0})
+
+    def post(self, request):
+        from django.core.cache import cache
+        import time
+
+        enabled = request.data.get('enabled', False)
+        duration_mins = int(request.data.get('durationMins', 30))
+
+        if enabled:
+            end_time = int(time.time() * 1000) + duration_mins * 60 * 1000
+            # Cache TTL = duration + 1 minute buffer (in seconds)
+            cache.set(self.CACHE_KEY, {'enabled': True, 'endTime': end_time}, timeout=duration_mins * 60 + 60)
+            log_action(AuditLog.Action.OTHER, user=request.user,
+                       details=f'Maintenance mode enabled for {duration_mins} minutes',
+                       request=request)
+            return Response({'enabled': True, 'endTime': end_time, 'message': f'Maintenance mode enabled for {duration_mins} minutes.'})
+        else:
+            cache.delete(self.CACHE_KEY)
+            log_action(AuditLog.Action.OTHER, user=request.user,
+                       details='Maintenance mode disabled',
+                       request=request)
+            return Response({'enabled': False, 'endTime': 0, 'message': 'Maintenance mode disabled.'})
+

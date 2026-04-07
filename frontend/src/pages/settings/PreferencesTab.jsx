@@ -31,18 +31,6 @@ const PreferencesTab = ({
                             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Priority</label>
-                        <select
-                            value={preferences.defaultPriority}
-                            onChange={(e) => setPreferences({ ...preferences, defaultPriority: e.target.value })}
-                            className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                        >
-                            <option value="LOW">Low</option>
-                            <option value="NORMAL">Normal</option>
-                            <option value="HIGH">High</option>
-                        </select>
-                    </div>
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Purpose Template</label>
                         <textarea
@@ -124,7 +112,7 @@ const PreferencesTab = ({
                         <div>
                             <span className="text-gray-700 dark:text-gray-300 font-medium">Due date reminders</span>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Get notified before items are due</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Coming Soon</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Work in Progress</p>
                         </div>
                         <input
                             type="checkbox"
@@ -152,7 +140,7 @@ const PreferencesTab = ({
                         <div>
                             <span className="text-gray-700 dark:text-gray-300 font-medium">Auto-renew requests</span>
                             <p className="text-sm text-gray-500 dark:text-gray-400">Automatically extend borrowing period if available</p>
-                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Coming Soon</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">⏳ Work in Progress</p>
                         </div>
                         <input
                             type="checkbox"
@@ -166,7 +154,7 @@ const PreferencesTab = ({
 
             <div className="flex items-center justify-end gap-3">
                 {saveMessage && (
-                    <span className="text-sm text-emerald-600 font-medium animate-pulse">
+                    <span className="text-sm text-emerald-600 font-medium">
                         ✓ {saveMessage}
                     </span>
                 )}

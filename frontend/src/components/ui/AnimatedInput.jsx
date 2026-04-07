@@ -14,6 +14,7 @@ const AnimatedInput = ({
     required = false,
     rightSlot,
     borderClass,
+    ...rest
 }) => {
     const [focused, setFocused] = useState(false);
 
@@ -37,6 +38,7 @@ const AnimatedInput = ({
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
                 className={`w-full pl-10 ${rightSlot ? 'pr-10' : 'pr-4'} py-3 bg-gray-50 dark:bg-gray-700/50 border rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${borderClass || defaultBorder}`}
+                {...rest}
             />
             {rightSlot && <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{rightSlot}</div>}
             {focused && (

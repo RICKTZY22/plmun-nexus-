@@ -18,7 +18,7 @@ class Request(models.Model):
 
     class Priority(models.TextChoices):
         LOW = 'LOW', 'Low'
-        NORMAL = 'NORMAL', 'Normal'
+        MEDIUM = 'MEDIUM', 'Medium'
         HIGH = 'HIGH', 'High'
 
 
@@ -50,7 +50,7 @@ class Request(models.Model):
     priority = models.CharField(
         max_length=20,
         choices=Priority.choices,
-        default=Priority.NORMAL,
+        default=Priority.MEDIUM,
     )
 
 
@@ -68,6 +68,10 @@ class Request(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     rejection_reason = models.TextField(blank=True)
     returned_at = models.DateTimeField(null=True, blank=True)
+
+    # Soft-delete: cleared requests stay in DB for reports/charts
+    # but are hidden from the active requests list.
+    is_cleared = models.BooleanField(default=False)
 
 
     created_at = models.DateTimeField(auto_now_add=True)

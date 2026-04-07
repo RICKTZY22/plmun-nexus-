@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLMun Nexus — System Diagrams</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;line-height:1.6}
+  .page{max-width:1100px;margin:0 auto;padding:40px 24px}
+  h1{font-size:2.5rem;font-weight:800;text-align:center;margin-bottom:8px;background:linear-gradient(135deg,#38bdf8,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .subtitle{text-align:center;color:#94a3b8;margin-bottom:48px;font-size:.9rem}
+  .section{margin-bottom:64px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:36px;position:relative;overflow:hidden}
+  .section::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#38bdf8,#818cf8,#c084fc)}
+  .section-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;border:1px solid}
+  .badge-blue{background:rgba(56,189,248,.1);color:#38bdf8;border-color:rgba(56,189,248,.2)}
+  .badge-purple{background:rgba(129,140,248,.1);color:#818cf8;border-color:rgba(129,140,248,.2)}
+  .badge-green{background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)}
+  .badge-amber{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.2)}
+  .badge-rose{background:rgba(251,113,133,.1);color:#fb7185;border-color:rgba(251,113,133,.2)}
+  .badge-cyan{background:rgba(34,211,238,.1);color:#22d3ee;border-color:rgba(34,211,238,.2)}
+  .badge-indigo{background:rgba(99,102,241,.1);color:#6366f1;border-color:rgba(99,102,241,.2)}
+  h2{font-size:1.6rem;font-weight:700;color:#f1f5f9;margin-bottom:6px}
+  h3{font-size:1.1rem;font-weight:600;color:#cbd5e1;margin:24px 0 12px}
+  p.desc{color:#94a3b8;font-size:.85rem;margin-bottom:24px}
+
+  /* SDLC */
+  .sdlc-flow{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;padding:20px 0}
+  .sdlc-phase{width:140px;padding:16px 12px;border-radius:14px;text-align:center;position:relative;border:2px solid}
+  .sdlc-phase .num{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+  .sdlc-phase .name{font-size:.8rem;font-weight:700;color:#f1f5f9}
+  .sdlc-arrow{font-size:1.2rem;color:#475569;margin:0 4px}
+  .sdlc-feedback{text-align:center;margin-top:16px;color:#64748b;font-size:.75rem;font-style:italic}
+  .sp1{background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3)}.sp1 .num{color:#38bdf8}
+  .sp2{background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3)}.sp2 .num{color:#818cf8}
+  .sp3{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3)}.sp3 .num{color:#34d399}
+  .sp4{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3)}.sp4 .num{color:#fbbf24}
+  .sp5{background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.3)}.sp5 .num{color:#fb7185}
+  .sp6{background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.3)}.sp6 .num{color:#a855f7}
+
+  /* Gantt */
+  .gantt{width:100%;border-collapse:separate;border-spacing:0;font-size:.75rem}
+  .gantt th{background:rgba(255,255,255,.06);padding:10px 8px;text-align:left;font-weight:600;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+  .gantt td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+  .gantt-bar{height:22px;border-radius:6px;position:relative;min-width:20px}
+  .gantt-bar span{position:absolute;left:8px;top:3px;font-size:.65rem;font-weight:600;white-space:nowrap;color:#fff}
+  .gb1{background:linear-gradient(90deg,#38bdf8,#0ea5e9)}
+  .gb2{background:linear-gradient(90deg,#818cf8,#6366f1)}
+  .gb3{background:linear-gradient(90deg,#34d399,#059669)}
+  .gb4{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+  .gb5{background:linear-gradient(90deg,#fb7185,#e11d48)}
+  .gb6{background:linear-gradient(90deg,#a855f7,#7c3aed)}
+  .gantt-months{display:grid;grid-template-columns:repeat(10,1fr);gap:0;margin-bottom:2px}
+  .gantt-months span{text-align:center;font-size:.65rem;color:#64748b;padding:4px 0;border-left:1px solid rgba(255,255,255,.04)}
+  .gantt-row{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:center;margin-bottom:6px}
+  .gantt-label{font-size:.75rem;color:#cbd5e1;font-weight:500;text-align:right;padding-right:8px}
+  .gantt-track{position:relative;height:24px;background:rgba(255,255,255,.02);border-radius:6px;border:1px solid rgba(255,255,255,.04)}
+  .gantt-fill{position:absolute;top:2px;bottom:2px;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:.6rem;font-weight:600;color:#fff;white-space:nowrap}
+
+  /* DFD */
+  .dfd-container{display:flex;flex-direction:column;align-items:center;gap:24px;padding:20px}
+  .dfd-entity{padding:12px 24px;border-radius:10px;font-weight:600;font-size:.8rem;border:2px solid;text-align:center;min-width:160px}
+  .dfd-process{width:120px;height:120px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:.75rem;border:3px solid;line-height:1.3}
+  .dfd-store{padding:10px 20px;border-top:2px solid;border-bottom:2px solid;font-size:.75rem;font-weight:500;text-align:center;min-width:140px}
+  .dfd-arrow{color:#64748b;font-size:1.4rem}
+  .dfd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:center;justify-items:center}
+  .dfd-flow-label{font-size:.65rem;color:#94a3b8;text-align:center;max-width:100px}
+
+  /* Context diagram */
+  .ctx-diagram{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;padding:20px 0}
+  .ctx-center{width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(129,140,248,.1));border:3px solid rgba(129,140,248,.4);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:.8rem;color:#818cf8;line-height:1.3}
+  .ctx-actors{display:flex;flex-direction:column;gap:12px}
+  .ctx-actor{padding:10px 18px;border-radius:10px;font-size:.75rem;font-weight:600;border:2px solid;text-align:center}
+  .ctx-line{width:60px;height:2px;background:rgba(255,255,255,.15)}
+
+  /* Tables */
+  .data-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.8rem;border-radius:12px;overflow:hidden}
+  .data-table th{background:rgba(255,255,255,.06);padding:12px 14px;text-align:left;font-weight:600;color:#94a3b8;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em}
+  .data-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:#cbd5e1}
+  .data-table tr:last-child td{border-bottom:none}
+  .data-table tr:hover td{background:rgba(255,255,255,.02)}
+
+  /* Charter cards */
+  .charter-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .charter-card{padding:20px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+  .charter-card h4{font-size:.8rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .charter-card p,.charter-card li{font-size:.78rem;color:#94a3b8;line-height:1.6}
+  .charter-card ul{padding-left:16px}
+
+  /* CMMI */
+  .cmmi-levels{display:flex;align-items:flex-end;gap:12px;justify-content:center;padding:20px 0}
+  .cmmi-bar{border-radius:10px 10px 0 0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 16px;min-width:100px;text-align:center;border:2px solid;border-bottom:none;position:relative}
+  .cmmi-bar .level{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .cmmi-bar .label{font-size:.7rem;font-weight:600;margin-top:4px}
+  .cmmi-bar .status{font-size:1.2rem;margin-top:4px}
+
+  /* UML */
+  .uml-class{border:2px solid rgba(129,140,248,.4);border-radius:12px;overflow:hidden;min-width:200px;background:rgba(129,140,248,.05)}
+  .uml-class-header{background:rgba(129,140,248,.15);padding:10px 14px;font-weight:700;font-size:.8rem;text-align:center;color:#818cf8}
+  .uml-class-body{padding:8px 14px;font-size:.7rem;font-family:'Courier New',monospace;color:#94a3b8;border-top:1px solid rgba(129,140,248,.2)}
+  .uml-class-body div{padding:2px 0}
+  .uml-classes{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:16px 0}
+
+  /* State diagram */
+  .state-flow{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px 0}
+  .state-node{padding:10px 18px;border-radius:10px;font-size:.75rem;font-weight:600;border:2px solid;text-align:center}
+  .state-arrow{color:#475569;font-size:1rem}
+  .state-label{font-size:.6rem;color:#64748b;text-align:center;max-width:80px}
+
+  /* Use case */
+  .uc-grid{display:grid;grid-template-columns:180px 1fr 180px;gap:20px;align-items:start;padding:16px 0}
+  .uc-actor{text-align:center;padding:16px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+  .uc-actor .emoji{font-size:2rem;margin-bottom:4px}
+  .uc-actor .name{font-size:.75rem;font-weight:600;color:#f1f5f9}
+  .uc-actor .role{font-size:.65rem;color:#64748b}
+  .uc-cases{display:flex;flex-direction:column;gap:6px}
+  .uc-case{padding:8px 14px;border-radius:8px;font-size:.72rem;font-weight:500;color:#cbd5e1;border:1px solid;text-align:center}
+
+  /* Milestone */
+  .milestone-timeline{position:relative;padding-left:30px}
+  .milestone-timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#38bdf8,#818cf8,#a855f7,#34d399)}
+  .milestone-item{position:relative;margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px}
+  .milestone-item::before{content:'';position:absolute;left:-25px;top:16px;width:12px;height:12px;border-radius:50%;border:2px solid #818cf8;background:#0f172a}
+  .milestone-item.done::before{background:#818cf8}
+  .milestone-item .m-title{font-size:.8rem;font-weight:600;color:#f1f5f9}
+  .milestone-item .m-date{font-size:.7rem;color:#64748b}
+  .milestone-item .m-status{font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:6px;display:inline-block;margin-top:4px}
+  .status-done{background:rgba(52,211,153,.15);color:#34d399}
+  .status-wip{background:rgba(251,191,36,.15);color:#fbbf24}
+  .status-pending{background:rgba(148,163,184,.15);color:#94a3b8}
+
+  @media print{body{background:#fff;color:#1e293b}.section{border:1px solid #e2e8f0;break-inside:avoid}.section::before{background:#1e293b}}
+  @media(max-width:768px){.charter-grid,.uc-grid{grid-template-columns:1fr}.sdlc-flow{flex-direction:column}.sdlc-arrow{transform:rotate(90deg)}.ctx-diagram{flex-direction:column}.ctx-line{width:2px;height:30px}}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>PLMun Inventory Nexus</h1>
+<p class="subtitle">Phase 2 — System Planning Diagrams · BSCS 3D · Software Engineering 1</p>
+
+<!-- ══════════ 1. SDLC ══════════ -->
+<div class="section">
+  <span class="section-badge badge-blue">◆ Diagram 1</span>
+  <h2>Software Development Life Cycle (SDLC)</h2>
+  <p class="desc">Agile iterative 6-phase model — each phase is revisited across sprints as new features are added.</p>
+  <div class="sdlc-flow">
+    <div class="sdlc-phase sp1"><div class="num">Phase 1</div><div class="name">Requirements Gathering</div></div>
+    <span class="sdlc-arrow">→</span>
+    <div class="sdlc-phase sp2"><div class="num">Phase 2</div><div class="name">System Planning & Design</div></div>
+    <span class="sdlc-arrow">→</span>
+    <div class="sdlc-phase sp3"><div class="num">Phase 3</div><div class="name">Implementation & Coding</div></div>
+    <span class="sdlc-arrow">→</span>
+    <div class="sdlc-phase sp4"><div class="num">Phase 4</div><div class="name">Testing & QA</div></div>
+    <span class="sdlc-arrow">→</span>
+    <div class="sdlc-phase sp5"><div class="num">Phase 5</div><div class="name">Deployment & Release</div></div>
+    <span class="sdlc-arrow">→</span>
+    <div class="sdlc-phase sp6"><div class="num">Phase 6</div><div class="name">Maintenance & Iteration</div></div>
+  </div>
+  <p class="sdlc-feedback">⟲ Feedback loop: Phase 6 feeds back into Phase 1 for continuous improvement</p>
+</div>
+
+<!-- ══════════ 2. GANTT CHART ══════════ -->
+<div class="section">
+  <span class="section-badge badge-purple">◆ Diagram 2</span>
+  <h2>Gantt Chart — Project Timeline</h2>
+  <p class="desc">Development timeline from February to April 2026, organized by sprint phases.</p>
+  <div style="overflow-x:auto">
+    <div style="min-width:700px">
+      <div class="gantt-months" style="margin-left:200px">
+        <span>Feb W1</span><span>Feb W2</span><span>Feb W3</span><span>Feb W4</span>
+        <span>Mar W1</span><span>Mar W2</span><span>Mar W3</span><span>Mar W4</span>
+        <span>Apr W1</span><span>Apr W2</span>
+      </div>
+      <div class="gantt-row"><div class="gantt-label">Planning & UI/UX Design</div><div class="gantt-track"><div class="gantt-fill gb1" style="left:0%;width:15%">7d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Django + JWT Auth</div><div class="gantt-track"><div class="gantt-fill gb1" style="left:12%;width:12%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">React Routes & Layout</div><div class="gantt-track"><div class="gantt-fill gb1" style="left:22%;width:10%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Inventory CRUD & Filters</div><div class="gantt-track"><div class="gantt-fill gb2" style="left:30%;width:14%">7d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Form Validations</div><div class="gantt-track"><div class="gantt-fill gb2" style="left:42%;width:8%">4d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Request Workflow</div><div class="gantt-track"><div class="gantt-fill gb2" style="left:48%;width:16%">8d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Security Hardening</div><div class="gantt-track"><div class="gantt-fill gb3" style="left:58%;width:10%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Notifications & Comments</div><div class="gantt-track"><div class="gantt-fill gb3" style="left:64%;width:10%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Bug Fixes & Code Quality</div><div class="gantt-track"><div class="gantt-fill gb4" style="left:72%;width:10%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Deployment Config</div><div class="gantt-track"><div class="gantt-fill gb4" style="left:80%;width:6%">3d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Documentation Phase 1 & 2</div><div class="gantt-track"><div class="gantt-fill gb5" style="left:84%;width:10%">5d</div></div></div>
+      <div class="gantt-row"><div class="gantt-label">Final Testing & Submission</div><div class="gantt-track"><div class="gantt-fill gb6" style="left:92%;width:8%">3d</div></div></div>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-top:16px;flex-wrap:wrap">
+    <span style="font-size:.7rem;display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#38bdf8,#0ea5e9)"></span>Sprint 1: Auth & Layout</span>
+    <span style="font-size:.7rem;display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#818cf8,#6366f1)"></span>Sprint 2: Core Logic</span>
+    <span style="font-size:.7rem;display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#34d399,#059669)"></span>Sprint 3: Security & UX</span>
+    <span style="font-size:.7rem;display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(90deg,#fbbf24,#f59e0b)"></span>Sprint 4: Polish & Deploy</span>
+  </div>
+</div>
+
+<!-- ══════════ 3. DFD LEVEL 0 ══════════ -->
+<div class="section">
+  <span class="section-badge badge-green">◆ Diagram 3</span>
+  <h2>Data Flow Diagram — Level 0 (Context)</h2>
+  <p class="desc">Shows the system boundary and external entities that interact with PLMun Nexus.</p>
+  <div class="ctx-diagram">
+    <div class="ctx-actors">
+      <div class="ctx-actor" style="background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#38bdf8">👤 Students</div>
+      <div class="ctx-actor" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3);color:#34d399">🎓 Faculty</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.6rem;color:#64748b">Credentials, Requests →</span>
+      <div class="ctx-line"></div>
+      <span style="font-size:.6rem;color:#64748b">← Status, Notifications</span>
+    </div>
+    <div class="ctx-center">PLMun<br>Inventory<br>Nexus</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <span style="font-size:.6rem;color:#64748b">Management Actions →</span>
+      <div class="ctx-line"></div>
+      <span style="font-size:.6rem;color:#64748b">← Audit Logs, Stats</span>
+    </div>
+    <div class="ctx-actors">
+      <div class="ctx-actor" style="background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fbbf24">🔧 Staff</div>
+      <div class="ctx-actor" style="background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.3);color:#fb7185">👑 Admin</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 4. DFD LEVEL 1 ══════════ -->
+<div class="section">
+  <span class="section-badge badge-green">◆ Diagram 4</span>
+  <h2>Data Flow Diagram — Level 1 (Borrow Process)</h2>
+  <p class="desc">Detailed data flow for the borrow request lifecycle.</p>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <tr><th>Process</th><th>Input</th><th>Output</th><th>Data Store</th></tr>
+      <tr><td style="color:#38bdf8;font-weight:600">1. Submit Request</td><td>Item ID, Qty, Purpose, Priority</td><td>Valid request record</td><td>→ Requests DB</td></tr>
+      <tr><td style="color:#38bdf8;font-weight:600">2. Validate Access & Stock</td><td>User role, Item stock levels</td><td>Approved/Rejected validation</td><td>← Inventory DB</td></tr>
+      <tr><td style="color:#34d399;font-weight:600">3. Review Request</td><td>Pending request + Staff decision</td><td>Status update (Approved/Rejected)</td><td>→ Requests DB</td></tr>
+      <tr><td style="color:#34d399;font-weight:600">4. Update Inventory</td><td>Approved qty (F-expression)</td><td>Decremented stock, status change</td><td>→ Inventory DB</td></tr>
+      <tr><td style="color:#fbbf24;font-weight:600">5. Generate Notification</td><td>Decision + recipient list</td><td>Alert records (STATUS_CHANGE)</td><td>→ Notifications DB</td></tr>
+      <tr><td style="color:#fbbf24;font-weight:600">6. Log Action</td><td>Actor, action type, IP address</td><td>Audit trail entry</td><td>→ Audit Log DB</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ 5. PROJECT CHARTER ══════════ -->
+<div class="section">
+  <span class="section-badge badge-amber">◆ Diagram 5</span>
+  <h2>Project Charter</h2>
+  <p class="desc">Formal authorization document outlining the project's vision, scope, and governance.</p>
+  <div class="charter-grid">
+    <div class="charter-card">
+      <h4 style="color:#38bdf8">🎯 Vision</h4>
+      <p>Develop a centralized, secure, web-based inventory management system replacing PLMun's manual tracking with real-time digital workflows and transparent accountability.</p>
+    </div>
+    <div class="charter-card">
+      <h4 style="color:#34d399">📋 Scope</h4>
+      <ul>
+        <li>Inventory CRUD with access-level filtering</li>
+        <li>Request workflow (Pending → Approved → Returned)</li>
+        <li>4-tier RBAC (Student/Faculty/Staff/Admin)</li>
+        <li>Dashboard analytics + PDF/CSV export</li>
+        <li>Cloud deployment (Vercel + Railway)</li>
+      </ul>
+    </div>
+    <div class="charter-card">
+      <h4 style="color:#818cf8">👥 Team</h4>
+      <ul>
+        <li><strong>Leader:</strong> Mendoza, John Erick</li>
+        <li>Castillo, Kimar — Backend</li>
+        <li>Palma, Dave — Frontend</li>
+        <li>Olazo, Charl Stephen — UI/UX</li>
+        <li>Peneverde, Salvador B. Jr. — QA</li>
+        <li>Loterina, Justine — Systems Analyst</li>
+      </ul>
+    </div>
+    <div class="charter-card">
+      <h4 style="color:#fbbf24">⚠️ Constraints</h4>
+      <ul>
+        <li>Academic timeline (1 semester)</li>
+        <li>6-person student team</li>
+        <li>Free-tier cloud hosting</li>
+        <li>No institutional IT budget</li>
+        <li>Open-source tools only</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Milestones</h3>
+  <div class="milestone-timeline">
+    <div class="milestone-item done"><div class="m-title">Requirements Gathering</div><div class="m-date">Feb 7, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item done"><div class="m-title">Authentication System</div><div class="m-date">Feb 13, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item done"><div class="m-title">Inventory CRUD Complete</div><div class="m-date">Feb 24, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item done"><div class="m-title">Request Workflow Operational</div><div class="m-date">Mar 8, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item done"><div class="m-title">Security Hardening</div><div class="m-date">Mar 14, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item done"><div class="m-title">Production Deployment</div><div class="m-date">Mar 27, 2026</div><span class="m-status status-done">✓ Done</span></div>
+    <div class="milestone-item"><div class="m-title">Documentation Complete</div><div class="m-date">Apr 4, 2026</div><span class="m-status status-wip">⟳ In Progress</span></div>
+    <div class="milestone-item"><div class="m-title">Final Submission</div><div class="m-date">Apr 7, 2026</div><span class="m-status status-pending">○ Pending</span></div>
+  </div>
+</div>
+
+<!-- ══════════ 6. CMMI ══════════ -->
+<div class="section">
+  <span class="section-badge badge-rose">◆ Diagram 6</span>
+  <h2>CMMI — Capability Maturity Model Integration</h2>
+  <p class="desc">Current project maturity assessment against CMMI levels.</p>
+  <div class="cmmi-levels">
+    <div class="cmmi-bar" style="height:80px;background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.3)">
+      <div class="status">✅</div><div class="label" style="color:#34d399">Initial</div><div class="level">Level 1</div>
+    </div>
+    <div class="cmmi-bar" style="height:130px;background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.3)">
+      <div class="status">✅</div><div class="label" style="color:#34d399">Managed</div><div class="level">Level 2</div>
+    </div>
+    <div class="cmmi-bar" style="height:180px;background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.3)">
+      <div class="status">🔄</div><div class="label" style="color:#fbbf24">Defined</div><div class="level">Level 3</div>
+    </div>
+    <div class="cmmi-bar" style="height:230px;background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.3)">
+      <div class="status">○</div><div class="label" style="color:#64748b">Quantitative</div><div class="level">Level 4</div>
+    </div>
+    <div class="cmmi-bar" style="height:280px;background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.3)">
+      <div class="status">○</div><div class="label" style="color:#64748b">Optimizing</div><div class="level">Level 5</div>
+    </div>
+  </div>
+  <h3>Process Areas Mapped</h3>
+  <table class="data-table">
+    <tr><th>Process Area</th><th>Level</th><th>Project Practice</th><th>Evidence</th></tr>
+    <tr><td>Requirements Management</td><td style="color:#34d399">L2</td><td>Documented in Phase 1, tracked in TODO.md</td><td>Phase 1 document</td></tr>
+    <tr><td>Project Planning</td><td style="color:#34d399">L2</td><td>Gantt chart, sprint planning, task allocation</td><td>This document</td></tr>
+    <tr><td>Configuration Management</td><td style="color:#34d399">L2</td><td>Git version control, .env management</td><td>.github/, .gitignore</td></tr>
+    <tr><td>Quality Assurance</td><td style="color:#34d399">L2</td><td>Code reviews, build testing, ESLint</td><td>eslint.config.js</td></tr>
+    <tr><td>Measurement & Analysis</td><td style="color:#fbbf24">L3</td><td>Dashboard analytics, audit log reporting</td><td>Dashboard, Reports page</td></tr>
+    <tr><td>Risk Management</td><td style="color:#fbbf24">L3</td><td>Risk register with mitigation strategies</td><td>Phase 2 §5</td></tr>
+    <tr><td>Decision Analysis</td><td style="color:#fbbf24">L3</td><td>Tech stack selection documented</td><td>Phase 1, Phase 2</td></tr>
+  </table>
+</div>
+
+<!-- ══════════ 7. CMB ══════════ -->
+<div class="section">
+  <span class="section-badge badge-cyan">◆ Diagram 7</span>
+  <h2>Configuration Management Plan (CMB)</h2>
+  <p class="desc">Version control strategy, branching model, and CI/CD pipeline.</p>
+  <h3>Branching Model</h3>
+  <div style="display:flex;flex-direction:column;gap:8px;padding:16px 0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:120px;text-align:right;font-size:.75rem;font-weight:600;color:#34d399">main</span>
+      <div style="flex:1;height:4px;background:#34d399;border-radius:2px;position:relative">
+        <span style="position:absolute;top:-20px;left:0;font-size:.6rem;color:#64748b">Initial</span>
+        <span style="position:absolute;top:-20px;left:25%;font-size:.6rem;color:#64748b">Auth ✓</span>
+        <span style="position:absolute;top:-20px;left:50%;font-size:.6rem;color:#64748b">Inventory ✓</span>
+        <span style="position:absolute;top:-20px;left:75%;font-size:.6rem;color:#64748b">Requests ✓</span>
+        <span style="position:absolute;top:-20px;right:0;font-size:.6rem;color:#64748b">Bug fixes ✓</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:120px;text-align:right;font-size:.75rem;font-weight:500;color:#38bdf8">feature/auth</span>
+      <div style="flex:1;height:3px;background:transparent;position:relative">
+        <div style="position:absolute;left:5%;width:20%;height:3px;background:#38bdf8;border-radius:2px"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:120px;text-align:right;font-size:.75rem;font-weight:500;color:#818cf8">feature/inventory</span>
+      <div style="flex:1;height:3px;background:transparent;position:relative">
+        <div style="position:absolute;left:28%;width:22%;height:3px;background:#818cf8;border-radius:2px"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:120px;text-align:right;font-size:.75rem;font-weight:500;color:#a855f7">feature/requests</span>
+      <div style="flex:1;height:3px;background:transparent;position:relative">
+        <div style="position:absolute;left:52%;width:23%;height:3px;background:#a855f7;border-radius:2px"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="width:120px;text-align:right;font-size:.75rem;font-weight:500;color:#fb7185">fix/bugs</span>
+      <div style="flex:1;height:3px;background:transparent;position:relative">
+        <div style="position:absolute;left:78%;width:15%;height:3px;background:#fb7185;border-radius:2px"></div>
+      </div>
+    </div>
+  </div>
+  <h3>CI/CD Pipeline</h3>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px 0">
+    <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8">git push</div>
+    <span class="state-arrow">→</span>
+    <div class="state-node" style="background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#38bdf8">GitHub Actions</div>
+    <span class="state-arrow">→</span>
+    <div class="state-node" style="background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fbbf24">ESLint + Build</div>
+    <span class="state-arrow">→</span>
+    <div class="state-node" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3);color:#34d399">Deploy Vercel</div>
+    <span class="state-arrow">+</span>
+    <div class="state-node" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3);color:#34d399">Deploy Railway</div>
+  </div>
+  <h3>Configuration Items</h3>
+  <table class="data-table">
+    <tr><th>Item</th><th>Location</th><th>Management</th></tr>
+    <tr><td>Source Code</td><td>frontend/src/, Backend/apps/</td><td>Git version control</td></tr>
+    <tr><td>Database Schema</td><td>Backend/apps/*/migrations/</td><td>Django migrations</td></tr>
+    <tr><td>Environment Config</td><td>.env files</td><td>Excluded from Git</td></tr>
+    <tr><td>Dependencies</td><td>package.json, requirements.txt</td><td>Lock files</td></tr>
+    <tr><td>Documentation</td><td>docs/</td><td>Version-controlled</td></tr>
+  </table>
+</div>
+
+<!-- ══════════ 8. UML — USE CASE ══════════ -->
+<div class="section">
+  <span class="section-badge badge-indigo">◆ Diagram 8</span>
+  <h2>UML — Use Case Diagram</h2>
+  <p class="desc">System use cases mapped to the four actor roles.</p>
+  <div style="overflow-x:auto">
+    <table class="data-table">
+      <tr><th>Use Case</th><th style="text-align:center">Student</th><th style="text-align:center">Faculty</th><th style="text-align:center">Staff</th><th style="text-align:center">Admin</th></tr>
+      <tr><td>Login / Register</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>Submit Borrow Request</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>Track Request Status</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>View Notifications</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>View Dashboard</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>View Inventory</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>Manage Inventory (CRUD)</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>Approve / Reject Requests</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>View Reports & Export</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>Manage Users</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td></tr>
+      <tr><td>System Settings & Audit Logs</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#64748b">✗</td><td style="text-align:center;color:#34d399">✓</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ 9. UML — CLASS DIAGRAM ══════════ -->
+<div class="section">
+  <span class="section-badge badge-indigo">◆ Diagram 9</span>
+  <h2>UML — Class Diagram</h2>
+  <p class="desc">Core data models and their relationships.</p>
+  <div class="uml-classes">
+    <div class="uml-class">
+      <div class="uml-class-header">User</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ username: str</div><div>+ email: str</div><div>+ role: enum</div>
+        <div>+ is_active: bool</div><div>+ is_flagged: bool</div><div>+ overdue_count: int</div>
+      </div>
+      <div class="uml-class-body">
+        <div>+ has_min_role()</div><div>+ get_full_name()</div>
+      </div>
+    </div>
+    <div class="uml-class">
+      <div class="uml-class-header">Item</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ name: str</div><div>+ category: enum</div><div>+ quantity: int</div>
+        <div>+ status: enum</div><div>+ access_level: enum</div><div>+ is_returnable: bool</div>
+      </div>
+      <div class="uml-class-body">
+        <div>+ is_low_stock()</div><div>+ get_return_delta()</div>
+      </div>
+    </div>
+    <div class="uml-class">
+      <div class="uml-class-header">Request</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ item: FK(Item)</div><div>+ requested_by: FK(User)</div>
+        <div>+ quantity: int</div><div>+ status: enum</div><div>+ priority: enum</div><div>+ expected_return: date</div>
+      </div>
+    </div>
+    <div class="uml-class">
+      <div class="uml-class-header">Notification</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ recipient: FK(User)</div><div>+ request: FK(Request)</div>
+        <div>+ type: enum</div><div>+ is_read: bool</div>
+      </div>
+    </div>
+    <div class="uml-class">
+      <div class="uml-class-header">Comment</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ request: FK(Request)</div><div>+ author: FK(User)</div><div>+ text: str</div>
+      </div>
+    </div>
+    <div class="uml-class">
+      <div class="uml-class-header">AuditLog</div>
+      <div class="uml-class-body">
+        <div>+ id: int (PK)</div><div>+ user: FK(User)</div><div>+ action: str</div><div>+ ip_address: str</div>
+      </div>
+    </div>
+  </div>
+  <p style="text-align:center;font-size:.7rem;color:#64748b;margin-top:8px">User 1→* Request (submits) · Item 1→* Request (requested in) · Request 1→* Comment · Request 1→* Notification</p>
+</div>
+
+<!-- ══════════ 10. UML — STATE DIAGRAM ══════════ -->
+<div class="section">
+  <span class="section-badge badge-indigo">◆ Diagram 10</span>
+  <h2>UML — State Diagram (Request Lifecycle)</h2>
+  <p class="desc">State transitions of a borrow request from submission to completion.</p>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 0">
+    <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8">● Start</div>
+    <span style="color:#64748b;font-size:.7rem">User submits request ↓</span>
+    <div class="state-node" style="background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fbbf24;font-size:.85rem;padding:14px 28px">PENDING</div>
+    <div style="display:flex;gap:40px;align-items:start">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="color:#64748b;font-size:.65rem">Staff approves ↓</span>
+        <div class="state-node" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3);color:#34d399;padding:14px 28px">APPROVED</div>
+        <div style="display:flex;gap:20px;margin-top:8px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="color:#64748b;font-size:.6rem">done ↓</span>
+            <div class="state-node" style="background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#38bdf8;font-size:.7rem">COMPLETED</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="color:#64748b;font-size:.6rem">returned ↓</span>
+            <div class="state-node" style="background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.3);color:#a855f7;font-size:.7rem">RETURNED</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="color:#64748b;font-size:.6rem">overdue ↓</span>
+            <div class="state-node" style="background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.3);color:#fb7185;font-size:.7rem">OVERDUE</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="color:#64748b;font-size:.65rem">Staff rejects ↓</span>
+        <div class="state-node" style="background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.3);color:#fb7185;padding:14px 28px">REJECTED</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <span style="color:#64748b;font-size:.65rem">User cancels ↓</span>
+        <div class="state-node" style="background:rgba(100,116,139,.08);border-color:rgba(100,116,139,.3);color:#94a3b8;padding:14px 28px">CANCELLED</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ 11. UML — ACTIVITY DIAGRAM ══════════ -->
+<div class="section">
+  <span class="section-badge badge-indigo">◆ Diagram 11</span>
+  <h2>UML — Activity Diagram (Borrow Workflow)</h2>
+  <p class="desc">Step-by-step activity flow from login to item return.</p>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 0">
+    <div class="state-node" style="background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3);color:#34d399;border-radius:20px">● Start</div>
+    <span style="color:#475569">↓</span>
+    <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8">User Logs In</div>
+    <span style="color:#475569">↓</span>
+    <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8">Browse Inventory</div>
+    <span style="color:#475569">↓</span>
+    <div class="state-node" style="background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fbbf24;border-radius:0;transform:rotate(0deg)">◇ Stock Available?</div>
+    <div style="display:flex;gap:32px;align-items:start">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <span style="font-size:.65rem;color:#34d399">Yes ↓</span>
+        <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8;font-size:.72rem">Fill Request Form</div>
+        <span style="color:#475569">↓</span>
+        <div class="state-node" style="background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.3);color:#818cf8;font-size:.72rem">Submit Request</div>
+        <span style="color:#475569">↓</span>
+        <div class="state-node" style="background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fbbf24">◇ Staff Review</div>
+        <div style="display:flex;gap:24px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <span style="font-size:.65rem;color:#34d399">Approve ↓</span>
+            <div class="state-node" style="background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.3);color:#34d399;font-size:.7rem">Stock Deducted</div>
+            <span style="color:#475569">↓</span>
+            <div class="state-node" style="background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.3);color:#38bdf8;font-size:.7rem">User Returns</div>
+            <span style="color:#475569">↓</span>
+            <div class="state-node" style="background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.3);color:#34d399;border-radius:20px;font-size:.7rem">● End</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <span style="font-size:.65rem;color:#fb7185">Reject ↓</span>
+            <div class="state-node" style="background:rgba(251,113,133,.08);border-color:rgba(251,113,133,.3);color:#fb7185;font-size:.7rem">Rejected</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <span style="font-size:.65rem;color:#fb7185">No →</span>
+        <div class="state-node" style="background:rgba(100,116,139,.08);border-color:rgba(100,116,139,.3);color:#94a3b8;font-size:.7rem">Back to<br>Browse</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align:center;color:#475569;font-size:.75rem;padding:24px 0">PLMun Inventory Nexus · BSCS 3D · Software Engineering 1 · AY 2025–2026 · Mr. Melchor Paz</p>
+
+</div><!-- end page -->
+</body>
+</html>

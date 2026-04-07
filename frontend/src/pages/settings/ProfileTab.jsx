@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Camera, Mail, Phone, Building, Save } from 'lucide-react';
+import { User, Camera, Mail, Phone, Building, Save, Hash } from 'lucide-react';
 import { Button, Input } from '../../components/ui';
 import { getRoleLabel, getRoleBadgeColor } from '../../utils/roles';
 
@@ -50,6 +50,11 @@ const ProfileTab = ({ user, profileForm, setProfileForm, handleProfileSave, upda
                     <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user?.role)}`}>
                         {getRoleLabel(user?.role)}
                     </span>
+                    {user?.role === 'STUDENT' && user?.studentId && (
+                        <span className="inline-block mt-1 ml-1 px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-medium">
+                            ID: {user.studentId}
+                        </span>
+                    )}
                     <p className="text-xs text-gray-400 mt-1">Click camera to upload photo</p>
                 </div>
             </div>
@@ -81,6 +86,15 @@ const ProfileTab = ({ user, profileForm, setProfileForm, handleProfileSave, upda
                     value={profileForm.department}
                     onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })}
                 />
+                {user?.role === 'STUDENT' && (
+                    <Input
+                        label="Student ID"
+                        icon={Hash}
+                        value={user?.studentId || ''}
+                        disabled
+                        className="opacity-70"
+                    />
+                )}
             </div>
 
             <div className="flex justify-end">

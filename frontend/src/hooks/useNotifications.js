@@ -48,15 +48,6 @@ const useNotifications = () => {
         }
     }, []);
 
-    const fetchUnreadCount = useCallback(async () => {
-        try {
-            const count = await notificationService.getUnreadCount();
-            setUnreadCount(count);
-        } catch {
-            // same as above
-        }
-    }, []);
-
     const markAsRead = useCallback(async (id) => {
         try {
             await notificationService.markAsRead(id);

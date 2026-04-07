@@ -49,7 +49,7 @@ const FacultyTab = ({ facultySettings, setFacultySettings, saveSettings, faculty
                         <Briefcase size={18} className="text-primary" />
                         Borrowing Limits
                     </h3>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 font-medium">⏳ Coming Soon — limits will be enforced once backend integration is complete</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 font-medium">⏳ Work in Progress — limits will be enforced once backend integration is complete</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Maximum Items</label>
@@ -84,7 +84,7 @@ const FacultyTab = ({ facultySettings, setFacultySettings, saveSettings, faculty
                         <Shield size={18} className="text-primary" />
                         Approval Preferences
                     </h3>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 font-medium">⏳ Coming Soon — approval automation will be enabled in a future update</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-3 font-medium">⏳ Work in Progress — approval automation will be enabled in a future update</p>
                     <div className="space-y-4">
                         <label className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl cursor-pointer transition-colors">
                             <div>

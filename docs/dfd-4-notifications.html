@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD 4.0 — Notification System | PLMun Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dfd-styles.css">
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ DFD Level 1 — Process 4.0</div>
+  <h1>Notification System</h1>
+  <p>Real-time notifications triggered by request status changes, comments, and overdue reminders. Includes 24-hour deduplication cooldown and read/unread tracking via 30-second polling.</p>
+</div>
+<div class="container">
+<nav class="nav">
+  <a href="dfd-1-authentication.html">1.0 Authentication</a>
+  <a href="dfd-2-inventory.html">2.0 Inventory</a>
+  <a href="dfd-3-requests.html">3.0 Requests</a>
+  <a class="active" href="dfd-4-notifications.html">4.0 Notifications</a>
+  <a href="dfd-5-reports.html">5.0 Reports</a>
+  <a href="dfd-6-administration.html">6.0 Administration</a>
+</nav>
+
+<div class="proc-section ph-amber">
+<div class="proc-header"><div class="proc-num pn-amber">Sub-Process 4.1</div><div class="proc-title">Generate Notification</div>
+<div class="proc-desc">Automatically triggered when a request status changes, a comment is added, or an overdue is detected. Checks 24-hour cooldown before creating to prevent spam.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="store-shape">D3: Requests</div><div class="arrow">Status change event</div><div class="proc-circle"><div class="num">4.1</div>Generate<br>Notification</div><div class="arrow">INSERT notif</div><div class="store-shape">D4: Notifications</div></div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Trigger Event</th><th>Notification Type</th><th>Recipient</th><th>Message Example</th></tr></thead>
+    <tbody>
+      <tr><td>Request Submitted</td><td class="to">STATUS_CHANGE</td><td>All Staff</td><td class="data">"New borrow request from Juan Dela Cruz for Laptop"</td></tr>
+      <tr><td>Request Approved</td><td class="to">STATUS_CHANGE</td><td>Requester</td><td class="data">"Your request for Laptop has been approved"</td></tr>
+      <tr><td>Request Rejected</td><td class="to">STATUS_CHANGE</td><td>Requester</td><td class="data">"Your request for Laptop was rejected: [reason]"</td></tr>
+      <tr><td>Item Released</td><td class="to">STATUS_CHANGE</td><td>Requester</td><td class="data">"Your Laptop is ready for pickup"</td></tr>
+      <tr><td>Item Returned</td><td class="to">STATUS_CHANGE</td><td>Requester</td><td class="data">"Your Laptop has been returned successfully"</td></tr>
+      <tr><td>Comment Added</td><td class="to">COMMENT</td><td>Other party</td><td class="data">"Staff commented on your request: [text]"</td></tr>
+      <tr><td>Overdue Detected</td><td class="to">OVERDUE</td><td>Requester</td><td class="data">"Your borrowed Laptop is overdue for return"</td></tr>
+    </tbody>
+  </table>
+  <div class="sub-desc sd-amber"><strong>24-Hour Deduplication:</strong> Before creating, checks: <code>Notification.objects.filter(recipient=user, request=req, type=type, created_at__gte=now()-24h).exists()</code>. If a duplicate exists within 24 hours, the notification is silently skipped. This prevents spam when status changes happen rapidly.</div>
+</div></div>
+
+<div class="proc-section ph-amber">
+<div class="proc-header"><div class="proc-num pn-amber">Sub-Process 4.2</div><div class="proc-title">Poll & Display Notifications</div>
+<div class="proc-desc">Frontend polls the server every 30 seconds to fetch unread notifications. Displayed as a badge counter in the header and a dropdown list.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🌐 Client (30s interval)</div><div class="arrow">GET /notifications/</div><div class="proc-circle"><div class="num">4.2</div>Poll &<br>Display</div><div class="arrow left">Unread notifications</div><div class="store-shape">D4: Notifications</div></div>
+  </div>
+  <div class="sub-desc sd-amber"><strong>Polling Interval:</strong> 30 seconds via setInterval() in useNotifications() hook. Cleanup on component unmount.</div>
+  <div class="sub-desc sd-amber"><strong>Why not WebSockets?</strong> Polling was chosen over WebSocket for simplicity — the 6-person team scale doesn't justify the added complexity of WebSocket infrastructure, connection management, and reconnection logic.</div>
+  <div class="sub-desc sd-amber"><strong>Display:</strong> Bell icon in header shows unread count badge. Clicking opens a dropdown with notification list sorted by newest first.</div>
+</div></div>
+
+<div class="proc-section ph-amber">
+<div class="proc-header"><div class="proc-num pn-amber">Sub-Process 4.3</div><div class="proc-title">Mark as Read</div>
+<div class="proc-desc">User can mark individual notifications or all notifications as read. Updates the is_read flag in the database.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">👤 User</div><div class="arrow">Mark read action</div><div class="proc-circle"><div class="num">4.3</div>Mark<br>Read</div><div class="arrow">is_read = true</div><div class="store-shape">D4: Notifications</div></div>
+  </div>
+  <div class="sub-desc sd-amber"><strong>Single:</strong> POST /notifications/{id}/mark_read/ → sets is_read=True for one notification</div>
+  <div class="sub-desc sd-amber"><strong>Bulk:</strong> POST /notifications/mark_all_read/ → sets is_read=True for all of user's notifications</div>
+</div></div>
+
+<div class="proc-section ph-amber">
+<div class="proc-header"><div class="proc-num pn-amber">Complete Data Flow Table</div><div class="proc-title">All Flows in Process 4.0</div></div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>#</th><th>Flow</th><th>From</th><th>To</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>F4.1</td><td>Status Change Event</td><td class="from">Process 3.x</td><td class="to">4.1 Generate</td><td class="data">request_id, old_status, new_status, triggered_by_user</td></tr>
+      <tr><td>F4.2</td><td>Comment Event</td><td class="from">Process 3.8</td><td class="to">4.1 Generate</td><td class="data">request_id, comment_author, comment_text</td></tr>
+      <tr><td>F4.3</td><td>Dedup Check</td><td class="from">4.1 Generate</td><td class="to">D4</td><td class="data">SELECT WHERE recipient+request+type within 24h</td></tr>
+      <tr><td>F4.4</td><td>New Notification</td><td class="from">4.1 Generate</td><td class="to">D4</td><td class="data">recipient, sender, request_id, type, message, is_read=False</td></tr>
+      <tr><td>F4.5</td><td>Poll Request</td><td class="from">Client</td><td class="to">4.2 Poll</td><td class="data">GET with Bearer token → user_id extracted from JWT</td></tr>
+      <tr><td>F4.6</td><td>Notification List</td><td class="from">D4</td><td class="to">Client</td><td class="data">Array of notifications WHERE recipient=user, ordered by -created_at</td></tr>
+      <tr><td>F4.7</td><td>Mark Read</td><td class="from">User</td><td class="to">4.3 Mark</td><td class="data">notification_id or "all" → UPDATE is_read=True</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+</div>
+<div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 4.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026</div>
+</body></html>

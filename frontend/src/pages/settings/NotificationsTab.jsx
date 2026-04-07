@@ -11,7 +11,7 @@ const NotificationsTab = ({ notifPrefs, setNotifPrefs, saveMessage, saveSettings
             </div>
 
             <div className="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-sm text-blue-700 dark:text-blue-300">
-                <strong>Coming Soon</strong> — Email and push notification delivery is not yet active. Your preferences will be saved and applied once the notification service is enabled.
+                <strong>Work in Progress</strong> — Email and push notification delivery is not yet active. Your preferences will be saved and applied once the notification service is enabled.
             </div>
 
             <Card className="p-6 space-y-4">
@@ -36,7 +36,7 @@ const NotificationsTab = ({ notifPrefs, setNotifPrefs, saveMessage, saveSettings
 
             <div className="flex items-center justify-end gap-3">
                 {saveMessage && (
-                    <span className="text-sm text-emerald-600 font-medium animate-pulse">
+                    <span className="text-sm text-emerald-600 font-medium">
                         ✓ {saveMessage}
                     </span>
                 )}

@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agile Scrum Gantt Chart — PLMun Inventory Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;line-height:1.5}
+.hero{position:relative;padding:48px 24px 32px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(129,140,248,.1) 0%,transparent 60%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:rgba(129,140,248,.1);color:#818cf8;border:1px solid rgba(129,140,248,.2);margin-bottom:12px}
+.hero h1{font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:900;background:linear-gradient(135deg,#e2e8f0,#818cf8,#c084fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.hero p{color:#64748b;max-width:640px;margin:0 auto;font-size:.85rem}
+.hero-meta{display:flex;justify-content:center;gap:16px;margin-top:14px;flex-wrap:wrap}
+.hero-meta span{font-size:.7rem;color:#475569;display:flex;align-items:center;gap:4px}
+.hero-meta span strong{color:#94a3b8}
+.container{max-width:1300px;margin:0 auto;padding:0 16px 40px}
+.gantt-wrap{overflow-x:auto;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+table{width:100%;border-collapse:collapse;min-width:1100px;font-size:.72rem}
+thead th{position:sticky;top:0;z-index:10;background:#111827;font-weight:600}
+.mrow th{padding:7px 4px;text-align:center;color:#94a3b8;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid rgba(255,255,255,.06)}
+.wrow th{padding:4px 2px;text-align:center;color:#475569;font-size:.55rem;font-weight:500;border-bottom:2px solid rgba(99,102,241,.15)}
+.tcol{background:#0f1629!important}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background .15s}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+.ci{width:28px;text-align:center;color:#475569;padding:0 3px}
+.ct{width:220px;padding:6px 8px;color:#e2e8f0;font-weight:500}
+.cd{width:60px;text-align:center;color:#94a3b8;padding:0 3px}
+.cs{width:70px;text-align:center;color:#64748b;padding:0 3px;font-size:.62rem}
+.i0{font-weight:700;color:#f1f5f9;font-size:.76rem}
+.i1{padding-left:18px!important;font-weight:600;color:#cbd5e1;font-size:.72rem}
+.i2{padding-left:32px!important;font-weight:400;color:#94a3b8;font-size:.68rem}
+.gr{background:rgba(255,255,255,.03)!important}
+.gr td{border-bottom:1px solid rgba(255,255,255,.06)!important}
+.bc{position:relative;padding:0!important;height:26px;border-left:1px solid rgba(255,255,255,.02)}
+.b{position:absolute;top:4px;height:17px;border-radius:4px;min-width:3px;z-index:2;transition:opacity .2s}
+.b:hover{opacity:.85;filter:brightness(1.2)}
+.bs{height:9px;top:9px;border-radius:2px;opacity:.7}
+.bm{width:10px!important;height:10px;top:8px;border-radius:2px;transform:rotate(45deg)}
+/* Colors */
+.c-rose{background:linear-gradient(90deg,#fb7185,#e11d48)}
+.c-amb{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.c-cyan{background:linear-gradient(90deg,#06b6d4,#0891b2)}
+.c-ind{background:linear-gradient(90deg,#6366f1,#4f46e5)}
+.c-pur{background:linear-gradient(90deg,#a855f7,#7c3aed)}
+.c-eme{background:linear-gradient(90deg,#34d399,#059669)}
+.c-pink{background:linear-gradient(90deg,#ec4899,#db2777)}
+.c-blue{background:linear-gradient(90deg,#3b82f6,#2563eb)}
+.c-org{background:linear-gradient(90deg,#f97316,#ea580c)}
+.c-grn{background:linear-gradient(90deg,#22c55e,#16a34a)}
+/* Month bg */
+.ma{background:rgba(251,113,133,.04)}.ms{background:rgba(251,191,36,.04)}.mo{background:rgba(52,211,153,.04)}
+.mn{background:rgba(56,189,248,.04)}.md{background:rgba(129,140,248,.04)}.mj{background:rgba(168,85,247,.04)}
+.mf{background:rgba(236,72,153,.04)}.mm{background:rgba(34,211,238,.04)}.mp{background:rgba(74,222,128,.04)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:20px 0 32px;padding:14px 20px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04)}
+.legend-i{display:flex;align-items:center;gap:5px;font-size:.66rem;color:#94a3b8}
+.legend-s{width:12px;height:7px;border-radius:3px}
+.sc{margin-top:32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sc-c{padding:16px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);text-align:center}
+.sc-c .n{font-size:1.6rem;font-weight:800;margin-bottom:2px}
+.sc-c .l{font-size:.68rem;color:#64748b}
+.foot{text-align:center;padding:24px;color:#334155;font-size:.68rem;border-top:1px solid rgba(255,255,255,.04);margin-top:32px}
+@media(max-width:768px){.sc{grid-template-columns:repeat(2,1fr)}}
+@media print{body{background:#fff;color:#1e293b}}
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ Agile / Scrum Timeline</div>
+  <h1>Project Gantt Chart</h1>
+  <p>Sprint-based development timeline following Agile Scrum methodology — organized by sprints with cross-functional tasks per iteration.</p>
+  <div class="hero-meta">
+    <span>📅 <strong>Duration:</strong> 34 weeks</span>
+    <span>🔁 <strong>Methodology:</strong> Agile / Scrum</span>
+    <span>🏃 <strong>Sprints:</strong> 4 + Sprint 0</span>
+    <span>👥 <strong>Team:</strong> 6 members</span>
+    <span>📋 <strong>Stories:</strong> 25 (116 pts)</span>
+  </div>
+</div>
+
+<div class="container">
+<div class="legend">
+  <div class="legend-i"><div class="legend-s c-rose"></div>Pre-Sprint (Docs)</div>
+  <div class="legend-i"><div class="legend-s c-amb"></div>Requirements</div>
+  <div class="legend-i"><div class="legend-s c-cyan"></div>Sprint 0 (Foundation)</div>
+  <div class="legend-i"><div class="legend-s c-ind"></div>Sprint 1 (Auth)</div>
+  <div class="legend-i"><div class="legend-s c-pur"></div>Sprint 2 (Inventory)</div>
+  <div class="legend-i"><div class="legend-s c-eme"></div>Sprint 3 (Requests)</div>
+  <div class="legend-i"><div class="legend-s c-blue"></div>Sprint 4 (Polish)</div>
+  <div class="legend-i"><div class="legend-s c-org"></div>Post-Sprint (Testing)</div>
+  <div class="legend-i"><div class="legend-s c-pink"></div>Final Docs & Deploy</div>
+  <div class="legend-i"><div class="legend-s c-grn" style="transform:rotate(45deg);width:8px;height:8px;border-radius:2px"></div>Milestone</div>
+</div>
+
+<div class="gantt-wrap">
+<table>
+<thead>
+  <tr class="mrow">
+    <th class="tcol" colspan="4" rowspan="2" style="text-align:left;padding-left:10px;min-width:385px">Task Details</th>
+    <th class="ma" colspan="2" style="color:#fb7185">Aug</th>
+    <th class="ms" colspan="4" style="color:#fbbf24">Sep</th>
+    <th class="mo" colspan="5" style="color:#34d399">Oct</th>
+    <th class="mn" colspan="4" style="color:#38bdf8">Nov</th>
+    <th class="md" colspan="4" style="color:#818cf8">Dec</th>
+    <th class="mj" colspan="4" style="color:#a855f7">Jan '26</th>
+    <th class="mf" colspan="4" style="color:#ec4899">Feb</th>
+    <th class="mm" colspan="5" style="color:#22d3ee">Mar</th>
+    <th class="mp" colspan="4" style="color:#4ade80">Apr</th>
+  </tr>
+  <tr class="wrow">
+    <th class="ma">W3</th><th class="ma">W4</th>
+    <th class="ms">W1</th><th class="ms">W2</th><th class="ms">W3</th><th class="ms">W4</th>
+    <th class="mo">W1</th><th class="mo">W2</th><th class="mo">W3</th><th class="mo">W4</th><th class="mo">W5</th>
+    <th class="mn">W1</th><th class="mn">W2</th><th class="mn">W3</th><th class="mn">W4</th>
+    <th class="md">W1</th><th class="md">W2</th><th class="md">W3</th><th class="md">W4</th>
+    <th class="mj">W1</th><th class="mj">W2</th><th class="mj">W3</th><th class="mj">W4</th>
+    <th class="mf">W1</th><th class="mf">W2</th><th class="mf">W3</th><th class="mf">W4</th>
+    <th class="mm">W1</th><th class="mm">W2</th><th class="mm">W3</th><th class="mm">W4</th><th class="mm">W5</th>
+    <th class="mp">W1</th><th class="mp">W2</th><th class="mp">W3</th><th class="mp">W4</th>
+  </tr>
+</thead>
+<tbody>
+
+<!-- ═══ PRE-SPRINT: DOCUMENTATION ═══ -->
+<tr class="gr"><td class="ci">1</td><td class="ct i0">📋 Pre-Sprint: Documentation</td><td class="cd">6 wks</td><td class="cs">Aug 18</td>
+  <td class="bc ma" colspan="2"><div class="b bs c-rose" style="left:0;width:100%"></div></td>
+  <td class="bc ms" colspan="4"><div class="b bs c-rose" style="left:0;width:100%"></div></td>
+  <td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">2</td><td class="ct i2">Project Proposal & Topic Selection</td><td class="cd">2 wks</td><td class="cs">Aug 18</td>
+  <td class="bc ma" colspan="2"><div class="b c-rose" style="left:0;width:100%"></div></td>
+  <td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">3</td><td class="ct i2">Team Formation & Role Assignment</td><td class="cd">1 wk</td><td class="cs">Sep 1</td>
+  <td class="bc ma" colspan="2"></td>
+  <td class="bc ms" colspan="4"><div class="b c-rose" style="left:0;width:25%"></div></td>
+  <td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">4</td><td class="ct i2">Initial Research & Benchmarking</td><td class="cd">2 wks</td><td class="cs">Sep 8</td>
+  <td class="bc ma" colspan="2"></td>
+  <td class="bc ms" colspan="4"><div class="b c-rose" style="left:25%;width:50%"></div></td>
+  <td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">5</td><td class="ct i2">Tech Stack Evaluation & Dev Setup</td><td class="cd">1 wk</td><td class="cs">Sep 22</td>
+  <td class="bc ma" colspan="2"></td>
+  <td class="bc ms" colspan="4"><div class="b c-rose" style="left:75%;width:25%"></div></td>
+  <td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ REQUIREMENTS GATHERING ═══ -->
+<tr class="gr"><td class="ci">6</td><td class="ct i0">📝 Requirements Gathering</td><td class="cd">5 wks</td><td class="cs">Oct 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td>
+  <td class="bc mo" colspan="5"><div class="b bs c-amb" style="left:0;width:100%"></div></td>
+  <td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">7</td><td class="ct i2">Stakeholder Interviews & Surveys</td><td class="cd">2 wks</td><td class="cs">Oct 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td>
+  <td class="bc mo" colspan="5"><div class="b c-amb" style="left:0;width:40%"></div></td>
+  <td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">8</td><td class="ct i2">User Story Writing (Product Backlog)</td><td class="cd">2 wks</td><td class="cs">Oct 13</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td>
+  <td class="bc mo" colspan="5"><div class="b c-amb" style="left:40%;width:40%"></div></td>
+  <td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">9</td><td class="ct i2">Phase 1 Document & Backlog Finalized</td><td class="cd">1 wk</td><td class="cs">Oct 27</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td>
+  <td class="bc mo" colspan="5"><div class="b c-amb" style="left:80%;width:20%"></div></td>
+  <td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ SPRINT 0: FOUNDATION ═══ -->
+<tr class="gr"><td class="ci">10</td><td class="ct i0">🏗️ Sprint 0: Foundation</td><td class="cd">8 wks</td><td class="cs">Nov 3</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td>
+  <td class="bc mn" colspan="4"><div class="b bs c-cyan" style="left:0;width:100%"></div></td>
+  <td class="bc md" colspan="4"><div class="b bs c-cyan" style="left:0;width:100%"></div></td>
+  <td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">11</td><td class="ct i2">System Architecture Design</td><td class="cd">2 wks</td><td class="cs">Nov 3</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td>
+  <td class="bc mn" colspan="4"><div class="b c-cyan" style="left:0;width:50%"></div></td>
+  <td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">12</td><td class="ct i2">Database Schema / ERD Design</td><td class="cd">2 wks</td><td class="cs">Nov 17</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td>
+  <td class="bc mn" colspan="4"><div class="b c-cyan" style="left:50%;width:50%"></div></td>
+  <td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">13</td><td class="ct i2">DFD Level 0, 1 & UML Diagrams</td><td class="cd">2 wks</td><td class="cs">Dec 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td>
+  <td class="bc md" colspan="4"><div class="b c-cyan" style="left:0;width:50%"></div></td>
+  <td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">14</td><td class="ct i2">UI Wireframes & Figma Mockups</td><td class="cd">2 wks</td><td class="cs">Dec 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td>
+  <td class="bc md" colspan="4"><div class="b c-cyan" style="left:50%;width:50%"></div></td>
+  <td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ SPRINT 1: AUTH & CORE (26 pts) ═══ -->
+<tr class="gr"><td class="ci">15</td><td class="ct i0">🏃 Sprint 1: Auth & Core (26 pts)</td><td class="cd">2 wks</td><td class="cs">Jan 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b bs c-ind" style="left:0;width:50%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">16</td><td class="ct i1">Sprint Planning (Jan 1)</td><td class="cd">1 day</td><td class="cs">Jan 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b bm c-ind" style="left:2%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">17</td><td class="ct i2">CustomUser Model & JWT Auth (BE)</td><td class="cd">1 wk</td><td class="cs">Jan 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-ind" style="left:0;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">18</td><td class="ct i2">Login & Register Pages (FE)</td><td class="cd">1 wk</td><td class="cs">Jan 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-pur" style="left:0;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">19</td><td class="ct i2">Lockout & Permission Classes (BE)</td><td class="cd">1 wk</td><td class="cs">Jan 8</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-ind" style="left:25%;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">20</td><td class="ct i2">Sidebar, Nav & Auth Store (FE)</td><td class="cd">1 wk</td><td class="cs">Jan 8</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-pur" style="left:25%;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">21</td><td class="ct i1">Sprint 1 Review & Retro (Jan 14)</td><td class="cd">1 day</td><td class="cs">Jan 14</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b bm c-grn" style="left:47%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ SPRINT 2: INVENTORY (23 pts) ═══ -->
+<tr class="gr"><td class="ci">22</td><td class="ct i0">🏃 Sprint 2: Inventory (23 pts)</td><td class="cd">2 wks</td><td class="cs">Jan 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b bs c-pur" style="left:50%;width:50%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">23</td><td class="ct i2">Item Model & CRUD API (BE)</td><td class="cd">1 wk</td><td class="cs">Jan 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-ind" style="left:50%;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">24</td><td class="ct i2">Inventory Page, Cards & Modals (FE)</td><td class="cd">2 wks</td><td class="cs">Jan 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-pur" style="left:50%;width:50%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">25</td><td class="ct i2">Dark Mode & Responsive Design (UX)</td><td class="cd">1 wk</td><td class="cs">Jan 22</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b c-cyan" style="left:75%;width:25%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">26</td><td class="ct i1">Sprint 2 Review & Retro (Jan 28)</td><td class="cd">1 day</td><td class="cs">Jan 28</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td>
+  <td class="bc mj" colspan="4"><div class="b bm c-grn" style="left:95%"></div></td>
+  <td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ SPRINT 3: REQUESTS (37 pts) ═══ -->
+<tr class="gr"><td class="ci">27</td><td class="ct i0">🏃 Sprint 3: Requests (37 pts)</td><td class="cd">2 wks</td><td class="cs">Feb 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b bs c-eme" style="left:0;width:50%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">28</td><td class="ct i2">Request & Notification Models (BE)</td><td class="cd">1 wk</td><td class="cs">Feb 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-ind" style="left:0;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">29</td><td class="ct i2">Approve/Reject/Release Flow (BE)</td><td class="cd">1 wk</td><td class="cs">Feb 8</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-ind" style="left:25%;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">30</td><td class="ct i2">Request Page, Comments, Notifs (FE)</td><td class="cd">2 wks</td><td class="cs">Feb 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-pur" style="left:0;width:50%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">31</td><td class="ct i2">DFD Level 2 & Process Docs (SA)</td><td class="cd">1 wk</td><td class="cs">Feb 8</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-cyan" style="left:25%;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">32</td><td class="ct i1">Sprint 3 Review & Retro (Feb 14)</td><td class="cd">1 day</td><td class="cs">Feb 14</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b bm c-grn" style="left:47%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ 1ST SYSTEM CHECKING MILESTONE ═══ -->
+<tr style="background:rgba(251,191,36,.08)!important"><td class="ci">33</td><td class="ct i0" style="color:#fbbf24">📋 1st System Checking (Prof. Paz)</td><td class="cd">1 day</td><td class="cs">Feb 9</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b bm c-amb" style="left:30%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ SPRINT 4: POLISH (30 pts) ═══ -->
+<tr class="gr"><td class="ci">34</td><td class="ct i0">🏃 Sprint 4: Dashboard & Polish (30 pts)</td><td class="cd">2 wks</td><td class="cs">Feb 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b bs c-blue" style="left:50%;width:50%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">35</td><td class="ct i2">Dashboard, Charts, Stats (FE+BE)</td><td class="cd">1 wk</td><td class="cs">Feb 15</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-blue" style="left:50%;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">36</td><td class="ct i2">Reports, Export CSV/PDF, QR (FE+BE)</td><td class="cd">1 wk</td><td class="cs">Feb 22</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-blue" style="left:75%;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">37</td><td class="ct i2">Settings, Audit Logs, Login Landing</td><td class="cd">1 wk</td><td class="cs">Feb 22</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td>
+  <td class="bc mf" colspan="4"><div class="b c-pur" style="left:75%;width:25%"></div></td>
+  <td class="bc mm" colspan="5"></td><td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">38</td><td class="ct i1">Sprint 4 Review & Retro (Mar 1)</td><td class="cd">1 day</td><td class="cs">Mar 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b bm c-grn" style="left:2%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ POST-SPRINT: QA & HARDENING ═══ -->
+<tr class="gr"><td class="ci">39</td><td class="ct i0">🧪 Post-Sprint: QA & Hardening</td><td class="cd">4 wks</td><td class="cs">Mar 3</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b bs c-org" style="left:5%;width:80%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">40</td><td class="ct i2">Security & Penetration Testing (QA)</td><td class="cd">1 wk</td><td class="cs">Mar 3</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b c-org" style="left:5%;width:20%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">41</td><td class="ct i2">Regression Testing & Bug Fixes</td><td class="cd">2 wks</td><td class="cs">Mar 10</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b c-org" style="left:25%;width:40%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">42</td><td class="ct i2">UAT & Performance Optimization</td><td class="cd">1 wk</td><td class="cs">Mar 24</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b c-org" style="left:65%;width:20%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+
+<!-- ═══ DEPLOYMENT & DOCS ═══ -->
+<tr class="gr"><td class="ci">43</td><td class="ct i0">🚀 Deployment & Documentation</td><td class="cd">3 wks</td><td class="cs">Mar 28</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b bs c-pink" style="left:80%;width:20%"></div></td>
+  <td class="bc mp" colspan="4"><div class="b bs c-pink" style="left:0;width:40%"></div></td>
+</tr>
+<tr><td class="ci">44</td><td class="ct i2">Render.com Deploy (BE + FE + DB)</td><td class="cd">3 days</td><td class="cs">Mar 28</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td>
+  <td class="bc mm" colspan="5"><div class="b c-blue" style="left:80%;width:15%"></div></td>
+  <td class="bc mp" colspan="4"></td>
+</tr>
+<tr><td class="ci">45</td><td class="ct i2">Phase 2 Document & User Manual</td><td class="cd">1 wk</td><td class="cs">Apr 1</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b c-pink" style="left:0;width:25%"></div></td>
+</tr>
+<tr><td class="ci">46</td><td class="ct i2">System Diagrams, Charts & Role Docs</td><td class="cd">1 wk</td><td class="cs">Apr 3</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b c-pink" style="left:10%;width:25%"></div></td>
+</tr>
+
+<!-- ═══ 2ND SYSTEM CHECKING MILESTONE (CURRENT) ═══ -->
+<tr style="background:rgba(251,191,36,.08)!important"><td class="ci">47</td><td class="ct i0" style="color:#fbbf24">📋 2nd System Checking ← YOU ARE HERE</td><td class="cd">1 day</td><td class="cs">Apr 6</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b bm c-amb" style="left:38%"></div></td>
+</tr>
+
+<!-- ═══ REMAINING: FINAL POLISH & SUBMISSION ═══ -->
+<tr class="gr"><td class="ci">48</td><td class="ct i0">📄 Final Revisions & Submission</td><td class="cd">2+ wks</td><td class="cs">Apr 7</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b bs c-grn" style="left:42%;width:58%"></div></td>
+</tr>
+<tr><td class="ci">49</td><td class="ct i2">Address 2nd Checking Feedback</td><td class="cd">1 wk</td><td class="cs">Apr 7</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b c-org" style="left:42%;width:28%"></div></td>
+</tr>
+<tr><td class="ci">50</td><td class="ct i2">Final Documentation & Presentation Prep</td><td class="cd">1 wk</td><td class="cs">Apr 14</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b c-pink" style="left:70%;width:30%"></div></td>
+</tr>
+<tr><td class="ci">51</td><td class="ct i1">📌 Final Submission & Defense (TBD)</td><td class="cd">TBD</td><td class="cs">Apr 21+</td>
+  <td class="bc ma" colspan="2"></td><td class="bc ms" colspan="4"></td><td class="bc mo" colspan="5"></td><td class="bc mn" colspan="4"></td><td class="bc md" colspan="4"></td><td class="bc mj" colspan="4"></td><td class="bc mf" colspan="4"></td><td class="bc mm" colspan="5"></td>
+  <td class="bc mp" colspan="4"><div class="b bm c-grn" style="left:92%"></div></td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<div class="sc">
+  <div class="sc-c"><div class="n" style="color:#818cf8">36+</div><div class="l">Total Weeks</div></div>
+  <div class="sc-c"><div class="n" style="color:#34d399">51</div><div class="l">Total Tasks</div></div>
+  <div class="sc-c"><div class="n" style="color:#a855f7">4+1</div><div class="l">Sprints (incl. Sprint 0)</div></div>
+  <div class="sc-c"><div class="n" style="color:#fbbf24">2 of 3</div><div class="l">System Checkings Done</div></div>
+</div>
+</div>
+
+<div class="foot">
+  PLMun Inventory Nexus · Agile/Scrum Gantt Chart · BSCS 3D · Software Engineering 1 · AY 2025–2026 · Prof. Mr. Melchor Paz
+</div>
+</body>
+</html>
+

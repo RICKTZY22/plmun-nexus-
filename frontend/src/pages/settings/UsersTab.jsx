@@ -175,8 +175,14 @@ const UsersTab = ({
                                         }`}
                                 >
                                     {/* Avatar */}
-                                    <div className={`relative w-11 h-11 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0`}>
-                                        {initial}
+                                    <div className="relative flex-shrink-0">
+                                        {u.avatarUrl ? (
+                                            <img src={u.avatarUrl} alt={name} className="w-11 h-11 rounded-xl object-cover shadow-sm" />
+                                        ) : (
+                                            <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                                                {initial}
+                                            </div>
+                                        )}
                                         {/* Online indicator */}
                                         <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-800 ${u.isActive ? 'bg-emerald-500' : 'bg-gray-400'}`} />
                                     </div>
@@ -186,8 +192,8 @@ const UsersTab = ({
                                         <div className="flex items-center gap-2">
                                             <p className="font-semibold text-gray-900 dark:text-white truncate">{name}</p>
                                             {u.isFlagged && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 animate-pulse">
-                                                    <AlertTriangle size={10} /> FLAGGED ({u.overdueCount || 0})
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30">
+                                                    <AlertTriangle size={10} /> Flagged · {u.overdueCount || 0}
                                                 </span>
                                             )}
                                         </div>

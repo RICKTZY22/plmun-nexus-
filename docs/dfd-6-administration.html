@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD 6.0 — User & System Administration | PLMun Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dfd-styles.css">
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ DFD Level 1 — Process 6.0</div>
+  <h1>User & System Administration</h1>
+  <p>Admin-only operations: user management (role assignment, activation/deactivation), profile management, system audit logs, and maintenance tasks like clearing request history.</p>
+</div>
+<div class="container">
+<nav class="nav">
+  <a href="dfd-1-authentication.html">1.0 Authentication</a>
+  <a href="dfd-2-inventory.html">2.0 Inventory</a>
+  <a href="dfd-3-requests.html">3.0 Requests</a>
+  <a href="dfd-4-notifications.html">4.0 Notifications</a>
+  <a href="dfd-5-reports.html">5.0 Reports</a>
+  <a class="active" href="dfd-6-administration.html">6.0 Administration</a>
+</nav>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.1</div><div class="proc-title">Manage Users (Admin)</div>
+<div class="proc-desc">Admin can view all registered users, change their roles, and view their activity statistics. This is the only way to promote a Student to Staff or Admin.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🔑 Admin</div><div class="arrow">Role change request</div><div class="proc-circle"><div class="num">6.1</div>Manage<br>Users</div><div class="arrow">UPDATE role</div><div class="store-shape">D1: Users</div></div>
+  </div>
+  <div class="sub-desc sd-rose"><strong>User List View:</strong> Shows all users with: name, email, role badge, department, registration date, request count, last login</div>
+  <div class="sub-desc sd-rose"><strong>Role Assignment:</strong> Dropdown selector: STUDENT → FACULTY → STAFF → ADMIN. Changes take effect immediately on next API call.</div>
+  <div class="sub-desc sd-rose"><strong>Permission:</strong> IsAdmin — only ADMIN role can access. Returns 403 for Staff, Faculty, Student.</div>
+  <div class="sub-desc sd-rose"><strong>Audit:</strong> Logs "Role Changed" with old_role → new_role in audit details</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.2</div><div class="proc-title">Activate / Deactivate User</div>
+<div class="proc-desc">Admin can deactivate a user account (prevents login) without deleting it. Useful for graduated students or suspended accounts.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🔑 Admin</div><div class="arrow">Toggle active action</div><div class="proc-circle"><div class="num">6.2</div>Toggle<br>Active</div><div class="arrow">is_active = true/false</div><div class="store-shape">D1: Users</div></div>
+  </div>
+  <div class="sub-desc sd-rose"><strong>Deactivate Effect:</strong> User's is_active=False → Process 1.1 (Validate Credentials) rejects login with "Account deactivated"</div>
+  <div class="sub-desc sd-rose"><strong>Reactivate:</strong> Admin can re-enable the account anytime. All previous data (requests, history) is preserved.</div>
+  <div class="sub-desc sd-rose"><strong>vs. Delete:</strong> Deactivation is reversible. Deletion is permanent and cascades to remove all user data.</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.3</div><div class="proc-title">Delete User (Admin)</div>
+<div class="proc-desc">Permanently removes a user account and all associated data. Requires confirmation modal. Cannot delete self.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🔑 Admin</div><div class="arrow">Delete user action</div><div class="proc-circle"><div class="num">6.3</div>Delete<br>User</div><div class="arrow">DELETE record</div><div class="store-shape">D1: Users</div></div>
+  </div>
+  <div class="sub-desc sd-rose"><strong>Cascade:</strong> Deletes user's requests, comments, notifications. Audit logs preserve username (denormalized) for history.</div>
+  <div class="sub-desc sd-rose"><strong>Self-Delete Guard:</strong> Admin cannot delete their own account (server-side check)</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.4</div><div class="proc-title">Update Profile (Self)</div>
+<div class="proc-desc">All authenticated users can update their own profile information. Password changes require current password verification.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">👤 Any User</div><div class="arrow">Profile form data</div><div class="proc-circle"><div class="num">6.4</div>Update<br>Profile</div><div class="arrow">UPDATE user record</div><div class="store-shape">D1: Users</div></div>
+    <div class="dfd-row"><div class="proc-circle"><div class="num">6.4</div>Profile</div><div class="arrow">Audit entry</div><div class="store-shape">D6: Audit Logs</div></div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Action</th><th>Endpoint</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr><td>Edit Profile</td><td class="from">PUT /auth/profile/</td><td class="data">first_name, last_name, email, phone, department</td></tr>
+      <tr><td>Change Password</td><td class="from">PUT /auth/profile/password/</td><td class="data">current_password (verified), new_password, confirm_password</td></tr>
+      <tr><td>Upload Avatar</td><td class="from">PUT /auth/profile/picture/</td><td class="data">avatar (image file, multipart/form-data)</td></tr>
+    </tbody>
+  </table>
+  <div class="sub-desc sd-rose"><strong>Note:</strong> Users cannot change their own role or student_id. Only Admin can do that via Process 6.1.</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.5</div><div class="proc-title">View Audit Logs</div>
+<div class="proc-desc">Staff and Admin can view the full system audit trail. Shows who did what, when, and from where (IP address).</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff / Admin</div><div class="arrow">Query filters</div><div class="proc-circle"><div class="num">6.5</div>View<br>Audit Logs</div><div class="arrow left">Log entries</div><div class="store-shape">D6: Audit Logs</div></div>
+  </div>
+  <div class="sub-desc sd-rose"><strong>14 Tracked Actions:</strong> Login, Logout, Login Failed, Register, Profile Update, Password Changed, Item Created, Item Updated, Item Deleted, Request Created, Request Approved, Request Rejected, Status Change, History Cleared</div>
+  <div class="sub-desc sd-rose"><strong>Each Entry Contains:</strong> user (FK), username (cached string), action (choice), details (text), ip_address (IP), timestamp (datetime)</div>
+  <div class="sub-desc sd-rose"><strong>Display:</strong> Table in Settings → Admin tab. Sorted by newest first. Shows up to 100 recent entries.</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Sub-Process 6.6</div><div class="proc-title">System Maintenance</div>
+<div class="proc-desc">Staff/Admin can clear completed/returned/cancelled requests to keep the active view clean. Uses soft-delete (is_cleared=True) — data preserved for audit.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff / Admin</div><div class="arrow">Clear history action</div><div class="proc-circle"><div class="num">6.6</div>Clear<br>History</div><div class="arrow">is_cleared = true</div><div class="store-shape">D3: Requests</div></div>
+    <div class="dfd-row"><div class="proc-circle"><div class="num">6.6</div>Clear</div><div class="arrow">Audit: "History Cleared"</div><div class="store-shape">D6: Audit Logs</div></div>
+  </div>
+  <div class="sub-desc sd-rose"><strong>Scope:</strong> Only affects requests WHERE status IN ('RETURNED', 'REJECTED', 'CANCELLED'). Active/pending requests are never affected.</div>
+  <div class="sub-desc sd-rose"><strong>Soft Delete:</strong> Sets is_cleared=True. These requests are filtered out of the normal view but remain in the database for reports and audit.</div>
+  <div class="sub-desc sd-rose"><strong>vs. Hard Delete:</strong> No data is permanently removed. Admin can verify historical data through audit logs and reports.</div>
+</div></div>
+
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Complete Data Flow Table</div><div class="proc-title">All Flows in Process 6.0</div></div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>#</th><th>Flow</th><th>From</th><th>To</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>F6.1</td><td>Role Change</td><td class="from">Admin</td><td class="to">6.1 Manage</td><td class="data">user_id, new_role (STUDENT/FACULTY/STAFF/ADMIN)</td></tr>
+      <tr><td>F6.2</td><td>Toggle Active</td><td class="from">Admin</td><td class="to">6.2 Toggle</td><td class="data">user_id → is_active flipped (True↔False)</td></tr>
+      <tr><td>F6.3</td><td>Delete User</td><td class="from">Admin</td><td class="to">6.3 Delete</td><td class="data">user_id → CASCADE delete (cannot delete self)</td></tr>
+      <tr><td>F6.4</td><td>Profile Data</td><td class="from">Any User</td><td class="to">6.4 Profile</td><td class="data">first_name, last_name, email, phone, department, avatar</td></tr>
+      <tr><td>F6.5</td><td>Password Change</td><td class="from">Any User</td><td class="to">6.4 Profile</td><td class="data">current_password (verified), new_password</td></tr>
+      <tr><td>F6.6</td><td>Audit Query</td><td class="from">Staff/Admin</td><td class="to">6.5 View Logs</td><td class="data">Filter → returns log entries sorted by -timestamp</td></tr>
+      <tr><td>F6.7</td><td>Clear History</td><td class="from">Staff/Admin</td><td class="to">6.6 Clear</td><td class="data">UPDATE requests SET is_cleared=True WHERE status IN (RETURNED, REJECTED, CANCELLED)</td></tr>
+      <tr><td>F6.8</td><td>All Audit Entries</td><td class="from">6.1–6.6</td><td class="to">D6: Audit Logs</td><td class="data">Every action logs: user, action, details, ip, timestamp</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+<!-- DATA STORES REFERENCE -->
+<div class="proc-section ph-rose">
+<div class="proc-header"><div class="proc-num pn-rose">Reference</div><div class="proc-title">All Data Stores Used Across DFD Level 1</div></div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>ID</th><th>Name</th><th>Database Table</th><th>Used By Processes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>D1</strong></td><td>Users</td><td class="data">users</td><td>1.0, 3.0, 6.0</td></tr>
+      <tr><td><strong>D2</strong></td><td>Items</td><td class="data">inventory_item</td><td>2.0, 3.0, 5.0</td></tr>
+      <tr><td><strong>D3</strong></td><td>Requests</td><td class="data">requests_request</td><td>3.0, 4.0, 5.0, 6.0</td></tr>
+      <tr><td><strong>D4</strong></td><td>Notifications</td><td class="data">requests_notification</td><td>4.0</td></tr>
+      <tr><td><strong>D5</strong></td><td>Comments</td><td class="data">requests_comment</td><td>3.0, 4.0</td></tr>
+      <tr><td><strong>D6</strong></td><td>Audit Logs</td><td class="data">authentication_auditlog</td><td>1.0, 2.0, 6.0</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+</div>
+<div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 6.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026</div>
+</body></html>

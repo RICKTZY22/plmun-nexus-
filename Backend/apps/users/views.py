@@ -82,8 +82,7 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         user.is_flagged = False
-        user.overdue_count = 0
-        user.save(update_fields=['is_flagged', 'overdue_count'])
+        user.save(update_fields=['is_flagged'])
 
         return Response({
             'message': f'{user.get_full_name() or user.username} has been unflagged',

@@ -2,18 +2,14 @@ import React, { useState, useEffect } from 'react';
 import {
     User,
     Shield,
-    Settings as SettingsIcon,
     ChevronRight,
     Wrench,
     Bell,
     Palette,
-    Database,
     Users,
     Lock,
-    BookOpen,
     GraduationCap,
     Briefcase,
-    ShieldCheck,
     Sliders,
     Mail,
     Building,
@@ -21,20 +17,20 @@ import {
     Trash2,
     AlertTriangle,
     ArrowLeft,
-    LogOut
+    LogOut,
+    History,
+    Settings as SettingsIcon
 } from 'lucide-react';
 import { Button, Input, Card, Modal } from '../components/ui';
-import { AdminOnly, StaffOnly, FacultyOnly } from '../components/auth';
 import useAuthStore from '../store/authStore';
 import useUIStore from '../store/uiStore';
 import { useUsers } from '../hooks';
 import { useIsMobile } from '../hooks';
 import { ROLES, getRoleLabel, getRoleBadgeColor, hasMinRole } from '../utils/roles';
 import { formatApiError } from '../utils/errorUtils';
+import { exportPDF } from '../utils/exportUtils';
 import api from '../services/api';
-import { exportCSV, exportPDF } from '../utils/exportUtils';
 import ProfileTab from './settings/ProfileTab';
-import PreferencesTab from './settings/PreferencesTab';
 import SecurityTab from './settings/SecurityTab';
 import NotificationsTab from './settings/NotificationsTab';
 import AppearanceTab from './settings/AppearanceTab';
@@ -43,6 +39,8 @@ import StaffTab from './settings/StaffTab';
 import SystemTab from './settings/SystemTab';
 import UsersTab from './settings/UsersTab';
 import AdminTab from './settings/AdminTab';
+import HistoryTab from './settings/HistoryTab';
+import PreferencesTab from './settings/PreferencesTab';
 
 // tabs ng settings - depende sa role kung anong makikita
 const settingsTabs = [
@@ -54,6 +52,7 @@ const settingsTabs = [
     { id: 'faculty', label: 'Faculty', icon: GraduationCap, exactRole: 'FACULTY' },
     { id: 'staff', label: 'Inventory', icon: Briefcase, minRole: ROLES.STAFF },
     { id: 'system', label: 'System', icon: Wrench, minRole: ROLES.STAFF },
+    { id: 'history', label: 'History & Flags', icon: History, minRole: ROLES.STAFF },
     { id: 'users', label: 'Users', icon: Users, minRole: ROLES.ADMIN },
     { id: 'admin', label: 'Administration', icon: Shield, minRole: ROLES.ADMIN },
 ];
@@ -141,7 +140,6 @@ const Settings = () => {
     const [preferences, setPreferences] = useState({
         // Request defaults
         defaultQuantity: 1,
-        defaultPriority: 'NORMAL',
         defaultPurpose: '',
         // Display preferences
         viewMode: 'table',
@@ -192,13 +190,15 @@ const Settings = () => {
         retentionDays: 30,
     });
 
-    // flash message helper - para di na kailangan mag setSaveMessage+setTimeout sa bawat save
-    // FIXME: nag-ooverlap minsan yung messages pag mabilis mag-click
+    // flash message helper — replaces previous message with a unique key so React
+    // always re-mounts the notification (fixes overlap/no-animation on rapid clicks)
     const [saveMessage, setSaveMessage] = useState('');
+    const [saveMessageKey, setSaveMessageKey] = useState(0);
     const flashTimerRef = React.useRef(null);
     const flashMessage = React.useCallback((msg, ms = 3000) => {
         clearTimeout(flashTimerRef.current);
         setSaveMessage(msg);
+        setSaveMessageKey(k => k + 1);
         flashTimerRef.current = setTimeout(() => setSaveMessage(''), ms);
     }, []);
     const [backupLoading, setBackupLoading] = useState(false);
@@ -320,6 +320,10 @@ const Settings = () => {
         }
         if (password !== password2) {
             setCreateUserError('Passwords do not match.');
+            return;
+        }
+        if (!email.trim().toLowerCase().endsWith('@plmun.edu.ph')) {
+            setCreateUserError('Only @plmun.edu.ph email addresses are allowed.');
             return;
         }
         if (password.length < 6) {
@@ -446,6 +450,7 @@ const Settings = () => {
                         passwordForm={passwordForm}
                         setPasswordForm={setPasswordForm}
                         showPasswords={showPasswords}
+                        setShowPasswords={setShowPasswords}
                         passwordError={passwordError}
                         setPasswordError={setPasswordError}
                         handlePasswordChange={handlePasswordChange}
@@ -530,6 +535,9 @@ const Settings = () => {
                     />
                 );
 
+            case 'history':
+                return <HistoryTab />;
+
             case 'admin':
                 return (
                     <AdminTab
@@ -567,12 +575,12 @@ const Settings = () => {
             >
                 <div className="p-6 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Full Name" icon={User} placeholder="Juan Dela Cruz" value={createUserForm.fullName} onChange={(e) => setCreateUserForm({ ...createUserForm, fullName: e.target.value })} />
-                        <Input label="Email" icon={Mail} type="email" placeholder="juan@plm.edu.ph" value={createUserForm.email} onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })} />
+                        <Input label="Full Name" icon={User} placeholder="Juan Dela Cruz" value={createUserForm.fullName} onChange={(e) => setCreateUserForm({ ...createUserForm, fullName: e.target.value })} autoComplete="off" />
+                        <Input label="Email" icon={Mail} type="email" placeholder="juan@plmun.edu.ph" value={createUserForm.email} onChange={(e) => setCreateUserForm({ ...createUserForm, email: e.target.value })} autoComplete="off" />
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Input label="Username" icon={User} placeholder="juandelacruz" value={createUserForm.username} onChange={(e) => setCreateUserForm({ ...createUserForm, username: e.target.value })} />
-                        <Input label="Department" icon={Building} placeholder="e.g., CIT" value={createUserForm.department} onChange={(e) => setCreateUserForm({ ...createUserForm, department: e.target.value })} />
+                        <Input label="Username" icon={User} placeholder="juandelacruz" value={createUserForm.username} onChange={(e) => setCreateUserForm({ ...createUserForm, username: e.target.value })} autoComplete="off" />
+                        <Input label="Department" icon={Building} placeholder="e.g., CIT" value={createUserForm.department} onChange={(e) => setCreateUserForm({ ...createUserForm, department: e.target.value })} autoComplete="off" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
@@ -649,6 +657,18 @@ const Settings = () => {
                         </div>
                         <h1 className="text-xl font-bold text-gray-900 dark:text-white">{currentTab?.label}</h1>
                     </div>
+                    {/* Mobile toast notification */}
+                    {saveMessage && (
+                        <div key={saveMessageKey} className="mb-4 px-4 py-2.5 rounded-xl text-sm font-medium animate-fade-in flex items-center gap-2 border"
+                            style={{
+                                backgroundColor: saveMessage.startsWith('✗') ? 'rgb(254 242 242)' : 'rgb(236 253 245)',
+                                borderColor: saveMessage.startsWith('✗') ? 'rgb(252 165 165)' : 'rgb(167 243 208)',
+                                color: saveMessage.startsWith('✗') ? 'rgb(185 28 28)' : 'rgb(4 120 87)',
+                            }}
+                        >
+                            {saveMessage}
+                        </div>
+                    )}
                     {renderTabContent()}
 
                     {/* Modals */}
@@ -735,6 +755,18 @@ const Settings = () => {
 
                 {/* Content Area */}
                 <div className="flex-1">
+                    {/* Global toast notification */}
+                    {saveMessage && (
+                        <div key={saveMessageKey} className="mb-4 px-4 py-2.5 rounded-xl text-sm font-medium animate-fade-in flex items-center gap-2 border"
+                            style={{
+                                backgroundColor: saveMessage.startsWith('✗') ? 'rgb(254 242 242)' : 'rgb(236 253 245)',
+                                borderColor: saveMessage.startsWith('✗') ? 'rgb(252 165 165)' : 'rgb(167 243 208)',
+                                color: saveMessage.startsWith('✗') ? 'rgb(185 28 28)' : 'rgb(4 120 87)',
+                            }}
+                        >
+                            {saveMessage}
+                        </div>
+                    )}
                     <Card className="p-6">
                         {renderTabContent()}
                     </Card>

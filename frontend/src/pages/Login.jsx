@@ -71,7 +71,7 @@ const CREATORS = [
         structured: 'Overall system architecture, project structure, and code standards',
     },
     {
-        name: 'Member 2',
+        name: 'Kimar Castillo',
         role: 'Backend Developer',
         avatar: '🧑‍💻',
         color: 'from-emerald-400 to-cyan-500',
@@ -87,7 +87,7 @@ const CREATORS = [
         structured: 'Backend folder structure, models, serializers, and views organization',
     },
     {
-        name: 'Member 3',
+        name: 'Dave Palma',
         role: 'Frontend Developer',
         avatar: '👩‍💻',
         color: 'from-purple-400 to-pink-500',
@@ -103,7 +103,7 @@ const CREATORS = [
         structured: 'Frontend components, pages, store, and routing structure',
     },
     {
-        name: 'Member 4',
+        name: 'Charl Stephen Olazo',
         role: 'UI/UX Designer',
         avatar: '🎨',
         color: 'from-amber-400 to-orange-500',
@@ -119,7 +119,7 @@ const CREATORS = [
         structured: 'Design system, color tokens, typography, and component styling guidelines',
     },
     {
-        name: 'Member 5',
+        name: 'Salvador B. Peneverde Jr.',
         role: 'QA & Documentation',
         avatar: '📝',
         color: 'from-rose-400 to-red-500',
@@ -133,6 +133,22 @@ const CREATORS = [
         ],
         tech: ['Testing', 'Documentation', 'SonarCloud', 'Git'],
         structured: 'Documentation structure, test plans, and quality assurance workflow',
+    },
+    {
+        name: 'Justine Loterina',
+        role: 'Systems Analyst',
+        avatar: '📊',
+        color: 'from-sky-400 to-indigo-500',
+        bio: 'Analyzed system requirements, designed data flows, and ensured the solution aligns with stakeholder needs.',
+        contributions: [
+            'Requirements analysis & gathering',
+            'Data flow diagrams & process modeling',
+            'System integration planning',
+            'Use case & UML documentation',
+            'Stakeholder coordination & feedback',
+        ],
+        tech: ['Systems Analysis', 'UML', 'ERD', 'Process Modeling'],
+        structured: 'System requirements, data flow documentation, and process specifications',
     },
 ];
 
@@ -156,7 +172,189 @@ const ACCREDITATIONS = [
 ];
 
 
-/* ─── Background carousel images ─── */
+/* ─── Methodology Carousel Slides ─── */
+const METHODOLOGY_SLIDES = [
+    {
+        id: 'agile',
+        badge: 'Framework',
+        title: 'Agile / Scrum',
+        subtitle: 'Iterative & Incremental Development',
+        color: 'from-blue-400 to-cyan-400',
+        borderColor: 'border-blue-400/20',
+        bgColor: 'bg-blue-500/5',
+        badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-400/30',
+        items: [
+            { label: 'Sprint Duration', value: '2 Weeks', icon: '⏱️' },
+            { label: 'Total Sprints', value: '4 Sprints', icon: '🔄' },
+            { label: 'Daily Standups', value: 'Progress Check', icon: '📋' },
+            { label: 'Sprint Review', value: 'End of Sprint', icon: '🔍' },
+            { label: 'Retrospective', value: 'Continuous Improvement', icon: '📈' },
+            { label: 'Product Backlog', value: '42 User Stories', icon: '📝' },
+        ],
+        desc: 'We adopted Agile/Scrum to deliver working increments every 2 weeks, enabling fast feedback loops and continuous adaptation based on stakeholder input.',
+    },
+    {
+        id: 'sdlc',
+        badge: 'Lifecycle',
+        title: 'SDLC Phases',
+        subtitle: '6-Phase Development Lifecycle',
+        color: 'from-emerald-400 to-teal-400',
+        borderColor: 'border-emerald-400/20',
+        bgColor: 'bg-emerald-500/5',
+        badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+        items: [
+            { label: '1. Requirements', value: 'Oct 2025', icon: '📋' },
+            { label: '2. Planning & Design', value: 'Nov–Jan', icon: '📐' },
+            { label: '3. Implementation', value: 'Feb–Mar 2026', icon: '⚙️' },
+            { label: '4. Testing & QA', value: 'Mar 2026', icon: '🧪' },
+            { label: '5. Deployment', value: 'Mar–Apr 2026', icon: '🚀' },
+            { label: '6. Maintenance', value: 'Ongoing', icon: '🔧' },
+        ],
+        desc: 'A structured 6-phase SDLC ensured each stage was completed before advancing, with Agile feedback loops embedded within the Implementation phase.',
+    },
+    {
+        id: 'gantt',
+        badge: 'Timeline',
+        title: 'Project Timeline',
+        subtitle: 'Aug 2025 – Apr 2026 (34 Weeks)',
+        color: 'from-purple-400 to-pink-400',
+        borderColor: 'border-purple-400/20',
+        bgColor: 'bg-purple-500/5',
+        badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-400/30',
+        items: [
+            { label: 'Documentation & Planning', value: 'Aug – Sep', icon: '📋', width: '20%' },
+            { label: 'Requirements Gathering', value: 'Oct', icon: '📝', width: '14%' },
+            { label: 'System Design', value: 'Nov – Jan', icon: '📐', width: '28%' },
+            { label: 'Development (BE + FE)', value: 'Feb – Mar', icon: '💻', width: '22%' },
+            { label: 'Testing & Deployment', value: 'Mar – Apr', icon: '🚀', width: '10%' },
+            { label: 'Final Documentation', value: 'Apr', icon: '📄', width: '6%' },
+        ],
+        desc: 'A 34-week project spanning from initial documentation in August 2025 through final submission in April 2026, with 6 members collaborating across all phases.',
+        isGantt: true,
+    },
+];
+
+const MethodologyCarousel = () => {
+    const [activeSlide, setActiveSlide] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+    const timerRef = useRef(null);
+
+    const goTo = (index) => {
+        if (isTransitioning || index === activeSlide) return;
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setActiveSlide(index);
+            setIsTransitioning(false);
+        }, 300);
+    };
+
+    const next = () => goTo((activeSlide + 1) % METHODOLOGY_SLIDES.length);
+    const prev = () => goTo((activeSlide - 1 + METHODOLOGY_SLIDES.length) % METHODOLOGY_SLIDES.length);
+
+    useEffect(() => {
+        timerRef.current = setInterval(next, 6000);
+        return () => clearInterval(timerRef.current);
+    }, [activeSlide]);
+
+    const slide = METHODOLOGY_SLIDES[activeSlide];
+    const barColors = ['bg-rose-400', 'bg-amber-400', 'bg-cyan-400', 'bg-green-400', 'bg-blue-400', 'bg-pink-400'];
+
+    return (
+        <div className="relative">
+            {/* Slide container */}
+            <div className={`relative rounded-2xl sm:rounded-3xl ${slide.bgColor} backdrop-blur-sm border ${slide.borderColor} p-5 sm:p-8 md:p-10 transition-opacity duration-300 ${isTransitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'}`}
+                style={{ transition: 'opacity 300ms, transform 300ms' }}>
+
+                {/* Slide badge & title */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+                    <span className={`inline-flex self-start px-3 py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest border ${slide.badgeColor}`}>
+                        {slide.badge}
+                    </span>
+                    <div>
+                        <h3 className={`text-xl sm:text-2xl font-bold bg-gradient-to-r ${slide.color} bg-clip-text text-transparent`}>
+                            {slide.title}
+                        </h3>
+                        <p className="text-white/40 text-xs sm:text-sm mt-0.5">{slide.subtitle}</p>
+                    </div>
+                </div>
+
+                {/* Slide content */}
+                {slide.isGantt ? (
+                    /* Gantt-style timeline bars */
+                    <div className="space-y-2.5 mb-6">
+                        {slide.items.map((item, i) => (
+                            <div key={item.label} className="flex items-center gap-3">
+                                <span className="text-lg flex-shrink-0">{item.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs sm:text-sm text-white/80 font-medium truncate">{item.label}</span>
+                                        <span className="text-[10px] sm:text-xs text-white/40 ml-2 flex-shrink-0">{item.value}</span>
+                                    </div>
+                                    <div className="w-full h-3 sm:h-4 rounded-full bg-white/5 overflow-hidden">
+                                        <div
+                                            className={`h-full rounded-full ${barColors[i]} opacity-70 transition-all duration-1000`}
+                                            style={{ width: isTransitioning ? '0%' : item.width, transitionDelay: `${i * 100}ms` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    /* Grid items for Agile & SDLC */
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 mb-6">
+                        {slide.items.map((item, i) => (
+                            <div key={item.label}
+                                className="flex items-start gap-2.5 p-3 sm:p-4 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-all duration-300"
+                                style={{ animationDelay: `${i * 80}ms` }}>
+                                <span className="text-lg flex-shrink-0 mt-0.5">{item.icon}</span>
+                                <div className="min-w-0">
+                                    <p className="text-[11px] sm:text-xs text-white/40 truncate">{item.label}</p>
+                                    <p className="text-xs sm:text-sm text-white font-semibold mt-0.5 truncate">{item.value}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Description */}
+                <p className="text-white/50 text-xs sm:text-sm leading-relaxed">{slide.desc}</p>
+            </div>
+
+            {/* Navigation: dots + arrows */}
+            <div className="flex items-center justify-center gap-4 mt-6">
+                {/* Prev */}
+                <button onClick={prev} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                    <ChevronDown size={16} className="rotate-90" />
+                </button>
+
+                {/* Dots */}
+                <div className="flex gap-2">
+                    {METHODOLOGY_SLIDES.map((s, i) => (
+                        <button
+                            key={s.id}
+                            onClick={() => goTo(i)}
+                            className={`h-2 rounded-full transition-all duration-300 ${i === activeSlide ? 'w-8 bg-accent' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+                        />
+                    ))}
+                </div>
+
+                {/* Next */}
+                <button onClick={next} className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+                    <ChevronDown size={16} className="-rotate-90" />
+                </button>
+            </div>
+
+            {/* Slide counter */}
+            <p className="text-center text-white/20 text-[10px] mt-3 font-medium tracking-wider">
+                {activeSlide + 1} / {METHODOLOGY_SLIDES.length}
+            </p>
+        </div>
+    );
+};
+
+
+// login page
 const BG_CAROUSEL_IMAGES = [universityBuilding, plmunBuildingFacade, plmunCommunity, plmunCampusEvent, plmunGraduation];
 const BG_CAROUSEL_INTERVAL = 5000; // 5 seconds
 
@@ -242,6 +440,9 @@ const Login = () => {
             clearGuard();
             navigate('/dashboard');
         } else {
+            // Don't count deactivated account redirects as brute-force attempts
+            if (result.error === 'Account deactivated') return;
+
             const newAttempts = attempts + 1;
             setAttempts(newAttempts);
 
@@ -312,7 +513,7 @@ const Login = () => {
                         </div>
 
                         <div className="space-y-6">
-                            <h1 className="text-5xl font-black text-white leading-tight animate-fade-in-up animate-fill-both animate-delay-200">
+                            <h1 className="text-5xl font-bold text-white leading-tight animate-fade-in-up animate-fill-both animate-delay-200">
                                 Smarter<br />
                                 <span className="text-accent-light">Inventory</span><br />
                                 Management.
@@ -330,7 +531,7 @@ const Login = () => {
                         </div>
 
                         <p className="text-white/40 text-xs animate-fade-in animate-fill-both animate-delay-500">
-                            © 2025 Pamantasan ng Lungsod ng Muntinlupa · "Lakas, Talino, at Buhay"
+                            © {new Date().getFullYear()} Pamantasan ng Lungsod ng Muntinlupa · "Lakas, Talino, at Buhay"
                         </p>
                     </div>
                 </div>
@@ -349,7 +550,7 @@ const Login = () => {
 
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-5 sm:p-8 border border-gray-200 dark:border-gray-700">
                             <div className="mb-7">
-                                <h2 className="text-2xl font-black text-gray-900 dark:text-white">Welcome back</h2>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Sign in to your PLMun Nexus account</p>
                             </div>
 
@@ -373,7 +574,7 @@ const Login = () => {
                                         <p className="text-sm font-semibold text-red-700 dark:text-red-400">Account temporarily locked</p>
                                         <p className="text-xs text-red-600 dark:text-red-300 mt-0.5">
                                             Too many failed attempts. Try again in{' '}
-                                            <span className="font-black tabular-nums text-sm">{countdown}s</span>
+                                            <span className="font-bold tabular-nums text-sm">{countdown}s</span>
                                         </p>
                                     </div>
                                 </div>
@@ -518,7 +719,7 @@ const Login = () => {
                             <span className="inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-accent/20 text-accent-light text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4 border border-accent/30">
                                 About the System
                             </span>
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                                 PLMun Inventory <span className="text-accent-light">Nexus</span>
                             </h2>
                             <p className="mt-3 sm:mt-4 text-white/70 max-w-2xl mx-auto leading-relaxed text-sm sm:text-base">
@@ -553,7 +754,7 @@ const Login = () => {
                                 { label: 'Database', value: 'PostgreSQL', sub: 'Production-grade RDBMS' },
                             ].map((s) => (
                                 <div key={s.label} className="text-center p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
-                                    <p className="text-lg sm:text-2xl font-black text-accent-light">{s.value}</p>
+                                    <p className="text-lg sm:text-2xl font-bold text-accent-light">{s.value}</p>
                                     <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1">{s.label}</p>
                                     <p className="text-[10px] sm:text-xs text-white/50 mt-0.5 hidden sm:block">{s.sub}</p>
                                 </div>
@@ -563,76 +764,20 @@ const Login = () => {
                 </section>
 
 
-                {/* ═══════════ SECTION 3: EDUCATIONAL PHILOSOPHY ═══════════ */}
+                {/* ═══════════ SECTION 3: WORK IN PROGRESS ═══════════ */}
                 <section
                     ref={addSectionRef(1)}
                     data-section="philosophy"
-                    className={`relative z-[2] py-12 md:py-20 px-4 sm:px-6 overflow-hidden transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                    className={`relative z-[2] py-10 md:py-14 px-4 sm:px-6 transition-all duration-700 ${visibleSections.has('philosophy') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                 >
-                    {/* Gold tint overlay for this section */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900/60 via-yellow-800/50 to-amber-900/60 z-0" />
-                    {/* Subtle pattern overlay */}
-                    <div className="absolute inset-0 opacity-[0.06] z-0"
-                        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '32px 32px' }} />
-
-                    <div className="relative z-[1] max-w-6xl mx-auto">
-                        <div className="text-center mb-8 md:mb-14">
-                            <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-1.5 sm:py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-3 sm:mb-4 border border-white/30">
-                                <BookOpen size={14} />
-                                Educational Philosophy
-                            </div>
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white">
-                                Mission · Vision · Values
-                            </h2>
+                    <div className="max-w-2xl mx-auto text-center">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white/70 text-xs font-medium border border-white/20 mb-4">
+                            <Sparkles size={14} />
+                            Work in Progress
                         </div>
-
-                        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
-                            {/* Mission */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Target size={20} className="text-white" />
-                                </div>
-                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Mission</h3>
-                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
-                                    To provide quality, affordable and relevant education responsive to the changing needs of
-                                    the local and global communities through effective and efficient integration of instruction,
-                                    research and extension; to develop productive and God-loving individuals in society.
-                                </p>
-                            </div>
-
-                            {/* Vision */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Lightbulb size={20} className="text-white" />
-                                </div>
-                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Vision</h3>
-                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
-                                    A dynamic and highly competitive Higher Education Institution (HEI) committed to people
-                                    empowerment towards building a humane society.
-                                </p>
-                            </div>
-
-                            {/* Quality Policy */}
-                            <div className="group bg-white/15 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-7 border border-white/25 hover:bg-white/25 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl sm:col-span-2 md:col-span-1">
-                                <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white/20 flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                                    <Award size={20} className="text-white" />
-                                </div>
-                                <h3 className="text-base sm:text-xl font-black text-white mb-2 sm:mb-3">Quality Policy</h3>
-                                <p className="text-white/85 text-xs sm:text-sm leading-relaxed">
-                                    "We, in the Pamantasan ng Lungsod ng Muntinlupa, commit to meet and even exceed our clients'
-                                    needs and expectations by adhering to good governance, productivity and continually improving
-                                    the effectiveness of our Quality Management System in compliance to ethical standards and
-                                    applicable statutory and regulatory requirements."
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Motto */}
-                        <div className="mt-6 sm:mt-10 text-center">
-                            <p className="text-white/60 text-[10px] sm:text-xs uppercase tracking-widest mb-1 sm:mb-2">University Motto</p>
-                            <p className="text-xl sm:text-2xl font-black text-white italic">"Lakas, Talino, at Buhay"</p>
-                            <p className="text-white/70 text-xs sm:text-sm mt-1">Strength, Wisdom, and Life</p>
-                        </div>
+                        <p className="text-white/50 text-sm">
+                            University mission, vision, and educational philosophy content will be available soon.
+                        </p>
                     </div>
                 </section>
 
@@ -675,7 +820,7 @@ const Login = () => {
                                     <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-4 border border-accent/30">
                                         Our University
                                     </span>
-                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white leading-tight">
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight">
                                         Pamantasan ng Lungsod ng <span className="text-accent-light">Muntinlupa</span>
                                     </h2>
                                 </div>
@@ -713,7 +858,7 @@ const Login = () => {
                                 <span className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent-light text-xs font-bold uppercase tracking-widest mb-3 border border-accent/30">
                                     Accreditation
                                 </span>
-                                <h3 className="text-xl sm:text-2xl font-black text-white">
+                                <h3 className="text-xl sm:text-2xl font-bold text-white">
                                     Recognized & <span className="text-accent-light">Accredited</span>
                                 </h3>
                             </div>
@@ -748,6 +893,40 @@ const Login = () => {
             </div>{/* end carousel wrapper */}
 
 
+            {/* ═══════════ SECTION 4.5: DEVELOPMENT METHODOLOGY CAROUSEL ═══════════ */}
+            <section
+                ref={addSectionRef(4)}
+                data-section="methodology"
+                className="relative py-14 md:py-24 px-4 sm:px-6 overflow-hidden"
+                style={{ background: 'linear-gradient(180deg, #0c1222 0%, #111827 50%, #0f172a 100%)' }}
+            >
+                {/* Ambient glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-accent/5 rounded-full blur-[120px]" />
+
+                <div className={`relative z-10 max-w-5xl mx-auto transition-all duration-700 ${visibleSections.has('methodology') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                    {/* Header */}
+                    <div className="text-center mb-10">
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-sm text-accent-light text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mb-4 border border-white/10">
+                            <GitBranch size={13} />
+                            How We Built It
+                        </span>
+                        <h2 className="text-2xl sm:text-4xl font-bold text-white mb-3 leading-tight">
+                            Development{' '}
+                            <span className="bg-gradient-to-r from-accent-light to-purple-400 bg-clip-text text-transparent">
+                                Methodology
+                            </span>
+                        </h2>
+                        <p className="text-white/50 max-w-md mx-auto text-xs sm:text-sm">
+                            Our team followed industry-standard practices to deliver a production-quality system.
+                        </p>
+                    </div>
+
+                    {/* Carousel */}
+                    <MethodologyCarousel />
+                </div>
+            </section>
+
+
             {/* ═══════════ SECTION 5: CREATORS / TEAM ═══════════ */}
             <section
                 ref={addSectionRef(3)}
@@ -775,7 +954,7 @@ const Login = () => {
                             <Code2 size={13} />
                             The Team Behind The System
                         </div>
-                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-black text-white mb-3 sm:mb-5 leading-tight">
+                        <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-5 leading-tight">
                             Meet the{' '}
                             <span className="bg-gradient-to-r from-accent-light via-purple-400 to-accent-light bg-[length:200%_auto] animate-gradient bg-clip-text text-transparent">
                                 Creators
@@ -786,10 +965,13 @@ const Login = () => {
                             turning classroom knowledge into a real-world application.
                             <span className="block mt-2 text-accent-light/60 text-xs">Click on a member to see their contributions</span>
                         </p>
+                        <p className="text-white/30 text-[11px] mt-3 font-medium tracking-wide">
+                            BSCS 3D — Software Engineering 1 · Prof. Mr. Melchor Paz
+                        </p>
                     </div>
 
                     {/* Team cards with staggered scroll-reveal */}
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
                         {CREATORS.map((member, i) => (
                             <div
                                 key={member.name}
@@ -904,7 +1086,7 @@ const Login = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black text-white">{selectedCreator.name}</h3>
+                                        <h3 className="text-2xl font-bold text-white">{selectedCreator.name}</h3>
                                         <p className={`text-sm font-semibold bg-gradient-to-r ${selectedCreator.color} bg-clip-text text-transparent`}>
                                             {selectedCreator.role}
                                         </p>
@@ -926,7 +1108,7 @@ const Login = () => {
                                                 style={{ animationDelay: `${i * 80}ms` }}
                                             >
                                                 <div className={`w-5 h-5 rounded-md bg-gradient-to-br ${selectedCreator.color} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                                                    <span className="text-white text-[10px] font-black">{i + 1}</span>
+                                                    <span className="text-white text-[10px] font-bold">{i + 1}</span>
                                                 </div>
                                                 <p className="text-white/70 text-sm leading-relaxed">{item}</p>
                                             </div>
@@ -1093,7 +1275,7 @@ const Login = () => {
                 {/* Bottom bar */}
                 <div className="bg-[#004430] text-center py-4 px-6">
                     <p className="text-white/50 text-xs">
-                        © 2025 Pamantasan ng Lungsod ng Muntinlupa · PLMun Inventory Nexus · All rights reserved.
+                        © {new Date().getFullYear()} Pamantasan ng Lungsod ng Muntinlupa · PLMun Inventory Nexus · All rights reserved.
                     </p>
                     <p className="text-white/35 text-[10px] mt-1 italic">
                         "Lakas, Talino, at Buhay"

@@ -1,0 +1,346 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DFD 2.0 — Inventory Management | PLMun Nexus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="dfd-styles.css">
+</head>
+
+<body>
+  <div class="hero">
+    <div class="hero-badge">◆ DFD Level 1 — Process 2.0</div>
+    <h1>Inventory Management</h1>
+    <p>CRUD operations for inventory items including adding, editing, deleting, status transitions, image uploads, and
+      access-level-filtered browsing.</p>
+  </div>
+  <div class="container">
+    <nav class="nav">
+      <a href="dfd-1-authentication.html">1.0 Authentication</a>
+      <a class="active" href="dfd-2-inventory.html">2.0 Inventory</a>
+      <a href="dfd-3-requests.html">3.0 Requests</a>
+      <a href="dfd-4-notifications.html">4.0 Notifications</a>
+      <a href="dfd-5-reports.html">5.0 Reports</a>
+      <a href="dfd-6-administration.html">6.0 Administration</a>
+    </nav>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="leg-ext"></div>External Entity
+      </div>
+      <div class="legend-item">
+        <div class="leg-proc"></div>Process
+      </div>
+      <div class="legend-item">
+        <div class="leg-store"></div>Data Store
+      </div>
+      <div class="legend-item">
+        <div class="leg-flow"></div>Data Flow
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">External Entities</div>
+        <div class="proc-title">Actors Involved</div>
+      </div>
+      <div class="proc-body">
+        <div class="sub-desc sd-blue"><strong>🛡️ Staff / Admin</strong> — Can perform all CRUD operations: add, edit,
+          delete, change status, export. Only roles with STAFF or higher can modify items.</div>
+        <div class="sub-desc sd-blue"><strong>👤 All Authenticated Users</strong> — Can browse and view items. Items are
+          filtered by access_level (Student items visible to all, Admin items visible only to Admin).</div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Sub-Process 2.1</div>
+        <div class="proc-title">Add New Item</div>
+        <div class="proc-desc">Staff/Admin creates a new inventory item with all required fields. Supports image upload
+          via multipart/form-data.</div>
+      </div>
+      <div class="proc-body">
+        <div class="dfd">
+          <div class="dfd-row">
+            <div class="ext">🛡️ Staff / Admin</div>
+            <div class="arrow">Item form data</div>
+            <div class="proc-circle">
+              <div class="num">2.1</div>Add New<br>Item
+            </div>
+            <div class="arrow">INSERT record</div>
+            <div class="store-shape">D2: Items</div>
+          </div>
+          <div class="dfd-row">
+            <div class="proc-circle">
+              <div class="num">2.1</div>Add Item
+            </div>
+            <div class="arrow">Audit: "Item Created"</div>
+            <div class="store-shape">D6: Audit Logs</div>
+          </div>
+        </div>
+        <div class="sub-desc sd-blue"><strong>Input (15 fields):</strong> name, category
+          (ELECTRONICS/FURNITURE/EQUIPMENT/SUPPLIES/OTHER), quantity, status (AVAILABLE/IN_USE/MAINTENANCE/RETIRED),
+          location, description, image (file), access_level (STUDENT/FACULTY/STAFF/ADMIN), priority (LOW/MEDIUM/HIGH),
+          is_returnable (bool), borrow_duration (int), borrow_duration_unit (HOURS/DAYS/WEEKS)</div>
+        <div class="sub-desc sd-blue"><strong>Default Values from Settings:</strong> Staff can set default category,
+          status, and location in Settings → Inventory tab. These pre-fill the form to speed up bulk item entry.</div>
+        <div class="sub-desc sd-blue"><strong>Image Upload:</strong> Sent as multipart/form-data. Stored in
+          /media/items/ directory. URL returned as relative path.</div>
+        <div class="sub-desc sd-blue"><strong>Permission:</strong> IsStaffOrAbove — returns 403 Forbidden for Student
+          and Faculty roles.</div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Sub-Process 2.2</div>
+        <div class="proc-title">Update Item</div>
+        <div class="proc-desc">Partial update (PATCH) or full update (PUT) of any item field. Tracks old vs new values
+          in audit log.</div>
+      </div>
+      <div class="proc-body">
+        <div class="dfd">
+          <div class="dfd-row">
+            <div class="ext">🛡️ Staff / Admin</div>
+            <div class="arrow">Updated fields (partial)</div>
+            <div class="proc-circle">
+              <div class="num">2.2</div>Update<br>Item
+            </div>
+            <div class="arrow bi">Read current / Write updated</div>
+            <div class="store-shape">D2: Items</div>
+          </div>
+        </div>
+        <div class="sub-desc sd-blue"><strong>Supports:</strong> PATCH (partial — only changed fields) and PUT (full —
+          all fields required)</div>
+        <div class="sub-desc sd-blue"><strong>Audit Detail:</strong> Logs "Item Updated" with item_name and changed
+          field names in the details field</div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Sub-Process 2.3</div>
+        <div class="proc-title">Delete Item</div>
+        <div class="proc-desc">Permanently removes an item from the database. Hard delete — no soft delete for items
+          (unlike requests).</div>
+      </div>
+      <div class="proc-body">
+        <div class="dfd">
+          <div class="dfd-row">
+            <div class="ext">🛡️ Staff / Admin</div>
+            <div class="arrow">Item ID</div>
+            <div class="proc-circle">
+              <div class="num">2.3</div>Delete<br>Item
+            </div>
+            <div class="arrow">DELETE record</div>
+            <div class="store-shape">D2: Items</div>
+          </div>
+        </div>
+        <div class="sub-desc sd-blue"><strong>Confirmation:</strong> Frontend shows a confirmation modal before sending
+          DELETE request</div>
+        <div class="sub-desc sd-blue"><strong>Cascade:</strong> Related requests preserve item_name (denormalized field)
+          so history remains readable after deletion</div>
+        <div class="sub-desc sd-blue"><strong>Audit:</strong> Logs "Item Deleted" with item name and ID</div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Sub-Process 2.4</div>
+        <div class="proc-title">Change Item Status</div>
+        <div class="proc-desc">Transitions an item between AVAILABLE, IN_USE, MAINTENANCE, and RETIRED states. Requires
+          a note explaining the change. Maintenance status accepts an ETA date.</div>
+      </div>
+      <div class="proc-body">
+        <div class="dfd">
+          <div class="dfd-row">
+            <div class="ext">🛡️ Staff / Admin</div>
+            <div class="arrow">new_status + note</div>
+            <div class="proc-circle">
+              <div class="num">2.4</div>Change<br>Status
+            </div>
+            <div class="arrow">UPDATE status fields</div>
+            <div class="store-shape">D2: Items</div>
+          </div>
+        </div>
+        <table class="flow-table">
+          <thead>
+            <tr>
+              <th>From Status</th>
+              <th>Allowed Transitions</th>
+              <th>Additional Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>AVAILABLE</td>
+              <td class="to">MAINTENANCE, RETIRED</td>
+              <td class="data">status_note required; maintenance_eta for MAINTENANCE</td>
+            </tr>
+            <tr>
+              <td>IN_USE</td>
+              <td class="to">AVAILABLE (Returned)</td>
+              <td class="data">Quick return without modal (handleQuickReturn)</td>
+            </tr>
+            <tr>
+              <td>MAINTENANCE</td>
+              <td class="to">AVAILABLE (Fixed)</td>
+              <td class="data">Clears maintenance_eta and status_note</td>
+            </tr>
+            <tr>
+              <td>RETIRED</td>
+              <td class="to">AVAILABLE (Reactivated)</td>
+              <td class="data">Restores item to active inventory</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="sub-desc sd-blue"><strong>Audit:</strong> Logs "Status Change" with old_status → new_status and the
+          note</div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Sub-Process 2.5</div>
+        <div class="proc-title">Browse & Filter Inventory</div>
+        <div class="proc-desc">All authenticated users can browse inventory. Results are filtered server-side by
+          access_level and client-side by search term, category, and status.</div>
+      </div>
+      <div class="proc-body">
+        <div class="dfd">
+          <div class="dfd-row">
+            <div class="ext">👤 All Users</div>
+            <div class="arrow">search, category, status</div>
+            <div class="proc-circle">
+              <div class="num">2.5</div>Browse<br>Inventory
+            </div>
+            <div class="arrow left">Filtered items array</div>
+            <div class="store-shape">D2: Items</div>
+          </div>
+        </div>
+        <table class="flow-table">
+          <thead>
+            <tr>
+              <th>Filter</th>
+              <th>Parameter</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Text Search</td>
+              <td class="from">?search=</td>
+              <td class="data">?search=laptop → name__icontains="laptop"</td>
+            </tr>
+            <tr>
+              <td>Category</td>
+              <td class="from">?category=</td>
+              <td class="data">?category=ELECTRONICS → exact match</td>
+            </tr>
+            <tr>
+              <td>Status</td>
+              <td class="from">?status=</td>
+              <td class="data">?status=AVAILABLE → exact match</td>
+            </tr>
+            <tr>
+              <td>Access Level</td>
+              <td class="from">(automatic)</td>
+              <td class="data">Student sees STUDENT items; Staff sees all items</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="sub-desc sd-blue"><strong>Views:</strong> Card grid (default on mobile) or data table (desktop).
+          Configurable in Settings → Appearance.</div>
+        <div class="sub-desc sd-blue"><strong>Grouping:</strong> Items grouped by stock level: Out of Stock → Low Stock
+          (≤5) → Normal Stock. Each group is collapsible.</div>
+        <div class="sub-desc sd-blue"><strong>Pagination:</strong> Client-side, configurable 6/12/24/48 items per page.
+        </div>
+      </div>
+    </div>
+
+    <div class="proc-section ph-blue">
+      <div class="proc-header">
+        <div class="proc-num pn-blue">Complete Data Flow Table</div>
+        <div class="proc-title">All Flows in Process 2.0</div>
+      </div>
+      <div class="proc-body">
+        <table class="flow-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Flow Name</th>
+              <th>From</th>
+              <th>To</th>
+              <th>Data Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>F2.1</td>
+              <td>Item Form Data</td>
+              <td class="from">Staff/Admin</td>
+              <td class="to">2.1 Add</td>
+              <td class="data">15 fields: name, category, qty, status, location, desc, image, access_level, priority,
+                is_returnable, borrow_duration, borrow_duration_unit</td>
+            </tr>
+            <tr>
+              <td>F2.2</td>
+              <td>New Item Record</td>
+              <td class="from">2.1 Add</td>
+              <td class="to">D2: Items</td>
+              <td class="data">INSERT with auto-generated id, created_at, updated_at</td>
+            </tr>
+            <tr>
+              <td>F2.3</td>
+              <td>Updated Fields</td>
+              <td class="from">Staff/Admin</td>
+              <td class="to">2.2 Update</td>
+              <td class="data">Partial object: any subset of item fields</td>
+            </tr>
+            <tr>
+              <td>F2.4</td>
+              <td>Delete Command</td>
+              <td class="from">Staff/Admin</td>
+              <td class="to">2.3 Delete</td>
+              <td class="data">item_id (integer)</td>
+            </tr>
+            <tr>
+              <td>F2.5</td>
+              <td>Status Transition</td>
+              <td class="from">Staff/Admin</td>
+              <td class="to">2.4 Change Status</td>
+              <td class="data">new_status, status_note (text), maintenance_eta (date, optional)</td>
+            </tr>
+            <tr>
+              <td>F2.6</td>
+              <td>Search Query</td>
+              <td class="from">All Users</td>
+              <td class="to">2.5 Browse</td>
+              <td class="data">search_term, category_filter, status_filter</td>
+            </tr>
+            <tr>
+              <td>F2.7</td>
+              <td>Items List</td>
+              <td class="from">D2: Items</td>
+              <td class="to">All Users</td>
+              <td class="data">Array of items filtered by access_level ≤ user.role</td>
+            </tr>
+            <tr>
+              <td>F2.8</td>
+              <td>Audit Entry</td>
+              <td class="from">2.1/2.2/2.3/2.4</td>
+              <td class="to">D6: Audit Logs</td>
+              <td class="data">user, action, item_name, details, ip_address, timestamp</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  <div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 2.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026
+  </div>
+</body>
+
+</html>

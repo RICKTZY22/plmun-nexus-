@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD 5.0 — Reporting & Export | PLMun Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dfd-styles.css">
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ DFD Level 1 — Process 5.0</div>
+  <h1>Reporting & Data Export</h1>
+  <p>Generates analytics dashboards, statistical reports with charts, and exports data to CSV/PDF formats. Aggregates data from multiple stores for visualization.</p>
+</div>
+<div class="container">
+<nav class="nav">
+  <a href="dfd-1-authentication.html">1.0 Authentication</a>
+  <a href="dfd-2-inventory.html">2.0 Inventory</a>
+  <a href="dfd-3-requests.html">3.0 Requests</a>
+  <a href="dfd-4-notifications.html">4.0 Notifications</a>
+  <a class="active" href="dfd-5-reports.html">5.0 Reports</a>
+  <a href="dfd-6-administration.html">6.0 Administration</a>
+</nav>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Sub-Process 5.1</div><div class="proc-title">Compute Statistics</div>
+<div class="proc-desc">Aggregates data from Items and Requests data stores to produce summary statistics, category breakdowns, monthly trends, and stock level alerts.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="store-shape">D2: Items</div><div class="arrow">All items</div><div class="proc-circle"><div class="num">5.1</div>Compute<br>Statistics</div><div class="arrow left">All requests</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <table class="flow-table">
+    <thead><tr><th>Statistic</th><th>Source</th><th>Computation</th></tr></thead>
+    <tbody>
+      <tr><td>Total Items</td><td class="from">D2: Items</td><td class="data">COUNT(*)</td></tr>
+      <tr><td>Available / In Use / Maintenance / Retired</td><td class="from">D2: Items</td><td class="data">COUNT(*) GROUP BY status</td></tr>
+      <tr><td>Low Stock Count</td><td class="from">D2: Items</td><td class="data">COUNT(*) WHERE quantity ≤ 5 AND quantity > 0</td></tr>
+      <tr><td>Category Distribution</td><td class="from">D2: Items</td><td class="data">COUNT(*) GROUP BY category → pie chart data</td></tr>
+      <tr><td>Monthly Request Trends</td><td class="from">D3: Requests</td><td class="data">COUNT(*) GROUP BY MONTH(created_at) → bar chart data</td></tr>
+      <tr><td>Request Status Breakdown</td><td class="from">D3: Requests</td><td class="data">COUNT(*) GROUP BY status → donut chart data</td></tr>
+      <tr><td>Top Requesters</td><td class="from">D3: Requests</td><td class="data">COUNT(*) GROUP BY requested_by ORDER BY count DESC LIMIT 5</td></tr>
+      <tr><td>Recent Activity</td><td class="from">D3: Requests</td><td class="data">WHERE created_at = TODAY(), ORDER BY -created_at LIMIT 10</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Sub-Process 5.2</div><div class="proc-title">Render Dashboard</div>
+<div class="proc-desc">Transforms aggregated statistics into visual components: stat cards, pie/bar/line charts, low-stock alerts, and recent activity feed.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="proc-circle"><div class="num">5.1</div>Statistics</div><div class="arrow">Aggregated data</div><div class="proc-circle"><div class="num">5.2</div>Render<br>Dashboard</div><div class="arrow">Visual components</div><div class="ext">🛡️ Faculty / Staff / Admin</div></div>
+  </div>
+  <div class="sub-desc sd-cyan"><strong>Charts Library:</strong> Recharts (React) — renders responsive SVG charts client-side</div>
+  <div class="sub-desc sd-cyan"><strong>Components:</strong> 5 stat cards (total, available, in-use, maintenance, low-stock), category pie chart, monthly trends bar chart, recent activity list</div>
+  <div class="sub-desc sd-cyan"><strong>Low Stock Alerts:</strong> Clickable cards linking to /inventory?item={id} for quick navigation</div>
+  <div class="sub-desc sd-cyan"><strong>Permission:</strong> Dashboard visible to Faculty+ only. Students see their own request page instead.</div>
+</div></div>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Sub-Process 5.3</div><div class="proc-title">Export to CSV</div>
+<div class="proc-desc">Exports inventory items or request data to CSV format. Uses the File System Access API for a native "Save As" dialog with fallback to anchor download.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff / Admin</div><div class="arrow">Export CSV action</div><div class="proc-circle"><div class="num">5.3</div>Export<br>CSV</div><div class="arrow">.csv file download</div><div class="ext">📄 File System</div></div>
+  </div>
+  <div class="sub-desc sd-cyan"><strong>Format:</strong> UTF-8 with BOM (\\uFEFF) for Excel compatibility. Comma-delimited. Quoted fields.</div>
+  <div class="sub-desc sd-cyan"><strong>Filename:</strong> inventory_YYYY-MM-DD.csv or requests_YYYY-MM-DD.csv</div>
+  <div class="sub-desc sd-cyan"><strong>Inventory CSV Headers:</strong> Name, Category, Quantity, Status, Location, Description, Date Added</div>
+  <div class="sub-desc sd-cyan"><strong>Reports CSV Headers:</strong> Request ID, Item, Requester, Quantity, Status, Date, Purpose</div>
+</div></div>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Sub-Process 5.4</div><div class="proc-title">Export to PDF</div>
+<div class="proc-desc">Generates a formatted PDF document with title, summary statistics, data table, and branded footer. Client-side generation using jsPDF.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff / Admin</div><div class="arrow">Export PDF action</div><div class="proc-circle"><div class="num">5.4</div>Export<br>PDF</div><div class="arrow">.pdf file download</div><div class="ext">📄 File System</div></div>
+  </div>
+  <div class="sub-desc sd-cyan"><strong>Library:</strong> jsPDF + jspdf-autotable (client-side, no server round trip)</div>
+  <div class="sub-desc sd-cyan"><strong>PDF Layout:</strong> Title → Generated timestamp → Summary stats → Auto-table with headers/rows → Page numbers + "PLMun Inventory Nexus" branding</div>
+  <div class="sub-desc sd-cyan"><strong>Table Style:</strong> Grid theme, blue header (#2563eb), alternating row colors, 8pt font</div>
+  <div class="sub-desc sd-cyan"><strong>Save Dialog:</strong> Uses showSaveFilePicker() API for native "Save As" on Chrome/Edge. Falls back to anchor download on Firefox/Safari.</div>
+</div></div>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Sub-Process 5.5</div><div class="proc-title">Print Report</div>
+<div class="proc-desc">Opens a print-ready version of the inventory or report in a new browser window for direct printing.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff / Admin</div><div class="arrow">Print action</div><div class="proc-circle"><div class="num">5.5</div>Print<br>Report</div><div class="arrow">Print dialog</div><div class="ext">🖨️ Printer</div></div>
+  </div>
+  <div class="sub-desc sd-cyan"><strong>Implementation:</strong> Generates a clean HTML page with inline styles, opens in new window via window.open(), calls window.print()</div>
+  <div class="sub-desc sd-cyan"><strong>Layout:</strong> White background, black text, simple table format optimized for paper</div>
+</div></div>
+
+<div class="proc-section ph-cyan">
+<div class="proc-header"><div class="proc-num pn-cyan">Complete Data Flow Table</div><div class="proc-title">All Flows in Process 5.0</div></div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>#</th><th>Flow</th><th>From</th><th>To</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>F5.1</td><td>Item Statistics</td><td class="from">D2: Items</td><td class="to">5.1 Compute</td><td class="data">All item records → count, group, aggregate</td></tr>
+      <tr><td>F5.2</td><td>Request Statistics</td><td class="from">D3: Requests</td><td class="to">5.1 Compute</td><td class="data">All request records → count, group by month/status</td></tr>
+      <tr><td>F5.3</td><td>Dashboard Data</td><td class="from">5.2 Render</td><td class="to">Staff/Admin</td><td class="data">Stat cards, chart data arrays, activity feed items</td></tr>
+      <tr><td>F5.4</td><td>CSV Data</td><td class="from">5.3 Export CSV</td><td class="to">File System</td><td class="data">UTF-8 CSV blob → Save As dialog → .csv file</td></tr>
+      <tr><td>F5.5</td><td>PDF Data</td><td class="from">5.4 Export PDF</td><td class="to">File System</td><td class="data">jsPDF document blob → Save As dialog → .pdf file</td></tr>
+      <tr><td>F5.6</td><td>Print Data</td><td class="from">5.5 Print</td><td class="to">Printer</td><td class="data">HTML table → new window → browser print dialog</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+</div>
+<div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 5.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026</div>
+</body></html>

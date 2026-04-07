@@ -2,14 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Menu, AlertTriangle, ShieldAlert, Wrench, LogOut } from 'lucide-react';
 import { Sidebar, BottomNav } from '../components/layout';
-import { Dashboard, Inventory, Requests, Reports, Login, Register, Settings, Users } from '../pages';
+import { Dashboard, Inventory, Requests, Reports, Login, Register, Settings, Users, AccountDeactivated } from '../pages';
 import { NotificationDropdown, AnimatedBackground } from '../components/ui';
 import { useIsMobile } from '../hooks';
 import useAuthStore from '../store/authStore';
+import api from '../services/api';
 import { RoleGuard } from '../components/auth';
 import { ROLES, hasMinRole } from '../utils/roles';
 
 // Main layout shell (sidebar + content area)
+// Page title mapping for the header
+const PAGE_TITLES = {
+    '/dashboard': 'Dashboard',
+    '/inventory': 'Inventory',
+    '/requests': 'Requests',
+    '/reports': 'Reports',
+    '/settings': 'Settings',
+    '/users': 'User Management',
+};
+
 const DashboardLayout = () => {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -17,6 +28,8 @@ const DashboardLayout = () => {
     const { user, refreshProfile, logout } = useAuthStore();
     const isMobile = useIsMobile();
     const location = useLocation();
+    const currentPageTitle = PAGE_TITLES[location.pathname] || 'PLMun Nexus';
+    const isDashboard = location.pathname === '/dashboard';
 
     // Reset dismissed state on page navigation
     React.useEffect(() => {
@@ -32,7 +45,7 @@ const DashboardLayout = () => {
         return () => clearInterval(id);
     }, [user, refreshProfile]);
 
-    // ── Maintenance mode check ──
+    // ── Maintenance mode check (server-side) ──
     const [maintenanceActive, setMaintenanceActive] = useState(false);
     const [maintenanceEnd, setMaintenanceEnd] = useState(0);
     const [countdown, setCountdown] = useState('');
@@ -42,24 +55,23 @@ const DashboardLayout = () => {
     const isBlocked = maintenanceActive && !hasMinRole(userRole, 'STAFF');
 
     useEffect(() => {
-        const check = () => {
+        const check = async () => {
             try {
-                const raw = localStorage.getItem('plmun-maintenance');
-                if (!raw) { setMaintenanceActive(false); return; }
-                const m = JSON.parse(raw);
-                if (m.enabled && m.endTime > Date.now()) {
+                const res = await api.get('/auth/maintenance/');
+                const { enabled, endTime } = res.data;
+                if (enabled && endTime > Date.now()) {
                     setMaintenanceActive(true);
-                    setMaintenanceEnd(m.endTime);
+                    setMaintenanceEnd(endTime);
                 } else {
-                    // Timer expired — auto-disable
-                    localStorage.removeItem('plmun-maintenance');
                     setMaintenanceActive(false);
                     setMaintenanceEnd(0);
                 }
-            } catch { setMaintenanceActive(false); }
+            } catch {
+                // API unreachable — keep current state
+            }
         };
         check();
-        const interval = setInterval(check, 2000);
+        const interval = setInterval(check, 10_000); // poll every 10s
         return () => clearInterval(interval);
     }, []);
 
@@ -109,14 +121,22 @@ const DashboardLayout = () => {
                             >
                                 <Menu size={22} className="text-gray-600 dark:text-gray-300" />
                             </button>
-                            <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">
-                                Welcome, <span className="font-semibold text-gray-900 dark:text-white">{user?.fullName || 'User'}</span>
-                            </span>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white sm:hidden">
-                                {user?.fullName?.split(' ')[0] || 'Hi'}
-                            </span>
+                            {isDashboard ? (
+                                <>
+                                    <span className="text-sm text-gray-600 dark:text-gray-300 hidden sm:inline">
+                                        Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, <span className="font-semibold text-gray-900 dark:text-white">{user?.fullName?.split(' ')[0] || 'User'}</span>!
+                                    </span>
+                                    <span className="text-sm font-semibold text-gray-900 dark:text-white sm:hidden">
+                                        {user?.fullName?.split(' ')[0] || 'Hi'}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {currentPageTitle}
+                                </span>
+                            )}
                             {isFlagged && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 animate-pulse">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800/30">
                                     <AlertTriangle size={11} />
                                     Flagged
                                 </span>
@@ -238,7 +258,7 @@ const DashboardLayout = () => {
                                     {/* Contact info */}
                                     <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 border border-amber-200 dark:border-amber-700/50">
                                         <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 text-center">
-                                            ⚠️ Please contact an Admin or Staff member to resolve this issue and restore your account access.
+                                            Please contact an Admin or Staff member to resolve this issue and restore your account access.
                                         </p>
                                     </div>
 
@@ -333,6 +353,7 @@ const AppRoutes = () => {
                     </PublicRoute>
                 }
             />
+            <Route path="/deactivated" element={<AccountDeactivated />} />
 
             {/* Protected Routes */}
             <Route
@@ -379,7 +400,23 @@ const AppRoutes = () => {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* 404 catch-all */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={
+                <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4 animate-fade-in">
+                    <div className="w-20 h-20 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-6">
+                        <AlertTriangle size={36} className="text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-2">404</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+                        The page you're looking for doesn't exist or has been moved.
+                    </p>
+                    <a
+                        href="/dashboard"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-medium hover:opacity-90 transition-opacity shadow-lg shadow-primary/20"
+                    >
+                        Go to Dashboard
+                    </a>
+                </div>
+            } />
         </Routes>
     );
 };

@@ -40,7 +40,7 @@ const DueCountdown = ({ expectedReturn, className = '' }) => {
     const colorClass = isOverdue
         ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
         : isUrgent
-            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 animate-pulse'
+            ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30'
             : isWarning
                 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                 : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';

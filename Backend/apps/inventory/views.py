@@ -148,9 +148,8 @@ class ItemViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
         """Kunin yung mga items na mababa na yung stock."""
-        # TODO: baka kailangan gawing dynamic yung threshold, hindi laging 5
         items = self.get_queryset().filter(
-            quantity__lte=Item.LOW_STOCK_THRESHOLD,
+            quantity__lte=Item.get_low_stock_threshold(),
             quantity__gt=0,
         ).exclude(status='RETIRED').order_by('quantity')
 
@@ -176,7 +175,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             'maintenance': queryset.filter(status='MAINTENANCE').count(),
             'retired': queryset.filter(status='RETIRED').count(),
             'lowStock': queryset.filter(
-                quantity__lte=Item.LOW_STOCK_THRESHOLD,
+                quantity__lte=Item.get_low_stock_threshold(),
                 quantity__gt=0,
             ).count(),
             'outOfStock': queryset.filter(quantity=0).count(),
@@ -184,3 +183,64 @@ class ItemViewSet(viewsets.ModelViewSet):
 
         return Response(stats)
 
+    @action(detail=False, methods=['get'])
+    def dashboard(self, request):
+        """Combined dashboard endpoint — returns inventory stats, request stats,
+        low stock items, and category breakdown in a single call.
+        Replaces 4 separate API calls from the frontend (F10)."""
+        from apps.requests.models import Request
+
+        inv_qs = self.get_queryset()
+
+        # Inventory stats
+        inventory_stats = {
+            'total': inv_qs.count(),
+            'available': inv_qs.filter(status='AVAILABLE').count(),
+            'inUse': inv_qs.filter(status='IN_USE').count(),
+            'maintenance': inv_qs.filter(status='MAINTENANCE').count(),
+            'retired': inv_qs.filter(status='RETIRED').count(),
+            'lowStock': inv_qs.filter(
+                quantity__lte=Item.get_low_stock_threshold(), quantity__gt=0,
+            ).count(),
+            'outOfStock': inv_qs.filter(quantity=0).count(),
+        }
+
+        # Low stock items (serialized)
+        low_stock_items = inv_qs.filter(
+            quantity__lte=Item.get_low_stock_threshold(), quantity__gt=0,
+        ).exclude(status='RETIRED').order_by('quantity')
+        low_stock_data = ItemSerializer(low_stock_items, many=True).data
+
+        # Category breakdown
+        from django.db.models import Count
+        category_counts = dict(
+            inv_qs.values_list('category').annotate(count=Count('id')).values_list('category', 'count')
+        )
+
+        # Request stats (scoped by role via the Request queryset)
+        now = timezone.now()
+        if request.user.role in ['STAFF', 'ADMIN']:
+            req_qs = Request.objects.all()
+        else:
+            req_qs = Request.objects.filter(requested_by=request.user)
+        overdue_qs = req_qs.filter(
+            status__in=['APPROVED', 'COMPLETED'],
+            expected_return__lt=now,
+        )
+        request_stats = {
+            'total': req_qs.count(),
+            'pending': req_qs.filter(status='PENDING').count(),
+            'approved': req_qs.filter(status='APPROVED').count(),
+            'completed': req_qs.filter(status='COMPLETED').count(),
+            'rejected': req_qs.filter(status='REJECTED').count(),
+            'returned': req_qs.filter(status='RETURNED').count(),
+            'overdue': overdue_qs.count(),
+            'highPriority': req_qs.filter(priority='HIGH', status='PENDING').count(),
+        }
+
+        return Response({
+            'inventoryStats': inventory_stats,
+            'requestStats': request_stats,
+            'lowStockItems': low_stock_data,
+            'categoryBreakdown': category_counts,
+        })

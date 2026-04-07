@@ -20,7 +20,7 @@ const Dashboard = () => {
     useEffect(() => {
         fetchInventory();
         fetchInventoryStats();
-        fetchRequests();
+        fetchRequests({ include_cleared: true });
         checkOverdue();
     }, [fetchInventory, fetchInventoryStats, fetchRequests, checkOverdue]);
 
@@ -41,7 +41,7 @@ const Dashboard = () => {
     // Calculate category data from real inventory
     const categoryData = React.useMemo(() => {
         if (!inventory || inventory.length === 0) {
-            return [{ name: 'No Data', value: 1 }];
+            return [];
         }
         const categories = {};
         inventory.forEach(item => {
@@ -134,14 +134,23 @@ const Dashboard = () => {
             CANCELLED: 'Request Cancelled',
             OVERDUE: 'Request Overdue',
         };
-        return requests.slice(0, 5).map((req) => ({
-            id: req.id,
-            action: statusLabels[req.status] || `Status: ${req.status}`,
-            item: req.itemName || req.item_name || 'Unknown Item',
-            user: req.requestedBy || req.requester_name || 'Unknown User',
-            time: new Date(req.requestDate || req.created_at).toLocaleDateString(),
-            dotColor: activityDotColors[req.status] || 'bg-gray-400',
-        }));
+        // Only show today's activity — data is NOT deleted, just filtered for display
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return requests
+            .filter(req => {
+                const reqDate = new Date(req.requestDate || req.createdAt || req.created_at);
+                return reqDate >= today;
+            })
+            .slice(0, 8)
+            .map((req) => ({
+                id: req.id,
+                action: statusLabels[req.status] || `Status: ${req.status}`,
+                item: req.itemName || req.item_name || 'Unknown Item',
+                user: req.requestedBy || req.requester_name || 'Unknown User',
+                time: new Date(req.requestDate || req.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                dotColor: activityDotColors[req.status] || 'bg-gray-400',
+            }));
     }, [requests]);
 
     const isLoading = inventoryLoading || requestsLoading;
@@ -155,7 +164,17 @@ const Dashboard = () => {
         completed: myRequests.filter(r => r.status === 'COMPLETED' || r.status === 'RETURNED').length,
         overdue: myRequests.filter(r => r.isOverdue).length,
     }), [myRequests]);
-    const myRecent = useMemo(() => myRequests.slice(0, 5), [myRequests]);
+    // Student view: only show today's requests
+    const myRecent = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return myRequests
+            .filter(r => {
+                const d = new Date(r.requestDate || r.createdAt || r.created_at);
+                return d >= today;
+            })
+            .slice(0, 5);
+    }, [myRequests]);
     const activeBorrows = useMemo(() => myRequests.filter(r => r.status === 'APPROVED' && r.isReturnable && r.expectedReturn), [myRequests]);
 
     // favorites ng user, naka-save sa localStorage
@@ -212,9 +231,25 @@ const Dashboard = () => {
                 </div>
 
                 {requestsLoading && !requests.length && (
-                    <div className="flex flex-col items-center justify-center py-20">
-                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                        <p className="text-gray-500 dark:text-gray-400">Loading your data...</p>
+                    <div className="space-y-6 animate-pulse">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                                        <div>
+                                            <div className="h-6 w-8 bg-gray-200 dark:bg-gray-700 rounded mb-1" />
+                                            <div className="h-3 w-16 bg-gray-100 dark:bg-gray-700/50 rounded" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {[...Array(2)].map((_, i) => (
+                                <div key={i} className="h-20 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700/50" />
+                            ))}
+                        </div>
                     </div>
                 )}
 
@@ -431,11 +466,36 @@ const Dashboard = () => {
     // ── Faculty/Staff/Admin dashboard (mas maraming data) ──
     return (
         <>
-            {/* Loading State */}
+            {/* Loading Skeleton State */}
             {isLoading && !inventory.length && !requests.length && (
-                <div className="flex flex-col items-center justify-center py-20">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">Loading dashboard data...</p>
+                <div className="space-y-6 animate-pulse">
+                    {/* Skeleton header */}
+                    <div>
+                        <div className="h-7 w-40 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+                        <div className="h-4 w-64 bg-gray-200 dark:bg-gray-700 rounded mt-2" />
+                    </div>
+                    {/* Skeleton stat cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                                </div>
+                                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded-lg mb-2" />
+                                <div className="h-3 w-32 bg-gray-100 dark:bg-gray-700/50 rounded" />
+                            </div>
+                        ))}
+                    </div>
+                    {/* Skeleton charts */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {[...Array(2)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-card">
+                                <div className="h-4 w-36 bg-gray-200 dark:bg-gray-700 rounded mb-4" />
+                                <div className="h-[280px] bg-gray-100 dark:bg-gray-700/30 rounded-lg" />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -474,8 +534,8 @@ const Dashboard = () => {
                         title="Pending Requests"
                         value={requestStats?.pending?.toString() || '0'}
                         icon={Clock}
-                        trend={requestStats?.highPriority > 0 ? "up" : "down"}
-                        trendValue={requestStats?.highPriority > 0 ? `${requestStats.highPriority} high priority` : 'No urgent requests'}
+                        trend={requestStats?.overdue > 0 ? "up" : "down"}
+                        trendValue={requestStats?.overdue > 0 ? `${requestStats.overdue} overdue` : 'No urgent requests'}
                         color="warning"
                     />
                     <StatCard
@@ -520,10 +580,11 @@ const Dashboard = () => {
                                     {lowStockItems.slice(0, 6).map((item) => (
                                         <div
                                             key={item.id}
-                                            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-800"
+                                            onClick={() => navigate(`/inventory?item=${item.id}`)}
+                                            className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-800 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 hover:shadow-sm group"
                                         >
                                             <div className="min-w-0 flex-1">
-                                                <p className="font-medium text-gray-800 dark:text-gray-100 truncate text-sm">
+                                                <p className="font-medium text-gray-800 dark:text-gray-100 truncate text-sm group-hover:text-red-700 dark:group-hover:text-red-300 transition-colors">
                                                     {item.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -592,7 +653,10 @@ const Dashboard = () => {
                                 {isLoading ? (
                                     <p className="text-sm text-gray-500 text-center py-4">Loading...</p>
                                 ) : recentActivity.length === 0 ? (
-                                    <p className="text-sm text-gray-500 text-center py-4">No recent activity</p>
+                                    <div className="text-center py-6">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">No activity today</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Activity resets daily. Full history is in Settings → History & Flags.</p>
+                                    </div>
                                 ) : (
                                     recentActivity.map((activity) => (
                                         <div key={activity.id} className="flex items-start gap-3">

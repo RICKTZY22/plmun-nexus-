@@ -3,7 +3,7 @@
 import React from 'react';
 import { Star, Eye, MapPin, ArrowRight, Edit, Trash2, QrCode, FileText, AlertTriangle, XCircle } from 'lucide-react';
 import { Button, Card } from '../ui';
-import { FacultyOnly } from '../auth';
+import { StaffOnly } from '../auth';
 import { resolveImageUrl } from '../../utils/imageUtils';
 
 const statusColors = {
@@ -11,6 +11,12 @@ const statusColors = {
     IN_USE: 'bg-blue-100 text-blue-700',
     MAINTENANCE: 'bg-amber-100 text-amber-700',
     RETIRED: 'bg-gray-100 text-gray-700',
+};
+
+const priorityConfig = {
+    LOW: { label: 'Low', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300', icon: '🟢' },
+    MEDIUM: { label: 'Medium', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300', icon: '🟡' },
+    HIGH: { label: 'High', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300', icon: '🔴' },
 };
 
 const categoryIcons = {
@@ -78,9 +84,16 @@ const InventoryItemCard = ({
                     </div>
                 </div>
                 <div className="flex items-center justify-between">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
-                        {item.status}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[item.status]}`}>
+                            {item.status}
+                        </span>
+                        {item.priority && item.priority !== 'MEDIUM' && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${priorityConfig[item.priority]?.color || ''}`}>
+                                {priorityConfig[item.priority]?.icon} {priorityConfig[item.priority]?.label}
+                            </span>
+                        )}
+                    </div>
                     <div className="flex items-center gap-1.5">
                         <span className={`text-sm font-bold ${item.quantity <= 5 ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-300'}`}>
                             Qty: {item.quantity}
@@ -109,7 +122,7 @@ const InventoryItemCard = ({
                             {item.status === 'IN_USE' ? '🔵 In Use' : item.status === 'MAINTENANCE' ? '🟡 Maintenance' : item.status === 'RETIRED' ? '⚫ Retired' : ''}
                         </span>
                     )}
-                    <FacultyOnly>
+                    <StaffOnly>
                         {/* FIXME: using idx as key here isn't great if actions
                            get reordered, but actions are static per status so it's fine for now */}
                         {getStatusActions(item).map((action, idx) => {
@@ -123,7 +136,7 @@ const InventoryItemCard = ({
                         <Button variant="ghost" size="sm" onClick={() => onQrCode(item)} title="QR Code" className="flex-1 hover:scale-105 transition-transform"><QrCode size={14} className="text-primary" /></Button>
                         <Button variant="ghost" size="sm" onClick={() => onEdit(item)} title="Edit" className="flex-1 hover:scale-105 transition-transform"><Edit size={14} /></Button>
                         <Button variant="ghost" size="sm" onClick={() => onDelete(item.id)} title="Delete" className="flex-1 hover:scale-105 transition-transform"><Trash2 size={14} className="text-red-500" /></Button>
-                    </FacultyOnly>
+                    </StaffOnly>
                 </div>
             </div>
         </Card>

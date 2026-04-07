@@ -28,7 +28,7 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'category', 'quantity', 'status', 'location',
             'description', 'imageUrl', 'accessLevel', 'dateAdded',
-            'isLowStock', 'isOutOfStock', 'isReturnable',
+            'isLowStock', 'isOutOfStock', 'isReturnable', 'priority',
             'borrowDuration', 'borrowDurationUnit',
             'statusNote', 'statusChangedAt', 'statusChangedByName', 'maintenanceEta',
         ]
@@ -60,13 +60,13 @@ class ItemCreateUpdateSerializer(serializers.ModelSerializer):
         model = Item
         fields = [
             'name', 'category', 'quantity', 'status', 'location',
-            'description', 'imageUrl', 'accessLevel', 'isReturnable',
+            'description', 'imageUrl', 'accessLevel', 'isReturnable', 'priority',
             'borrowDuration', 'borrowDurationUnit',
         ]
 
     def validate_quantity(self, value):
-        if value < 0:
-            raise serializers.ValidationError('Quantity cannot be negative.')
+        if value < 1:
+            raise serializers.ValidationError('Quantity must be at least 1.')
         return value
 
     def validate_name(self, value):

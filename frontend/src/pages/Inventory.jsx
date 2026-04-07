@@ -3,13 +3,13 @@ import { Plus, Search, Package, Download, Printer, FileText, MapPin, ChevronDown
 import { Button, Input, Card, Modal, Table, QRCodeModal } from '../components/ui';
 import { useInventory } from '../hooks';
 import { useIsMobile } from '../hooks';
-import { FacultyOnly, StaffOnly } from '../components/auth';
+import { StaffOnly } from '../components/auth';
 import { InventoryItemCard, InventoryFormModal, InventoryDetailModal } from '../components/inventory';
 import { exportCSV, exportPDF } from '../utils/exportUtils';
 import useUIStore from '../store/uiStore';
 import useAuthStore from '../store/authStore';
 import { resolveImageUrl } from '../utils/imageUtils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { hasMinRole, ROLES } from '../utils/roles';
 
 // status colors at category icons na ginagamit sa table view
@@ -57,6 +57,7 @@ const Inventory = () => {
         imageUrl: null,
         accessLevel: 'STUDENT',
         isReturnable: true,
+        priority: 'MEDIUM',
         borrowDuration: '',
         borrowDurationUnit: 'DAYS',
     };
@@ -67,6 +68,21 @@ const Inventory = () => {
     const [deleteItemId, setDeleteItemId] = useState(null);
     const [detailItem, setDetailItem] = useState(null);
     const [collapsedSections, setCollapsedSections] = useState({});
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Auto-open item detail when navigating with ?item=ID (e.g. from dashboard low stock)
+    useEffect(() => {
+        const itemId = searchParams.get('item');
+        if (itemId && inventory && inventory.length > 0) {
+            const found = inventory.find(i => String(i.id) === String(itemId));
+            if (found) {
+                setDetailItem(found);
+                // Clean up URL so refreshing doesn't re-open
+                searchParams.delete('item');
+                setSearchParams(searchParams, { replace: true });
+            }
+        }
+    }, [inventory, searchParams, setSearchParams]);
 
     // favorites system - naka-save sa localStorage per user
     const [favorites, setFavorites] = useState([]);
@@ -101,6 +117,18 @@ const Inventory = () => {
             return matchSearch && matchCategory && matchStatus;
         });
     }, [inventory, search, filterCategory, filterStatus]);
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, filterCategory, filterStatus]);
+
+    // Pagination: slice the flat filtered list, then group the visible page
+    const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
+    const paginatedItems = useMemo(() => {
+        const start = (currentPage - 1) * itemsPerPage;
+        return filteredItems.slice(start, start + itemsPerPage);
+    }, [filteredItems, currentPage, itemsPerPage]);
 
     // Stock-level groups
     const LOW_STOCK_THRESHOLD = 5;
@@ -142,7 +170,6 @@ const Inventory = () => {
     // pag nag-click ng "Request" sa item card, dadalhin sa Requests page
     const handleRequestItem = (item, e) => {
         e?.stopPropagation();
-        console.log('requesting item:', item.name); // debug lang 'to
         navigate('/requests', { state: { prefillItem: item } });
     };
 
@@ -174,6 +201,7 @@ const Inventory = () => {
             imageUrl: null, // Don't send existing URL back as a file
             accessLevel: item.accessLevel || 'STUDENT',
             isReturnable: item.isReturnable !== undefined ? item.isReturnable : true,
+            priority: item.priority || 'MEDIUM',
             borrowDuration: item.borrowDuration || '',
             borrowDurationUnit: item.borrowDurationUnit || 'DAYS',
         });
@@ -274,13 +302,14 @@ const Inventory = () => {
 
     // Export to PDF
     const handleExportPDF = () => {
-        const headers = ['Name', 'Category', 'Qty', 'Status', 'Location'];
+        const headers = ['Name', 'Category', 'Qty', 'Status', 'Location', 'Priority'];
         const rows = inventory.map(item => [
             item.name || '',
             item.category || '',
             item.quantity || 0,
             item.status || '',
             item.location || '',
+            item.priority || 'MEDIUM',
         ]);
         const summary = {
             'Total Items': stats?.total || inventory.length,
@@ -288,7 +317,7 @@ const Inventory = () => {
             'In Use': stats?.inUse || 0,
             'Maintenance': stats?.maintenance || 0,
         };
-        exportPDF('inventory_report', 'PLMun Inventory Report', headers, rows, { summary });
+        exportPDF('inventory_items', 'PLMun Inventory Items List', headers, rows, { summary });
     };
 
     // Print inventory
@@ -387,11 +416,11 @@ const Inventory = () => {
                                 <span className="hidden md:inline">Print</span>
                             </button>
                         </StaffOnly>
-                        <FacultyOnly>
+                        <StaffOnly>
                             <Button icon={Plus} onClick={() => setIsAddModalOpen(true)}>
                                 Add Item
                             </Button>
-                        </FacultyOnly>
+                        </StaffOnly>
                     </div>
                 </div>
 
@@ -486,11 +515,10 @@ const Inventory = () => {
                 ) : (
                     <div className="space-y-4">
                         {stockGroups.map(group => {
-                            const groupItems = filteredItems.filter(group.filter);
+                            const groupItems = paginatedItems.filter(group.filter);
                             if (groupItems.length === 0) return null;
                             const isCollapsed = collapsedSections[group.key];
                             const GroupIcon = group.icon;
-                            const paginatedItems = groupItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
                             return (
                                 <div key={group.key} className={`rounded-xl border ${group.borderColor} overflow-hidden`}>
@@ -545,8 +573,9 @@ const Inventory = () => {
                                                         <Table.Head>Category</Table.Head>
                                                         <Table.Head>Quantity</Table.Head>
                                                         <Table.Head>Status</Table.Head>
+                                                        <Table.Head>Priority</Table.Head>
                                                         <Table.Head>Location</Table.Head>
-                                                        <Table.Head className="text-right"><FacultyOnly>Actions</FacultyOnly></Table.Head>
+                                                        <Table.Head className="text-right"><StaffOnly>Actions</StaffOnly></Table.Head>
                                                     </Table.Row>
                                                 </Table.Header>
                                                 <Table.Body>
@@ -582,6 +611,15 @@ const Inventory = () => {
                                                                 </span>
                                                             </Table.Cell>
                                                             <Table.Cell>
+                                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                                    item.priority === 'HIGH' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' :
+                                                                    item.priority === 'LOW' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                                                }`}>
+                                                                    {item.priority === 'HIGH' ? '🔴' : item.priority === 'LOW' ? '🟢' : '🟡'} {item.priority || 'MEDIUM'}
+                                                                </span>
+                                                            </Table.Cell>
+                                                            <Table.Cell>
                                                                 <div className="flex items-center gap-1 text-sm">
                                                                     <MapPin size={12} className="text-gray-400" />
                                                                     {item.location || '—'}
@@ -592,7 +630,7 @@ const Inventory = () => {
                                                                     {item.status === 'AVAILABLE' && item.quantity > 0 && (
                                                                         <Button variant="ghost" size="sm" onClick={(e) => handleRequestItem(item, e)} title="Request This Item" className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><FileText size={16} /></Button>
                                                                     )}
-                                                                    <FacultyOnly>
+                                                                    <StaffOnly>
                                                                         {getStatusActions(item).map((action, idx) => {
                                                                             const ActionIcon = action.icon;
                                                                             return (
@@ -604,7 +642,7 @@ const Inventory = () => {
                                                                         <Button variant="ghost" size="sm" onClick={() => { setQrItem(item); setQrModalOpen(true); }} title="QR Code"><QrCode size={16} className="text-primary" /></Button>
                                                                         <Button variant="ghost" size="sm" onClick={() => handleEdit(item)} title="Edit"><Edit size={16} /></Button>
                                                                         <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} title="Delete"><Trash2 size={16} className="text-red-500" /></Button>
-                                                                    </FacultyOnly>
+                                                                    </StaffOnly>
                                                                 </div>
                                                             </Table.Cell>
                                                         </Table.Row>
@@ -616,6 +654,56 @@ const Inventory = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {!loading && filteredItems.length > itemsPerPage && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700/50 px-4 py-3">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Showing <span className="font-semibold text-gray-700 dark:text-gray-200">{(currentPage - 1) * itemsPerPage + 1}</span>–<span className="font-semibold text-gray-700 dark:text-gray-200">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-semibold text-gray-700 dark:text-gray-200">{filteredItems.length}</span> items
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                                ← Prev
+                            </button>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                                .reduce((acc, p, i, arr) => {
+                                    if (i > 0 && p - arr[i - 1] > 1) acc.push('...');
+                                    acc.push(p);
+                                    return acc;
+                                }, [])
+                                .map((p, i) =>
+                                    p === '...' ? (
+                                        <span key={`dots-${i}`} className="px-2 text-gray-400">…</span>
+                                    ) : (
+                                        <button
+                                            key={p}
+                                            onClick={() => setCurrentPage(p)}
+                                            className={`w-9 h-9 text-sm font-medium rounded-lg transition-colors ${
+                                                currentPage === p
+                                                    ? 'bg-primary text-white shadow-sm'
+                                                    : 'border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                                            }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    )
+                                )
+                            }
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            >
+                                Next →
+                            </button>
+                        </div>
                     </div>
                 )}
 

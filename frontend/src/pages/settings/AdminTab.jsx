@@ -35,12 +35,14 @@ const AdminTab = ({
                             <input
                                 type="checkbox"
                                 checked={adminSettings.maintenanceMode}
-                                onChange={(e) => {
+                                onChange={async (e) => {
                                     const enabled = e.target.checked;
                                     setAdminSettings({ ...adminSettings, maintenanceMode: enabled });
                                     if (!enabled) {
-                                        localStorage.removeItem('plmun-maintenance');
-                                        flashMessage('✓ Maintenance mode disabled.');
+                                        try {
+                                            await api.post('/auth/maintenance/', { enabled: false });
+                                            flashMessage('✓ Maintenance mode disabled.');
+                                        } catch { flashMessage('✗ Failed to disable maintenance mode.'); }
                                     }
                                 }}
                                 className="w-5 h-5 text-primary rounded focus:ring-primary"
@@ -63,10 +65,11 @@ const AdminTab = ({
                                         <button
                                             key={opt.mins}
                                             type="button"
-                                            onClick={() => {
-                                                const endTime = Date.now() + opt.mins * 60 * 1000;
-                                                localStorage.setItem('plmun-maintenance', JSON.stringify({ enabled: true, endTime }));
-                                                flashMessage(`✓ Maintenance mode enabled for ${opt.label}. Students & Faculty are now blocked.`, 5000);
+                                            onClick={async () => {
+                                                try {
+                                                    await api.post('/auth/maintenance/', { enabled: true, durationMins: opt.mins });
+                                                    flashMessage(`✓ Maintenance mode enabled for ${opt.label}. Students & Faculty are now blocked.`, 5000);
+                                                } catch { flashMessage('✗ Failed to enable maintenance mode.'); }
                                             }}
                                             className="px-3 py-1.5 text-sm rounded-lg bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-700/40 transition-colors font-medium"
                                         >
@@ -81,14 +84,15 @@ const AdminTab = ({
                                         max="1440"
                                         placeholder="Custom minutes"
                                         className="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary"
-                                        onKeyDown={(e) => {
+                                        onKeyDown={async (e) => {
                                             if (e.key === 'Enter') {
                                                 const mins = parseInt(e.target.value, 10);
                                                 if (mins > 0) {
-                                                    const endTime = Date.now() + mins * 60 * 1000;
-                                                    localStorage.setItem('plmun-maintenance', JSON.stringify({ enabled: true, endTime }));
-                                                    flashMessage(`✓ Maintenance mode enabled for ${mins} minute(s).`, 5000);
-                                                    e.target.value = '';
+                                                    try {
+                                                        await api.post('/auth/maintenance/', { enabled: true, durationMins: mins });
+                                                        flashMessage(`✓ Maintenance mode enabled for ${mins} minute(s).`, 5000);
+                                                        e.target.value = '';
+                                                    } catch { flashMessage('✗ Failed to enable maintenance mode.'); }
                                                 }
                                             }
                                         }}
@@ -96,19 +100,25 @@ const AdminTab = ({
                                     <span className="text-xs text-gray-500">Press Enter to set</span>
                                 </div>
                                 {(() => {
-                                    try {
-                                        const m = JSON.parse(localStorage.getItem('plmun-maintenance') || '{}');
-                                        if (m.enabled && m.endTime > Date.now()) {
-                                            const remaining = Math.ceil((m.endTime - Date.now()) / 60000);
-                                            const hrs = Math.floor(remaining / 60);
-                                            const mins = remaining % 60;
-                                            return (
-                                                <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
-                                                    ⏱ Active — ends in {hrs > 0 ? `${hrs}h ` : ''}{mins}m
-                                                </p>
-                                            );
-                                        }
-                                    } catch { }
+                                    // Fetch active status from API on mount — show remaining time
+                                    const [remaining, setRemaining] = React.useState(null);
+                                    React.useEffect(() => {
+                                        api.get('/auth/maintenance/').then(res => {
+                                            if (res.data.enabled && res.data.endTime > Date.now()) {
+                                                const mins = Math.ceil((res.data.endTime - Date.now()) / 60000);
+                                                setRemaining(mins);
+                                            }
+                                        }).catch(() => {});
+                                    }, []);
+                                    if (remaining) {
+                                        const hrs = Math.floor(remaining / 60);
+                                        const mins = remaining % 60;
+                                        return (
+                                            <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                                                ⏱ Active — ends in {hrs > 0 ? `${hrs}h ` : ''}{mins}m
+                                            </p>
+                                        );
+                                    }
                                     return null;
                                 })()}
                             </div>
@@ -116,7 +126,7 @@ const AdminTab = ({
                         <label className="flex items-center justify-between p-3 rounded-xl opacity-60 cursor-not-allowed">
                             <div>
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">Allow Registration</span>
-                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Coming Soon</span>
+                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">WIP</span>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Allow new users to register (requires backend enforcement)</p>
                             </div>
                             <input
@@ -129,7 +139,7 @@ const AdminTab = ({
                         <label className="flex items-center justify-between p-3 rounded-xl opacity-60 cursor-not-allowed">
                             <div>
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">Require Email Verification</span>
-                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Coming Soon</span>
+                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">WIP</span>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Requires SMTP configuration in Django settings</p>
                             </div>
                             <input
@@ -152,7 +162,7 @@ const AdminTab = ({
                         <label className="flex items-center justify-between p-3 rounded-xl opacity-60 cursor-not-allowed">
                             <div>
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">Automatic Backups</span>
-                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Coming Soon</span>
+                                <span className="ml-2 inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">WIP</span>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Automatically backup database (requires backend scheduler)</p>
                             </div>
                             <input

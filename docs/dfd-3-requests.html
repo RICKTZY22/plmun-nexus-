@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD 3.0 — Borrow Request Workflow | PLMun Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="dfd-styles.css">
+</head>
+<body>
+<div class="hero">
+  <div class="hero-badge">◆ DFD Level 1 — Process 3.0</div>
+  <h1>Borrow Request Workflow</h1>
+  <p>Full lifecycle: submission → approval/rejection → item release → return. Includes atomic stock deduction, overdue tracking, comments, and cancellation.</p>
+</div>
+<div class="container">
+<nav class="nav">
+  <a href="dfd-1-authentication.html">1.0 Authentication</a>
+  <a href="dfd-2-inventory.html">2.0 Inventory</a>
+  <a class="active" href="dfd-3-requests.html">3.0 Requests</a>
+  <a href="dfd-4-notifications.html">4.0 Notifications</a>
+  <a href="dfd-5-reports.html">5.0 Reports</a>
+  <a href="dfd-6-administration.html">6.0 Administration</a>
+</nav>
+<div class="legend">
+  <div class="legend-item"><div class="leg-ext"></div>External Entity</div>
+  <div class="legend-item"><div class="leg-proc"></div>Process</div>
+  <div class="legend-item"><div class="leg-store"></div>Data Store</div>
+  <div class="legend-item"><div class="leg-flow"></div>Data Flow</div>
+</div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.1</div><div class="proc-title">Submit Borrow Request</div>
+<div class="proc-desc">Any authenticated user creates a request to borrow an item. The item name is denormalized (snapshot stored on the request) to survive future item renames or deletions.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">👤 Requester</div><div class="arrow">item_id, qty, purpose</div><div class="proc-circle"><div class="num">3.1</div>Submit<br>Request</div><div class="arrow">INSERT request</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Input:</strong> item_id (FK), quantity (≤ available stock), purpose (text), expected_return (datetime, optional)</div>
+  <div class="sub-desc sd-purple"><strong>Denormalization:</strong> item_name = item.name at creation time — preserved even if item renamed later</div>
+  <div class="sub-desc sd-purple"><strong>Initial Status:</strong> PENDING — awaits Staff/Admin review</div>
+  <div class="sub-desc sd-purple"><strong>Notification Trigger:</strong> Creates notification to all Staff users (type=STATUS_CHANGE, "New request submitted")</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.2</div><div class="proc-title">Review Pending Requests</div>
+<div class="proc-desc">Staff/Admin views all pending requests in a queue. Can see requester info, item details, quantity, purpose, and comments.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="store-shape">D3: Requests</div><div class="arrow">Pending requests</div><div class="proc-circle"><div class="num">3.2</div>Review<br>Queue</div><div class="arrow">Request list + details</div><div class="ext">🛡️ Staff / Admin</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Staff View:</strong> Sees ALL requests from all users. Filtered by status tabs (Pending / Approved / All).</div>
+  <div class="sub-desc sd-purple"><strong>Student View:</strong> Sees only their OWN requests. Cannot see other students' requests.</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.3</div><div class="proc-title">Approve Request & Deduct Stock</div>
+<div class="proc-desc">Staff approves a request. Stock is deducted atomically using Django F() expressions to prevent race conditions when two staff approve the same request simultaneously.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff</div><div class="arrow">Approve action</div><div class="proc-circle"><div class="num">3.3</div>Approve &<br>Deduct</div><div class="arrow">quantity -= N</div><div class="store-shape">D2: Items</div></div>
+    <div class="dfd-row"><div class="proc-circle"><div class="num">3.3</div>Approve</div><div class="arrow">status → APPROVED</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Atomic Deduction (Critical):</strong><br>
+  <code>rows = Item.objects.filter(id=item.id, quantity__gte=qty).update(quantity=F('quantity') - qty)</code><br>
+  If rows == 0 → insufficient stock → reject with "Not enough stock available".<br>
+  This prevents double-deduction when two staff click "Approve" at the same moment.</div>
+  <div class="sub-desc sd-purple"><strong>Fields Updated:</strong> request.status="APPROVED", request.approved_by=staff_user, request.approved_at=now()</div>
+  <div class="sub-desc sd-purple"><strong>Notification:</strong> Requester receives "Your request has been approved" notification</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.4</div><div class="proc-title">Reject Request</div>
+<div class="proc-desc">Staff rejects a request with a mandatory reason. No stock change. Requester is notified.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff</div><div class="arrow">Reject + reason</div><div class="proc-circle"><div class="num">3.4</div>Reject<br>Request</div><div class="arrow">status → REJECTED</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Input:</strong> request_id, rejection_reason (required text)</div>
+  <div class="sub-desc sd-purple"><strong>No Stock Effect:</strong> Since the item was never deducted (still PENDING), no quantity change needed</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.5</div><div class="proc-title">Release Item</div>
+<div class="proc-desc">After approval, staff physically hands the item to the requester and marks it as released. Status changes to COMPLETED.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff</div><div class="arrow">Release action</div><div class="proc-circle"><div class="num">3.5</div>Release<br>Item</div><div class="arrow">status → COMPLETED</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Meaning:</strong> COMPLETED = item is physically with the requester. Awaiting return (if is_returnable=true).</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.6</div><div class="proc-title">Process Item Return</div>
+<div class="proc-desc">When the item is returned, staff processes it. Stock is restored. If returned late, the user is flagged for overdue.</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">🛡️ Staff</div><div class="arrow">Return action</div><div class="proc-circle"><div class="num">3.6</div>Process<br>Return</div><div class="arrow">quantity += N</div><div class="store-shape">D2: Items</div></div>
+    <div class="dfd-row"><div class="proc-circle"><div class="num">3.6</div>Return</div><div class="arrow">Overdue check</div><div class="store-shape">D1: Users</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Stock Restoration:</strong> Item quantity incremented by the returned quantity</div>
+  <div class="sub-desc sd-purple"><strong>Overdue Detection:</strong> If returned_at > expected_return → user.is_flagged=True, user.overdue_count += 1</div>
+  <div class="sub-desc sd-purple"><strong>Status:</strong> Request status → RETURNED, returned_at = now()</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.7</div><div class="proc-title">Cancel Request</div>
+<div class="proc-desc">Only the original requester can cancel, and only while the request is still PENDING (not yet approved).</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">👤 Requester</div><div class="arrow">Cancel action</div><div class="proc-circle"><div class="num">3.7</div>Cancel<br>Request</div><div class="arrow">status → CANCELLED</div><div class="store-shape">D3: Requests</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Guard:</strong> request.requested_by == current_user AND request.status == "PENDING"</div>
+  <div class="sub-desc sd-purple"><strong>No Stock Effect:</strong> PENDING requests haven't deducted stock yet, so cancellation is safe</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Sub-Process 3.8</div><div class="proc-title">Add/View Comments</div>
+<div class="proc-desc">Both requester and staff can add comments to a request for discussion (e.g., asking for more info, providing pickup instructions).</div></div>
+<div class="proc-body">
+  <div class="dfd">
+    <div class="dfd-row"><div class="ext">👤 Any Participant</div><div class="arrow">Comment text</div><div class="proc-circle"><div class="num">3.8</div>Add<br>Comment</div><div class="arrow">INSERT comment</div><div class="store-shape">D5: Comments</div></div>
+    <div class="dfd-row"><div class="proc-circle"><div class="num">3.8</div>Comment</div><div class="arrow">Trigger notification</div><div class="store-shape">D4: Notifications</div></div>
+  </div>
+  <div class="sub-desc sd-purple"><strong>Input:</strong> request_id, text (string)</div>
+  <div class="sub-desc sd-purple"><strong>Notification:</strong> Creates COMMENT notification to the other party (if requester comments → staff notified, and vice versa)</div>
+</div></div>
+
+<div class="proc-section ph-purple">
+<div class="proc-header"><div class="proc-num pn-purple">Complete Data Flow Table</div><div class="proc-title">All Flows in Process 3.0</div></div>
+<div class="proc-body">
+  <table class="flow-table">
+    <thead><tr><th>#</th><th>Flow</th><th>From</th><th>To</th><th>Data</th></tr></thead>
+    <tbody>
+      <tr><td>F3.1</td><td>Submit Request</td><td class="from">Requester</td><td class="to">3.1</td><td class="data">item_id, quantity, purpose, expected_return</td></tr>
+      <tr><td>F3.2</td><td>New Request</td><td class="from">3.1</td><td class="to">D3</td><td class="data">INSERT with status=PENDING, item_name snapshot</td></tr>
+      <tr><td>F3.3</td><td>Pending Queue</td><td class="from">D3</td><td class="to">3.2</td><td class="data">Filtered requests WHERE status=PENDING</td></tr>
+      <tr><td>F3.4</td><td>Approve</td><td class="from">Staff</td><td class="to">3.3</td><td class="data">request_id → atomic stock deduction via F()</td></tr>
+      <tr><td>F3.5</td><td>Stock Deduction</td><td class="from">3.3</td><td class="to">D2</td><td class="data">item.quantity = F('quantity') - request.quantity</td></tr>
+      <tr><td>F3.6</td><td>Reject</td><td class="from">Staff</td><td class="to">3.4</td><td class="data">request_id, rejection_reason</td></tr>
+      <tr><td>F3.7</td><td>Release</td><td class="from">Staff</td><td class="to">3.5</td><td class="data">request_id → status=COMPLETED</td></tr>
+      <tr><td>F3.8</td><td>Return</td><td class="from">Staff</td><td class="to">3.6</td><td class="data">request_id → qty restored, returned_at set</td></tr>
+      <tr><td>F3.9</td><td>Overdue Flag</td><td class="from">3.6</td><td class="to">D1</td><td class="data">user.is_flagged=True, overdue_count++</td></tr>
+      <tr><td>F3.10</td><td>Cancel</td><td class="from">Requester</td><td class="to">3.7</td><td class="data">request_id (only if PENDING)</td></tr>
+      <tr><td>F3.11</td><td>Comment</td><td class="from">Any user</td><td class="to">3.8</td><td class="data">request_id, comment text → stored + notification created</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:24px;color:#c084fc">State Machine: Request Status Transitions</h3>
+  <table class="flow-table">
+    <thead><tr><th>Current Status</th><th>Action</th><th>New Status</th><th>Stock Impact</th></tr></thead>
+    <tbody>
+      <tr><td>PENDING</td><td class="to">Approve (Staff)</td><td>APPROVED</td><td class="data">quantity -= N (atomic)</td></tr>
+      <tr><td>PENDING</td><td class="to">Reject (Staff)</td><td>REJECTED</td><td class="data">None</td></tr>
+      <tr><td>PENDING</td><td class="to">Cancel (Owner)</td><td>CANCELLED</td><td class="data">None</td></tr>
+      <tr><td>APPROVED</td><td class="to">Release (Staff)</td><td>COMPLETED</td><td class="data">None (already deducted)</td></tr>
+      <tr><td>COMPLETED</td><td class="to">Return (Staff)</td><td>RETURNED</td><td class="data">quantity += N (restored)</td></tr>
+    </tbody>
+  </table>
+</div></div>
+
+</div>
+<div class="foot">PLMun Inventory Nexus · DFD Level 1 · Process 3.0 · BSCS 3D · Software Engineering 1 · AY 2025–2026</div>
+</body></html>

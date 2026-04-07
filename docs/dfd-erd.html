@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFD & ERD — PLMun Inventory Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#0a0e1a;color:#e2e8f0;line-height:1.6}
+
+/* Hero */
+.hero{position:relative;padding:60px 24px 40px;text-align:center;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(52,211,153,.1) 0%,transparent 60%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.2);margin-bottom:16px}
+.hero h1{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;background:linear-gradient(135deg,#e2e8f0,#34d399,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.hero p{color:#64748b;max-width:640px;margin:0 auto;font-size:.88rem}
+
+.container{max-width:1200px;margin:0 auto;padding:0 24px 80px}
+
+/* Section */
+.section{margin-bottom:56px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:36px;position:relative;overflow:hidden}
+.section::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.s-green::before{background:linear-gradient(90deg,#34d399,#22d3ee)}
+.s-blue::before{background:linear-gradient(90deg,#38bdf8,#818cf8)}
+.s-purple::before{background:linear-gradient(90deg,#818cf8,#c084fc)}
+.s-amber::before{background:linear-gradient(90deg,#fbbf24,#f97316)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;border:1px solid}
+.b-green{background:rgba(52,211,153,.1);color:#34d399;border-color:rgba(52,211,153,.2)}
+.b-blue{background:rgba(56,189,248,.1);color:#38bdf8;border-color:rgba(56,189,248,.2)}
+.b-purple{background:rgba(129,140,248,.1);color:#818cf8;border-color:rgba(129,140,248,.2)}
+.b-amber{background:rgba(251,191,36,.1);color:#fbbf24;border-color:rgba(251,191,36,.2)}
+h2{font-size:1.5rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+h3{font-size:1rem;font-weight:600;color:#cbd5e1;margin:28px 0 12px}
+p.desc{color:#94a3b8;font-size:.82rem;margin-bottom:20px}
+
+/* DFD Shapes */
+.dfd-canvas{position:relative;min-height:500px;padding:24px 0}
+
+/* External Entity = Rectangle */
+.ext{position:absolute;padding:12px 20px;border-radius:10px;font-weight:600;font-size:.75rem;border:2px solid;text-align:center;min-width:130px;z-index:2}
+/* Process = Circle */
+.proc{position:absolute;width:130px;height:130px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:.72rem;border:3px solid;z-index:2;line-height:1.3}
+.proc .p-num{font-size:.55rem;font-weight:600;opacity:.7;margin-bottom:2px}
+/* Data Store = Open-ended rectangle */
+.store{position:absolute;padding:8px 16px;border-top:2px solid;border-bottom:2px solid;font-size:.72rem;font-weight:500;text-align:center;min-width:130px;z-index:2}
+/* Arrow label */
+.flow{position:absolute;font-size:.6rem;color:#94a3b8;text-align:center;max-width:110px;z-index:3;line-height:1.3;pointer-events:none}
+/* SVG arrows */
+.dfd-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+
+/* ERD Table */
+.erd-wrapper{overflow-x:auto}
+.erd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;justify-content:center;padding:16px 0}
+.erd-table{border-radius:14px;overflow:hidden;border:2px solid;background:rgba(255,255,255,.02)}
+.erd-table-header{padding:14px 18px;font-weight:700;font-size:.85rem;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px}
+.erd-table-body{padding:6px 0}
+.erd-field{display:grid;grid-template-columns:20px 1fr 100px;gap:8px;align-items:center;padding:5px 16px;font-size:.72rem;border-bottom:1px solid rgba(255,255,255,.03)}
+.erd-field:last-child{border-bottom:none}
+.erd-field .icon{text-align:center;font-size:.6rem}
+.erd-field .fname{font-family:'JetBrains Mono',monospace;font-weight:500;color:#cbd5e1}
+.erd-field .ftype{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:#64748b;text-align:right}
+.pk{color:#fbbf24}.fk{color:#818cf8}.reg{color:#64748b}
+
+/* ERD colors */
+.erd-user{border-color:rgba(56,189,248,.3)}.erd-user .erd-table-header{background:rgba(56,189,248,.1);color:#38bdf8}
+.erd-item{border-color:rgba(52,211,153,.3)}.erd-item .erd-table-header{background:rgba(52,211,153,.1);color:#34d399}
+.erd-request{border-color:rgba(251,191,36,.3)}.erd-request .erd-table-header{background:rgba(251,191,36,.1);color:#fbbf24}
+.erd-comment{border-color:rgba(168,85,247,.3)}.erd-comment .erd-table-header{background:rgba(168,85,247,.1);color:#a855f7}
+.erd-notif{border-color:rgba(251,113,133,.3)}.erd-notif .erd-table-header{background:rgba(251,113,133,.1);color:#fb7185}
+.erd-audit{border-color:rgba(34,211,238,.3)}.erd-audit .erd-table-header{background:rgba(34,211,238,.1);color:#22d3ee}
+
+/* Relationship lines */
+.rel-section{margin-top:20px;padding:20px;border-radius:12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04)}
+.rel-row{display:grid;grid-template-columns:140px 24px 140px 1fr;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:.75rem}
+.rel-row:last-child{border-bottom:none}
+.rel-entity{padding:4px 10px;border-radius:6px;font-weight:600;text-align:center;font-size:.7rem}
+.rel-card{font-size:.85rem;text-align:center}
+.rel-desc{color:#94a3b8;font-size:.7rem}
+
+/* Level description cards */
+.level-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.level-card{padding:16px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);text-align:center}
+.level-card .lv{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.level-card h4{font-size:.82rem;font-weight:700;color:#f1f5f9;margin-bottom:6px}
+.level-card p{font-size:.7rem;color:#64748b;line-height:1.4}
+
+/* DFD L1 Process Table */
+.proc-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.78rem;border-radius:12px;overflow:hidden;margin-top:16px}
+.proc-table th{background:rgba(255,255,255,.05);padding:10px 14px;text-align:left;font-weight:600;color:#94a3b8;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
+.proc-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.03);color:#cbd5e1}
+.proc-table tr:last-child td{border-bottom:none}
+.proc-table tr:hover td{background:rgba(255,255,255,.02)}
+.pnum{font-weight:700;font-size:.7rem}
+
+/* Footer */
+.doc-footer{text-align:center;padding:32px 24px;color:#334155;font-size:.72rem;border-top:1px solid rgba(255,255,255,.04);margin-top:40px}
+
+@media(max-width:768px){.level-cards{grid-template-columns:1fr}.erd-grid{grid-template-columns:1fr}.rel-row{grid-template-columns:1fr;text-align:center}}
+@media print{body{background:#fff;color:#1e293b}.section{break-inside:avoid;border:1px solid #e2e8f0}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-badge">◆ Phase 2 · System Planning</div>
+  <h1>Data Flow & Entity-Relationship Diagrams</h1>
+  <p>Multi-level Data Flow Diagrams (DFD) showing how data moves through PLMun Nexus, and a complete Entity-Relationship Diagram mapping all database models.</p>
+</div>
+
+<div class="container">
+
+<!-- ══════════ DFD LEVELS OVERVIEW ══════════ -->
+<div class="level-cards">
+  <div class="level-card" style="border-color:rgba(52,211,153,.15)">
+    <div class="lv" style="color:#34d399">Level 0</div>
+    <h4>Context Diagram</h4>
+    <p>Shows the entire system as a single process with all external actors and data flows crossing the boundary.</p>
+  </div>
+  <div class="level-card" style="border-color:rgba(56,189,248,.15)">
+    <div class="lv" style="color:#38bdf8">Level 1</div>
+    <h4>System Overview</h4>
+    <p>Decomposes the system into 6 major processes, their interconnections, and 4 data stores.</p>
+  </div>
+  <div class="level-card" style="border-color:rgba(129,140,248,.15)">
+    <div class="lv" style="color:#818cf8">Level 2</div>
+    <h4>Process Detail</h4>
+    <p>Drills into the Request Management process, showing its 5 internal sub-processes and data flows.</p>
+  </div>
+</div>
+
+<!-- ══════════ DFD LEVEL 0 — CONTEXT ══════════ -->
+<div class="section s-green">
+  <span class="badge b-green">◆ DFD Level 0</span>
+  <h2>Context Diagram</h2>
+  <p class="desc">The system boundary showing all external entities and the data exchanged across it.</p>
+
+  <div class="dfd-canvas" style="min-height:460px">
+    <svg class="dfd-svg" viewBox="0 0 900 460" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Student → System -->
+      <line x1="150" y1="80" x2="370" y2="200" stroke="rgba(56,189,248,.3)" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+      <line x1="370" y1="230" x2="150" y2="110" stroke="rgba(56,189,248,.2)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-blue)"/>
+      <!-- Faculty → System -->
+      <line x1="150" y1="280" x2="370" y2="230" stroke="rgba(52,211,153,.3)" stroke-width="1.5" marker-end="url(#arr-green)"/>
+      <line x1="370" y1="250" x2="150" y2="310" stroke="rgba(52,211,153,.2)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-green)"/>
+      <!-- System → Staff -->
+      <line x1="540" y1="200" x2="720" y2="80" stroke="rgba(251,191,36,.3)" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+      <line x1="720" y1="110" x2="540" y2="230" stroke="rgba(251,191,36,.2)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-amber)"/>
+      <!-- System → Admin -->
+      <line x1="540" y1="250" x2="720" y2="350" stroke="rgba(251,113,133,.3)" stroke-width="1.5" marker-end="url(#arr-rose)"/>
+      <line x1="720" y1="320" x2="540" y2="230" stroke="rgba(251,113,133,.2)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-rose)"/>
+      <!-- System → DB -->
+      <line x1="455" y1="300" x2="455" y2="400" stroke="rgba(129,140,248,.3)" stroke-width="1.5" marker-end="url(#arr-indigo)"/>
+      <line x1="470" y1="400" x2="470" y2="300" stroke="rgba(129,140,248,.2)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr-indigo)"/>
+      <defs>
+        <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(56,189,248,.5)"/></marker>
+        <marker id="arr-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(52,211,153,.5)"/></marker>
+        <marker id="arr-amber" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(251,191,36,.5)"/></marker>
+        <marker id="arr-rose" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(251,113,133,.5)"/></marker>
+        <marker id="arr-indigo" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="rgba(129,140,248,.5)"/></marker>
+      </defs>
+    </svg>
+
+    <!-- Entities -->
+    <div class="ext" style="top:55px;left:20px;background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3);color:#38bdf8">👤 Student</div>
+    <div class="ext" style="top:255px;left:20px;background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.3);color:#34d399">🎓 Faculty</div>
+    <div class="ext" style="top:55px;right:30px;background:rgba(251,191,36,.06);border-color:rgba(251,191,36,.3);color:#fbbf24">🔧 Staff</div>
+    <div class="ext" style="top:310px;right:30px;background:rgba(251,113,133,.06);border-color:rgba(251,113,133,.3);color:#fb7185">👑 Admin</div>
+
+    <!-- Central Process -->
+    <div class="proc" style="top:148px;left:50%;margin-left:-75px;width:150px;height:150px;background:linear-gradient(135deg,rgba(52,211,153,.08),rgba(56,189,248,.06));border-color:rgba(52,211,153,.3)">
+      <div class="p-num" style="color:#34d399">P0</div>
+      <div style="color:#34d399;font-size:.85rem;font-weight:800">PLMun<br>Inventory<br>Nexus</div>
+    </div>
+
+    <!-- Data Store -->
+    <div class="store" style="bottom:20px;left:50%;margin-left:-80px;border-color:rgba(129,140,248,.4);color:#818cf8;background:rgba(129,140,248,.05)">D0 — PostgreSQL DB</div>
+
+    <!-- Flow Labels -->
+    <div class="flow" style="top:40px;left:200px">Credentials,<br>Borrow Requests</div>
+    <div class="flow" style="top:140px;left:170px;color:#64748b;font-style:italic">Status Updates,<br>Notifications ←</div>
+    <div class="flow" style="top:230px;left:200px">Credentials,<br>Borrow Requests</div>
+    <div class="flow" style="top:40px;right:175px">Pending Queue,<br>Approval Actions</div>
+    <div class="flow" style="top:135px;right:160px;color:#64748b;font-style:italic">Management,<br>Reports ←</div>
+    <div class="flow" style="top:310px;right:175px">Config, Users,<br>Audit Logs</div>
+    <div class="flow" style="bottom:70px;left:50%;margin-left:20px">Read/Write<br>All Tables</div>
+  </div>
+</div>
+
+<!-- ══════════ DFD LEVEL 1 — VISUAL ══════════ -->
+<div class="section s-blue">
+  <span class="badge b-blue">◆ DFD Level 1</span>
+  <h2>System Overview — 6 Processes</h2>
+  <p class="desc">Decomposition of the context diagram into 6 processes, 4 external entities, and 5 data stores with labeled data flows.</p>
+
+  <div style="overflow-x:auto;padding:8px 0">
+  <svg viewBox="0 0 980 680" xmlns="http://www.w3.org/2000/svg" style="width:100%;min-width:780px;max-width:980px;margin:0 auto;display:block;background:rgba(255,255,255,.01);border-radius:12px" font-family="Inter,sans-serif">
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#475569"/></marker>
+      <marker id="arr-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#38bdf8"/></marker>
+      <marker id="arr-g" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#34d399"/></marker>
+      <marker id="arr-y" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#fbbf24"/></marker>
+      <marker id="arr-p" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#a855f7"/></marker>
+      <marker id="arr-r" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#fb7185"/></marker>
+      <marker id="arr-c" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#22d3ee"/></marker>
+    </defs>
+
+    <!-- ════ EXTERNAL ENTITIES (right side) ════ -->
+    <rect x="810" y="30" width="150" height="42" rx="4" fill="#0f1629" stroke="#38bdf8" stroke-width="2"/>
+    <text x="885" y="56" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="700">Student</text>
+
+    <rect x="810" y="120" width="150" height="42" rx="4" fill="#0f1629" stroke="#34d399" stroke-width="2"/>
+    <text x="885" y="146" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Faculty</text>
+
+    <rect x="810" y="290" width="150" height="42" rx="4" fill="#0f1629" stroke="#fbbf24" stroke-width="2"/>
+    <text x="885" y="316" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700">Staff</text>
+
+    <rect x="810" y="420" width="150" height="42" rx="4" fill="#0f1629" stroke="#fb7185" stroke-width="2"/>
+    <text x="885" y="446" text-anchor="middle" fill="#fb7185" font-size="13" font-weight="700">Admin</text>
+
+    <!-- ════ DATA STORES (left side, double-line) ════ -->
+    <!-- D1 -->
+    <rect x="20" y="52" width="140" height="30" fill="rgba(56,189,248,.04)"/>
+    <line x1="20" y1="52" x2="160" y2="52" stroke="#38bdf8" stroke-width="2"/>
+    <line x1="20" y1="82" x2="160" y2="82" stroke="#38bdf8" stroke-width="2"/>
+    <text x="30" y="72" fill="#38bdf8" font-size="12" font-weight="600">D1  Users</text>
+
+    <!-- D2 -->
+    <rect x="20" y="160" width="140" height="30" fill="rgba(52,211,153,.04)"/>
+    <line x1="20" y1="160" x2="160" y2="160" stroke="#34d399" stroke-width="2"/>
+    <line x1="20" y1="190" x2="160" y2="190" stroke="#34d399" stroke-width="2"/>
+    <text x="30" y="180" fill="#34d399" font-size="12" font-weight="600">D2  Items</text>
+
+    <!-- D3 -->
+    <rect x="20" y="310" width="140" height="30" fill="rgba(251,191,36,.04)"/>
+    <line x1="20" y1="310" x2="160" y2="310" stroke="#fbbf24" stroke-width="2"/>
+    <line x1="20" y1="340" x2="160" y2="340" stroke="#fbbf24" stroke-width="2"/>
+    <text x="30" y="330" fill="#fbbf24" font-size="12" font-weight="600">D3  Requests</text>
+
+    <!-- D4 -->
+    <rect x="20" y="440" width="140" height="30" fill="rgba(251,113,133,.04)"/>
+    <line x1="20" y1="440" x2="160" y2="440" stroke="#fb7185" stroke-width="2"/>
+    <line x1="20" y1="470" x2="160" y2="470" stroke="#fb7185" stroke-width="2"/>
+    <text x="30" y="460" fill="#fb7185" font-size="12" font-weight="600">D4  Audit Logs</text>
+
+    <!-- D5 -->
+    <rect x="20" y="560" width="140" height="30" fill="rgba(168,85,247,.04)"/>
+    <line x1="20" y1="560" x2="160" y2="560" stroke="#a855f7" stroke-width="2"/>
+    <line x1="20" y1="590" x2="160" y2="590" stroke="#a855f7" stroke-width="2"/>
+    <text x="30" y="580" fill="#a855f7" font-size="12" font-weight="600">D5  Notifications</text>
+
+    <!-- ════ PROCESSES (center, rounded-rect with number badge) ════ -->
+    <!-- P1: Authenticate User -->
+    <rect x="350" y="30" width="180" height="50" rx="8" fill="rgba(56,189,248,.06)" stroke="#38bdf8" stroke-width="2"/>
+    <circle cx="360" cy="40" r="10" fill="#38bdf8"/><text x="360" y="44" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="800">1</text>
+    <text x="450" y="61" text-anchor="middle" fill="#38bdf8" font-size="12" font-weight="700">Authenticate User</text>
+
+    <!-- P2: Manage Inventory -->
+    <rect x="350" y="140" width="180" height="50" rx="8" fill="rgba(52,211,153,.06)" stroke="#34d399" stroke-width="2"/>
+    <circle cx="360" cy="150" r="10" fill="#34d399"/><text x="360" y="154" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="800">2</text>
+    <text x="450" y="171" text-anchor="middle" fill="#34d399" font-size="12" font-weight="700">Manage Inventory</text>
+
+    <!-- P3: Manage Requests -->
+    <rect x="350" y="280" width="180" height="58" rx="8" fill="rgba(251,191,36,.06)" stroke="#fbbf24" stroke-width="2.5"/>
+    <circle cx="360" cy="290" r="10" fill="#fbbf24"/><text x="360" y="294" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="800">3</text>
+    <text x="450" y="315" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">Manage Requests</text>
+
+    <!-- P4: Notify Users -->
+    <rect x="350" y="410" width="180" height="50" rx="8" fill="rgba(168,85,247,.06)" stroke="#a855f7" stroke-width="2"/>
+    <circle cx="360" cy="420" r="10" fill="#a855f7"/><text x="360" y="424" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">4</text>
+    <text x="450" y="441" text-anchor="middle" fill="#a855f7" font-size="12" font-weight="700">Notify Users</text>
+
+    <!-- P5: Generate Reports -->
+    <rect x="350" y="520" width="180" height="50" rx="8" fill="rgba(251,113,133,.06)" stroke="#fb7185" stroke-width="2"/>
+    <circle cx="360" cy="530" r="10" fill="#fb7185"/><text x="360" y="534" text-anchor="middle" fill="#fff" font-size="10" font-weight="800">5</text>
+    <text x="450" y="551" text-anchor="middle" fill="#fb7185" font-size="12" font-weight="700">Generate Reports</text>
+
+    <!-- P6: Manage Users -->
+    <rect x="580" y="520" width="180" height="50" rx="8" fill="rgba(34,211,238,.06)" stroke="#22d3ee" stroke-width="2"/>
+    <circle cx="590" cy="530" r="10" fill="#22d3ee"/><text x="590" y="534" text-anchor="middle" fill="#0f172a" font-size="10" font-weight="800">6</text>
+    <text x="680" y="551" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="700">Manage Users</text>
+
+    <!-- ════ ARROWS: Entity → Process ════ -->
+    <!-- Student → P1: Credentials -->
+    <line x1="810" y1="51" x2="532" y2="51" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-b)"/>
+    <text x="670" y="44" text-anchor="middle" fill="#94a3b8" font-size="9">Credentials</text>
+
+    <!-- Student → P3: Borrow request -->
+    <path d="M810,55 L780,55 L780,300 L532,300" stroke="#fbbf24" stroke-width="1.5" fill="none" marker-end="url(#arr-y)"/>
+    <text x="780" y="185" fill="#94a3b8" font-size="9" text-anchor="end" transform="rotate(-90,780,185)">Borrow request</text>
+
+    <!-- Faculty → P3: Borrow request -->
+    <line x1="810" y1="141" x2="770" y2="141" stroke="#fbbf24" stroke-width="1.2" fill="none"/>
+    <path d="M770,141 L770,310 L532,310" stroke="#fbbf24" stroke-width="1.2" fill="none" marker-end="url(#arr-y)"/>
+    <text x="650" y="305" text-anchor="middle" fill="#94a3b8" font-size="9">Borrow request</text>
+
+    <!-- Staff → P3: Approval / Rejection -->
+    <line x1="810" y1="311" x2="532" y2="311" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arr-y)"/>
+    <text x="670" y="326" text-anchor="middle" fill="#94a3b8" font-size="9">Approval / Rejection</text>
+
+    <!-- Admin → P6: User management -->
+    <line x1="810" y1="441" x2="790" y2="441" stroke="#22d3ee" stroke-width="1.5" fill="none"/>
+    <path d="M790,441 L790,545 L762,545" stroke="#22d3ee" stroke-width="1.5" fill="none" marker-end="url(#arr-c)"/>
+    <text x="795" y="495" fill="#94a3b8" font-size="9" transform="rotate(-90,795,495)">User mgmt</text>
+
+    <!-- ════ ARROWS: Process → Data Store ════ -->
+    <!-- P1 → D1: Verify / Create user -->
+    <line x1="350" y1="55" x2="162" y2="62" stroke="#38bdf8" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#arr-b)"/>
+    <text x="256" y="48" text-anchor="middle" fill="#64748b" font-size="8">Verify / Create user</text>
+
+    <!-- P2 → D2: CRUD operations -->
+    <line x1="350" y1="165" x2="162" y2="172" stroke="#34d399" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#arr-g)"/>
+    <text x="256" y="157" text-anchor="middle" fill="#64748b" font-size="8">CRUD items</text>
+
+    <!-- P3 → D3: Create / Update request -->
+    <line x1="350" y1="309" x2="162" y2="322" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="6 4" marker-end="url(#arr-y)"/>
+    <text x="256" y="306" text-anchor="middle" fill="#64748b" font-size="8">Create / Update request</text>
+
+    <!-- P3 → D2: Stock deduction -->
+    <path d="M380,280 L380,175 L162,175" stroke="#34d399" stroke-width="1" stroke-dasharray="4 4" fill="none" marker-end="url(#arr-g)"/>
+    <text x="280" y="200" text-anchor="middle" fill="#64748b" font-size="8">F() stock update</text>
+
+    <!-- P3 → D4: Audit log -->
+    <path d="M370,338 L370,455 L162,455" stroke="#fb7185" stroke-width="1" stroke-dasharray="4 4" fill="none" marker-end="url(#arr-r)"/>
+    <text x="270" y="450" text-anchor="middle" fill="#64748b" font-size="8">Log action</text>
+
+    <!-- P4 → D5: Notification records -->
+    <line x1="350" y1="435" x2="250" y2="435" stroke="#a855f7" stroke-width="1" fill="none"/>
+    <path d="M250,435 L250,575 L162,575" stroke="#a855f7" stroke-width="1.3" stroke-dasharray="6 4" fill="none" marker-end="url(#arr-p)"/>
+    <text x="200" y="510" text-anchor="middle" fill="#64748b" font-size="8" transform="rotate(-90,200,510)">bulk_create</text>
+
+    <!-- P5 → D1,D2,D3: Reads -->
+    <path d="M350,545 L220,545 L220,325 L162,325" stroke="#fb7185" stroke-width="1" stroke-dasharray="3 4" fill="none" marker-end="url(#arr-r)"/>
+    <text x="230" y="440" fill="#64748b" font-size="8" transform="rotate(-90,230,440)">Read all stores</text>
+
+    <!-- P6 → D1: Update roles -->
+    <path d="M580,545 L240,545 L240,67 L162,67" stroke="#22d3ee" stroke-width="1" stroke-dasharray="5 4" fill="none" marker-end="url(#arr-c)"/>
+    <text x="247" y="300" fill="#64748b" font-size="8" transform="rotate(-90,247,300)">Update user roles</text>
+
+    <!-- ════ ARROWS: Process → Process ════ -->
+    <!-- P3 → P4: Status change event -->
+    <line x1="440" y1="338" x2="440" y2="408" stroke="#a855f7" stroke-width="1.5" marker-end="url(#arr-p)"/>
+    <text x="452" y="378" fill="#94a3b8" font-size="8">Status change</text>
+
+    <!-- P1 → D4: Audit login -->
+    <path d="M400,80 L400,100 L210,100 L210,445 L162,445" stroke="#fb7185" stroke-width=".8" stroke-dasharray="3 4" fill="none" marker-end="url(#arr-r)"/>
+    <text x="210" y="270" fill="#64748b" font-size="7" transform="rotate(-90,210,270)">Audit log</text>
+
+    <!-- ════ ARROWS: Process → Entity (outputs) ════ -->
+    <!-- P1 → Student: JWT tokens -->
+    <line x1="532" y1="65" x2="808" y2="65" stroke="#38bdf8" stroke-width="1.2" marker-end="url(#arr-b)"/>
+    <text x="670" y="76" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">JWT tokens</text>
+
+    <!-- P4 → Entity: Notifications -->
+    <path d="M530,435 L750,435 L750,462 L810,462" stroke="#a855f7" stroke-width="1.2" fill="none" marker-end="url(#arr-p)"/>
+    <text x="656" y="428" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">Notifications</text>
+
+    <!-- P5 → Staff: Reports -->
+    <path d="M530,545 L750,545 L750,332 L810,332" stroke="#fb7185" stroke-width="1.2" fill="none" marker-end="url(#arr-r)"/>
+    <text x="640" y="540" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">PDF / CSV reports</text>
+
+    <!-- ════ LEGEND ════ -->
+    <rect x="20" y="625" width="940" height="42" rx="8" fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.05)"/>
+    <text x="40" y="650" fill="#64748b" font-size="10" font-weight="600">LEGEND:</text>
+    <!-- Process -->
+    <rect x="120" y="636" width="30" height="18" rx="4" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="158" y="650" fill="#94a3b8" font-size="9">Process</text>
+    <!-- Entity -->
+    <rect x="220" y="636" width="30" height="18" rx="2" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="258" y="650" fill="#94a3b8" font-size="9">External Entity</text>
+    <!-- Data Store -->
+    <line x1="370" y1="638" x2="400" y2="638" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="370" y1="652" x2="400" y2="652" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="408" y="650" fill="#94a3b8" font-size="9">Data Store</text>
+    <!-- Solid arrow -->
+    <line x1="500" y1="645" x2="530" y2="645" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="538" y="650" fill="#94a3b8" font-size="9">Data Flow</text>
+    <!-- Dashed arrow -->
+    <line x1="620" y1="645" x2="650" y2="645" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+    <text x="658" y="650" fill="#94a3b8" font-size="9">Store Read/Write</text>
+  </svg>
+  </div>
+
+<!-- ══════════ DFD LEVEL 2 ══════════ -->
+<div class="section s-purple">
+  <span class="badge b-purple">◆ DFD Level 2</span>
+  <h2>Process 3 — Request Management (Detailed)</h2>
+  <p class="desc">Decomposition of P3 into 5 sub-processes showing the complete borrow-approve-return lifecycle.</p>
+
+  <table class="proc-table">
+    <tr><th style="width:55px">#</th><th>Sub-Process</th><th>Input</th><th>Processing Logic</th><th>Output</th></tr>
+    <tr>
+      <td><span class="pnum" style="color:#fbbf24">P3.1</span></td>
+      <td style="font-weight:600">Validate & Submit Request</td>
+      <td>Item ID, Quantity, Purpose, Priority from User</td>
+      <td>Check stock ≥ requested qty; check user role ≥ item access_level; check user not flagged; snapshot item_name</td>
+      <td>New Request record (status=PENDING) → D3</td>
+    </tr>
+    <tr>
+      <td><span class="pnum" style="color:#fbbf24">P3.2</span></td>
+      <td style="font-weight:600">Review & Decide</td>
+      <td>Pending request from D3 + Staff/Admin decision</td>
+      <td>Block self-approval (approved_by ≠ requested_by); set approved_at timestamp; calculate expected_return from item.borrow_duration</td>
+      <td>Status → APPROVED or REJECTED (with reason) → D3</td>
+    </tr>
+    <tr>
+      <td><span class="pnum" style="color:#fbbf24">P3.3</span></td>
+      <td style="font-weight:600">Deduct Inventory</td>
+      <td>Approved request with quantity</td>
+      <td>F('quantity') - approved_qty (atomic, race-safe); auto-set item status if qty hits 0</td>
+      <td>Updated stock in D2; audit log entry → D4</td>
+    </tr>
+    <tr>
+      <td><span class="pnum" style="color:#fbbf24">P3.4</span></td>
+      <td style="font-weight:600">Process Return</td>
+      <td>Return action from Staff + returned_at timestamp</td>
+      <td>F('quantity') + returned_qty (restock); set status=RETURNED; check if return is overdue → increment user overdue_count & flag if ≥3</td>
+      <td>Restocked item in D2; updated request → D3; overdue notification → D5</td>
+    </tr>
+    <tr>
+      <td><span class="pnum" style="color:#fbbf24">P3.5</span></td>
+      <td style="font-weight:600">Broadcast Notifications</td>
+      <td>Status change event + recipient calculation</td>
+      <td>bulk_create notifications for: requester + all Staff/Admin; set type based on action (STATUS_CHANGE, OVERDUE, COMMENT)</td>
+      <td>Notification records → D5</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══════════ ERD ══════════ -->
+<div class="section s-amber">
+  <span class="badge b-amber">◆ Entity-Relationship Diagram</span>
+  <h2>Database Schema — All Models</h2>
+  <p class="desc">Complete ERD showing all 6 Django models with field types, constraints, and foreign key relationships. Mapped directly from the production codebase.</p>
+
+  <div class="erd-grid">
+    <!-- USER -->
+    <div class="erd-table erd-user">
+      <div class="erd-table-header">👤 User (CustomUser)</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">username</span><span class="ftype">CharField(150)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">email</span><span class="ftype">EmailField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">first_name</span><span class="ftype">CharField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">last_name</span><span class="ftype">CharField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">role</span><span class="ftype">Enum [4 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">department</span><span class="ftype">CharField(100)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">student_id</span><span class="ftype">CharField(20)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">phone</span><span class="ftype">CharField(20)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">avatar</span><span class="ftype">ImageField?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">is_active</span><span class="ftype">BooleanField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">is_flagged</span><span class="ftype">BooleanField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">overdue_count</span><span class="ftype">PositiveInt</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">password</span><span class="ftype">PBKDF2 Hash</span></div>
+      </div>
+    </div>
+
+    <!-- ITEM -->
+    <div class="erd-table erd-item">
+      <div class="erd-table-header">📦 Item</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">name</span><span class="ftype">CharField(200)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">category</span><span class="ftype">Enum [5 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">quantity</span><span class="ftype">PositiveInt</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">status</span><span class="ftype">Enum [4 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">access_level</span><span class="ftype">Enum [4 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">location</span><span class="ftype">CharField(100)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">description</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">is_returnable</span><span class="ftype">BooleanField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">borrow_duration</span><span class="ftype">PositiveInt?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">borrow_duration_unit</span><span class="ftype">Enum [4 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">image</span><span class="ftype">ImageField?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">status_note</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">status_changed_by</span><span class="ftype">FK → User?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">maintenance_eta</span><span class="ftype">DateTime?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">created_at</span><span class="ftype">DateTime auto</span></div>
+      </div>
+    </div>
+
+    <!-- REQUEST -->
+    <div class="erd-table erd-request">
+      <div class="erd-table-header">📋 Request</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">item</span><span class="ftype">FK → Item</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">item_name</span><span class="ftype">CharField(200)</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">requested_by</span><span class="ftype">FK → User</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">quantity</span><span class="ftype">PositiveInt</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">purpose</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">status</span><span class="ftype">Enum [6 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">priority</span><span class="ftype">Enum [3 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">request_date</span><span class="ftype">Date auto</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">expected_return</span><span class="ftype">DateTime?</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">approved_by</span><span class="ftype">FK → User?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">approved_at</span><span class="ftype">DateTime?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">rejection_reason</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">returned_at</span><span class="ftype">DateTime?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">is_cleared</span><span class="ftype">BooleanField</span></div>
+      </div>
+    </div>
+
+    <!-- COMMENT -->
+    <div class="erd-table erd-comment">
+      <div class="erd-table-header">💬 Comment</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">request</span><span class="ftype">FK → Request</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">author</span><span class="ftype">FK → User</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">text</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">created_at</span><span class="ftype">DateTime auto</span></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION -->
+    <div class="erd-table erd-notif">
+      <div class="erd-table-header">🔔 Notification</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">recipient</span><span class="ftype">FK → User</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">sender</span><span class="ftype">FK → User?</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">request</span><span class="ftype">FK → Request?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">type</span><span class="ftype">Enum [4 vals]</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">message</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">is_read</span><span class="ftype">BooleanField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">created_at</span><span class="ftype">DateTime auto</span></div>
+      </div>
+    </div>
+
+    <!-- AUDIT LOG -->
+    <div class="erd-table erd-audit">
+      <div class="erd-table-header">📝 AuditLog</div>
+      <div class="erd-table-body">
+        <div class="erd-field"><span class="icon pk">🔑</span><span class="fname">id</span><span class="ftype">AutoField PK</span></div>
+        <div class="erd-field"><span class="icon fk">🔗</span><span class="fname">user</span><span class="ftype">FK → User?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">action</span><span class="ftype">CharField(60)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">username</span><span class="ftype">CharField(150)</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">details</span><span class="ftype">TextField</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">ip_address</span><span class="ftype">GenericIP?</span></div>
+        <div class="erd-field"><span class="icon reg">•</span><span class="fname">timestamp</span><span class="ftype">DateTime auto</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Relationships -->
+  <h3>Entity Relationships</h3>
+  <div class="rel-section">
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(251,191,36,.1);color:#fbbf24">Request</div>
+      <div class="rel-desc">A user submits many borrow requests (requested_by FK)</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(251,191,36,.1);color:#fbbf24">Request</div>
+      <div class="rel-desc">A staff/admin approves many requests (approved_by FK)</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(52,211,153,.1);color:#34d399">Item</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(251,191,36,.1);color:#fbbf24">Request</div>
+      <div class="rel-desc">An item can be requested many times (item FK)</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(251,191,36,.1);color:#fbbf24">Request</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(168,85,247,.1);color:#a855f7">Comment</div>
+      <div class="rel-desc">A request has many threaded comments</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(168,85,247,.1);color:#a855f7">Comment</div>
+      <div class="rel-desc">A user authors many comments (author FK)</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(251,113,133,.1);color:#fb7185">Notification</div>
+      <div class="rel-desc">A user receives many notifications (recipient FK)</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(251,191,36,.1);color:#fbbf24">Request</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(251,113,133,.1);color:#fb7185">Notification</div>
+      <div class="rel-desc">A request triggers many notifications</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(34,211,238,.1);color:#22d3ee">AuditLog</div>
+      <div class="rel-desc">A user's actions generate many audit entries</div>
+    </div>
+    <div class="rel-row">
+      <div class="rel-entity" style="background:rgba(56,189,248,.1);color:#38bdf8">User</div>
+      <div class="rel-card">1 → *</div>
+      <div class="rel-entity" style="background:rgba(52,211,153,.1);color:#34d399">Item</div>
+      <div class="rel-desc">A staff/admin changes item statuses (status_changed_by FK)</div>
+    </div>
+  </div>
+
+  <h3>Enum Definitions</h3>
+  <table class="proc-table">
+    <tr><th>Model</th><th>Field</th><th>Values</th></tr>
+    <tr><td>User</td><td>role</td><td>STUDENT · FACULTY · STAFF · ADMIN (hierarchy: 0 → 3)</td></tr>
+    <tr><td>Item</td><td>status</td><td>AVAILABLE · IN_USE · MAINTENANCE · RETIRED</td></tr>
+    <tr><td>Item</td><td>category</td><td>ELECTRONICS · FURNITURE · EQUIPMENT · SUPPLIES · OTHER</td></tr>
+    <tr><td>Item</td><td>access_level</td><td>STUDENT · FACULTY · STAFF · ADMIN</td></tr>
+    <tr><td>Item</td><td>borrow_duration_unit</td><td>MINUTES · HOURS · DAYS · MONTHS</td></tr>
+    <tr><td>Request</td><td>status</td><td>PENDING · APPROVED · REJECTED · COMPLETED · RETURNED · CANCELLED</td></tr>
+    <tr><td>Request</td><td>priority</td><td>LOW · NORMAL · HIGH</td></tr>
+    <tr><td>Notification</td><td>type</td><td>COMMENT · STATUS_CHANGE · REMINDER · OVERDUE</td></tr>
+  </table>
+</div>
+
+</div>
+
+<div class="doc-footer">
+  PLMun Inventory Nexus · BSCS 3D · Software Engineering 1 · AY 2025–2026 · Mr. Melchor Paz
+</div>
+</body>
+</html>

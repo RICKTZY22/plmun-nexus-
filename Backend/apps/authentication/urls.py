@@ -9,6 +9,7 @@ from .views import (
     ProfilePictureView,
     BackupView,
     AuditLogView,
+    MaintenanceView,
 )
 
 urlpatterns = [
@@ -29,4 +30,7 @@ urlpatterns = [
 
 
     path('audit-logs/', AuditLogView.as_view(), name='audit_logs'),
+
+    # System maintenance
+    path('maintenance/', MaintenanceView.as_view(), name='maintenance'),
 ]

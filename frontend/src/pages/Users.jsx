@@ -28,6 +28,7 @@ const Users = () => {
     const formatDate = (dateString) => {
         if (!dateString) return 'Never';
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Never';
         return date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -51,10 +52,11 @@ const Users = () => {
                             type="button"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const headers = ['Name', 'Email', 'Role', 'Department', 'Status', 'Date Joined', 'Last Login'];
+                                const headers = ['Name', 'Email', 'Student ID', 'Role', 'Department', 'Status', 'Date Joined', 'Last Login'];
                                 const rows = users.map(u => [
                                     u.fullName || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
                                     u.email,
+                                    u.studentId || u.student_id || '',
                                     getRoleLabel(u.role),
                                     u.department || '',
                                     u.isActive || u.is_active ? 'Active' : 'Inactive',
@@ -72,10 +74,11 @@ const Users = () => {
                             type="button"
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const headers = ['Name', 'Email', 'Role', 'Department', 'Status', 'Last Login'];
+                                const headers = ['Name', 'Email', 'Student ID', 'Role', 'Department', 'Status', 'Last Login'];
                                 const rows = users.map(u => [
                                     u.fullName || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
                                     u.email,
+                                    u.studentId || u.student_id || '',
                                     getRoleLabel(u.role),
                                     u.department || '',
                                     u.isActive || u.is_active ? 'Active' : 'Inactive',
@@ -191,6 +194,7 @@ const Users = () => {
                     <Table.Header>
                         <Table.Row>
                             <Table.Head>User</Table.Head>
+                            <Table.Head>Student ID</Table.Head>
                             <Table.Head>Role</Table.Head>
                             <Table.Head>Department</Table.Head>
                             <Table.Head>Status</Table.Head>
@@ -207,7 +211,15 @@ const Users = () => {
                                 <Table.Row key={user.id}>
                                     <Table.Cell>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
+                                            {user.avatarUrl ? (
+                                                <img
+                                                    src={user.avatarUrl}
+                                                    alt={user.fullName || user.username}
+                                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200 dark:ring-gray-700"
+                                                    onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = 'flex'); }}
+                                                />
+                                            ) : null}
+                                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary items-center justify-center text-white font-bold ${user.avatarUrl ? 'hidden' : 'flex'}`}>
                                                 {(user.fullName || user.username || '?').charAt(0).toUpperCase()}
                                             </div>
                                             <div>
@@ -215,6 +227,15 @@ const Users = () => {
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                                             </div>
                                         </div>
+                                    </Table.Cell>
+                                    <Table.Cell>
+                                        {user.role === 'STUDENT' && (user.studentId || user.student_id) ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-medium">
+                                                {user.studentId || user.student_id}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-gray-400">—</span>
+                                        )}
                                     </Table.Cell>
                                     <Table.Cell>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
@@ -239,7 +260,7 @@ const Users = () => {
                                         </div>
                                     </Table.Cell>
                                     <Table.Cell className="text-sm text-gray-500">
-                                        {formatDate(user.lastLogin)}
+                                        {formatDate(user.last_login)}
                                     </Table.Cell>
                                 </Table.Row>
                             ))
